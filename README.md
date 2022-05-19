@@ -1,6 +1,19 @@
 # GENIN
 
-[[_TOC_]]
+- [GENIN](#genin)
+    * [Installation](#installation)
+        - [RHEL, Fedora, Rockylinux](#rhel--fedora--rockylinux)
+        - [Debian, Ubuntu](#debian--ubuntu)
+        - [Apple MacOs](#apple-macos)
+        - [Windows](#windows)
+    * [Usage guide](#usage-guide)
+        + [Inventory generation](#inventory-generation)
+        + [Flags and options](#flags-and-options)
+    * [Build from sources](#build-from-sources)
+    * [Contributing](#contributing)
+    * [Versioning](#versioning)
+    * [Authors](#authors)
+    * [License](#license)
 
 ---
 ## Installation
@@ -36,13 +49,13 @@ It is also possible to install a `deb` package on `debian` based distros:
 curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.1.amd64.deb && sudo dpkg -i genin-0.3.1.amd64.deb
 ```
 
-#### Apple MacOs x86_64
+#### Apple MacOs
 ```shell
 curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-darwin-amd64.zip 
 unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
 ```
 
-#### Windows x86_64
+#### Windows
 ```shell
 curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-windows-amd64.zip 
 unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
@@ -157,48 +170,48 @@ genin init --output mycluster.yml
 Now let's check what is the difference from the previous initialization `mycluster.yml`.
 ```yaml
 ---
+---
 instances:
-  # Here is new instance type
-  - name: stateboard # (important) Stateboard is non common instance, he has special configuration
-    stateboard: true # (important) Indicates that this instance is stateboard
-    config:
-      listen: 0.0.0.0:3399  # (optional) listening port
-      password: example     # (optional) stateboard password should be same as in stateboard params
-  - name: storage
-    roles: ["storage", "failover-coordinator"]
-    master_cnt: 1
-    replicas_cnt: 0
-    config:
-      my_key: my_value
   - name: router
-    roles: ["storage", "failover-coordinator"]
-    masters_cnt: 1
-    replicas_cnt: 0
-    config:
-      my_key: my_value
-
-vars:
-  ansible_user: my_user
-  ansible_password: my_user_password
-  cartridge_app_name: my_app
-  cartridge_package_path: /tmp/my_app.rpm
-  cartridge_cluster_cookie: my_app_cluster_cookie
-  # Because we add new argument to build command, here is new parameter block
-  cartridge_bootstrap_vshard: true # (optional) signals that cluster has vshard roles
-  cartridge_failover_params:    # (important) failover parameters
-    mode: stateful              # (important) only statefull mode has state provider. By default disabled.
-    state_provider: stateboard  # (important) state provider can be etcd2 or stateboard
-    stateboard_params:          # (optional) here should be stateboard or etcd2 params
-      uri: 192.168.27.1:3399    # (optional) stateboard uri
-      password: example         # (optional) stateboard password
-
+    type: router
+    count: 1
+    replicas: 0
+    weight: 10
+    roles:
+      - router
+      - api
+      - failover-coordinator
+  - name: storage
+    type: storage
+    count: 2
+    replicas: 2
+    weight: 10
+    roles:
+      - storage
 hosts:
-  datacenter1:
+  - name: selectel
+    type: datacenter
     ports:
-      begin_http: 8080
-      begin_binary: 3030
-    host1: 192.168.56.1
-    host2: 192.168.56.2
+      http: 8081
+      binary: 3031
+    hosts:
+      - name: host-1
+        ip: 192.168.16.1
+      - name: host-2
+        ip: 192.168.16.2
+failover:                       # (important) failover parameters
+  mode: stateful                # (important) only stateful mode has state provider. By default, stateful.
+  state_provider: stateboard    # (important) state provider can be etcd2 or stateboard
+  stateboard_params:
+    uri:
+      ip: 192.168.16.1          # (optional) listening address
+      port: 4401                # (optional) listening port
+    password: change_me         # (optional) stateboard password should be same as in stateboard params
+vars:
+  ansible_user: root
+  ansible_password: change_me
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
 ```
 
 The difference is not so great, but it is there since we launched it with additional parameters.  
@@ -321,7 +334,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 - **Dmitry Travyan**
 
-© 2020-2021 Picodata.io https://github.com/picodata
+© 2020-2022 Picodata.io https://github.com/picodata
 
 ## License
 
