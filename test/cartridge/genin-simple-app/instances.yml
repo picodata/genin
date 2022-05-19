@@ -1,0 +1,36 @@
+---
+genin-simple-app.router-1:
+  advertise_uri: localhost:3031
+  http_port: 8081
+
+genin-simple-app.storage-1:
+  advertise_uri: localhost:3032
+  http_port: 8082
+
+genin-simple-app.storage-1-replica-1:
+  advertise_uri: localhost:3033
+  http_port: 8083
+
+genin-simple-app.storage-1-replica-2:
+  advertise_uri: localhost:3034
+  http_port: 8084
+
+genin-simple-app.storage-2:
+  advertise_uri: localhost:3035
+  http_port: 8085
+
+genin-simple-app.storage-2-replica-1:
+  advertise_uri: localhost:3036
+  http_port: 8086
+
+genin-simple-app.storage-2-replica-2:
+  advertise_uri: localhost:3037
+  http_port: 8087
+
+genin-simple-app.enginge-1:
+  advertise_uri: localhost:3038
+  http_port: 8088
+
+genin-simple-app-stateboard:
+  listen: localhost:3030
+  password: genin-app

@@ -1,0 +1,63 @@
+---
+instances:
+  - name: api
+    count: 1
+    replicas: 0
+    weight: 10
+    roles:
+      - api
+  - name: calculator
+    count: 1
+    replicas: 0
+    weight: 10
+    roles:
+      - calculator
+  - name: storage
+    type: storage
+    count: 2
+    replicas: 2
+    weight: 10
+    roles:
+      - storage
+    config:
+      memtx_memory: 1179869184
+      vinyl_memory: 10345452343
+  - name: fake-storadge
+    type: storage
+    count: 2
+    replicas: 2
+    weight: 10
+    roles:
+      - storage
+  - name: router
+    type: router
+    count: 1
+    replicas: 0
+    weight: 10
+    roles:
+      - router
+      - failover-coordinator
+hosts:
+  - name: selectel
+    type: datacenter
+    ports:
+      http: 8100
+      binary: 3999
+    hosts:
+      - name: host-1
+        ip: 192.168.16.1
+      - name: host-2
+        ip: 192.168.16.2
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri:
+      ip: 192.168.16.1
+      port: 4401
+    password: change_me
+vars:
+  ansible_user: root
+  ansible_password: change_me
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie

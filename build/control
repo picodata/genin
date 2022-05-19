@@ -1,0 +1,6 @@
+Package: genin
+Version: ${VERSION}
+Architecture: amd64
+Maintainer: Dmitry Travyan <dmitry.travyan@picodata.io>
+Description: Tarantool cartridge inventory generator
+	Simple template engine that makes it easy to create inventory for tarantool cartridge

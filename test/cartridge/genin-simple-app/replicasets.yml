@@ -1,0 +1,35 @@
+router-1:
+  instances:
+    - router-1
+  roles:
+  - failover-coordinator
+  - app.roles.api
+  all_rw: false
+storage-1:
+  instances:
+  - storage-1
+  - storage-1-replica-1
+  - storage-1-replica-2
+  roles:
+    - app.roles.storage
+  weight: 1
+  all_rw: false
+  vshard_group: default
+storage-2:
+  instances:
+    - storage-2
+    - storage-2-replica-1
+    - storage-2-replica-2
+  roles:
+    - app.roles.storage
+  weight: 1
+  all_rw: false
+  vshard_group: default
+engine-1:
+  instances:
+    - engine-1
+  roles:
+    - app.roles.engine
+  weight: 1
+  all_rw: false
+  vshard_group: default

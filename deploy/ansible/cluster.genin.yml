@@ -1,0 +1,57 @@
+---
+instances:
+  - name: storage
+    type: storage
+    count: 2
+    replicas: 2
+    weight: 10
+    roles:
+      - app.roles.storage
+  - name: router
+    type: router
+    count: 1
+    weight: 10
+    roles:
+      - app.roles.router
+      - app.roles.api
+      - failover-coordinator
+  - name: engine
+    count: 1
+    weight: 10
+    roles:
+      - app.roles.engine
+hosts:
+  - name: selectel
+    type: datacenter
+    ports:
+      http: 8081
+      binary: 3031
+    hosts:
+      - name: genin_01_host
+        ip: 192.168.16.11
+      - name: genin_02_host
+        ip: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri:
+      ip: 192.168.16.11
+      port: 3030
+    password: genin-app
+vars:
+  ansible_user: vagrant
+  ansible_password: vagrant
+  cartridge_app_name: genin-simple-app
+  cartridge_cluster_cookie: genin-app-secret-cookie
+  cartridge_package_path: ../../test/cartridge/genin-simple-app/genin-simple-app-0.3.0-1.x86_64.rpm
+  cartridge_failover_params:
+    mode: stateful
+    state_provider: stateboard
+    stateboard_params:
+      uri: "192.168.16.11:3030"
+      password: genin-app
+  cartridge_bootstrap_vshard: true
+  cartridge_enable_tarantool_repo: false
+  wait_cluster_has_no_issues_retries: 20
+  instance_start_retries: 20

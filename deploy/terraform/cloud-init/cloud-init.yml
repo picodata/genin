@@ -1,0 +1,15 @@
+#cloud-config
+---
+users:
+  - name: picoadm
+    groups: [ sudo, docker ]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    passwd: ansible
+
+runcmd:
+  - [ sed, -i, 's/SELINUX=enforcing/SELINUX=disabled/g', /etc/selinux/config ]
+
+power_state:
+  mode: reboot
+  timeot: 10

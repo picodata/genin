@@ -1,0 +1,120 @@
+---
+all:
+  vars:
+    ansible_user: vagrant
+    ansible_password: vagrant
+    cartridge_app_name: genin-simple-app
+    cartridge_cluster_cookie: genin-app-secret-cookie
+    cartridge_package_path: "../../test/cartridge/genin-simple-app/genin-simple-app-0.3.0-1.x86_64.rpm"
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:3030"
+        password: genin-app
+    cartridge_bootstrap_vshard: true
+    cartridge_enable_tarantool_repo: false
+    wait_cluster_has_no_issues_retries: 20
+    instance_start_retries: 20
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: "8081"
+    storage-1:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: "8082"
+    storage-2-replica-1:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: "8083"
+    storage-1-replica-2:
+      config:
+        advertise_uri: "192.168.16.11:3034"
+        http_port: "8084"
+    stateboard:
+      stateboard: true
+      config:
+        listen: "0.0.0.0:3030"
+        password: genin-app
+    storage-2:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: "8082"
+    storage-2-replica-2:
+      config:
+        advertise_uri: "192.168.16.12:3033"
+        http_port: "8083"
+    storage-1-replica-1:
+      config:
+        advertise_uri: "192.168.16.12:3034"
+        http_port: "8084"
+    engine-1:
+      config:
+        advertise_uri: "192.168.16.11:3035"
+        http_port: "8085"
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        weight: 10
+        failover_priority:
+          - router-1
+        roles:
+          - app.roles.router
+          - app.roles.api
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        weight: 10
+        failover_priority:
+          - storage-1
+          - storage-1-replica-1
+          - storage-1-replica-2
+        roles:
+          - app.roles.storage
+      hosts:
+        storage-1: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        weight: 10
+        failover_priority:
+          - storage-2
+          - storage-2-replica-1
+          - storage-2-replica-2
+        roles:
+          - app.roles.storage
+      hosts:
+        storage-2: ~
+    engine-1-replicaset:
+      vars:
+        replicaset_alias: engine-1
+        weight: 10
+        failover_priority:
+          - engine-1
+        roles:
+          - app.roles.engine
+      hosts:
+        engine-1: ~
+    genin_01_host:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        storage-1: ~
+        storage-2-replica-1: ~
+        storage-1-replica-2: ~
+        stateboard: ~
+    genin_02_host:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        storage-2: ~
+        storage-2-replica-2: ~
+        storage-1-replica-1: ~
+        engine-1: ~

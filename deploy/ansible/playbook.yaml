@@ -1,0 +1,19 @@
+---
+- name: Deploy Genin simple app
+  hosts: all
+  become: false
+  tasks:
+    - name: Disable gpg check
+      lineinfile:
+        path: "{{ playbook_dir }}/.roles/tarantool.cartridge/tasks/steps/blocks/install_rpm_or_deb.yml"
+        regexp: ".*disable_gpg_check.*"
+        insertafter: '  yum:'
+        line: '    disable_gpg_check: yes'
+      run_once: true
+      delegate_to: localhost
+      become: false
+
+    - name: Import Tarantool Cartridge role
+      become: true
+      import_role:
+        name: tarantool.cartridge

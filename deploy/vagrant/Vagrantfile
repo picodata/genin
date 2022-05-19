@@ -1,0 +1,36 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    config.vm.box = "rockylinux/8"
+    config.vm.provider :libvirt do |vm|
+      vm.memory = 2048
+    end
+
+    config.vm.provision "shell", inline: <<-SHELL
+      sudo setenforce 0
+      sudo sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+      sudo sed -i 's/#MaxSessions 10/MaxSessions 99/g' /etc/ssh/sshd_config
+      sudo sed -i "s/PasswordAuthentication.*/PasswordAuthentication yes/g" /etc/ssh/sshd_config
+      sudo systemctl restart sshd
+      sudo yum install -y zip unzip vim net-tools wget epel-release
+      echo 'PATH=$PATH:/usr/share/tarantool/tdg' >> ~/.bashrc
+      curl -L https://tarantool.io/pre-release/2/installer.sh | bash
+      sudo yum install -y tarantool
+    SHELL
+
+    config.vm.define "genin_01_host" do |genin_01_host|
+      genin_01_host.vm.hostname = "genin-01-host"
+      genin_01_host.vm.network "private_network", ip: "192.168.16.11"
+    end
+
+    config.vm.define "genin_02_host" do |genin_02_host|
+      genin_02_host.vm.hostname = "genin-02-host"
+      genin_02_host.vm.network "private_network", ip: "192.168.16.12"
+    end
+
+  end
