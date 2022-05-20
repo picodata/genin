@@ -25,4 +25,5 @@ node_modules
 .roles
 /test/resources/*
 !/test/resources/test-*
+/test/resources/test-*-copy*:w
 /.gitlab-ci.yml

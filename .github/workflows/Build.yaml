@@ -4,7 +4,7 @@ on:
     branches:
       - master
     tags:
-      - *
+      - '*'
 env:
   VERSION: 0.3.0
   YUM_REGISTRY: https://binary.picodata.io/repository/yum

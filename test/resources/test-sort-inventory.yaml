@@ -1,0 +1,189 @@
+---
+all:
+  vars:
+    ansible_user: root
+    ansible_password: change_me
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.1:3999"
+        http_port: "8100"
+    fake-storadge-1:
+      config:
+        advertise_uri: "192.168.16.1:4000"
+        http_port: "8101"
+    fake-storadge-2-replica-1:
+      config:
+        advertise_uri: "192.168.16.1:4001"
+        http_port: "8102"
+    fake-storadge-1-replica-2:
+      config:
+        advertise_uri: "192.168.16.1:4002"
+        http_port: "8103"
+    storage-1:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.1:4003"
+        http_port: "8104"
+    storage-2-replica-1:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.1:4004"
+        http_port: "8105"
+    storage-1-replica-2:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.1:4005"
+        http_port: "8106"
+    api-1:
+      config:
+        advertise_uri: "192.168.16.1:4006"
+        http_port: "8107"
+    stateboard:
+      stateboard: true
+      config:
+        listen: "0.0.0.0:4401"
+        password: change_me
+    fake-storadge-2:
+      config:
+        advertise_uri: "192.168.16.2:4000"
+        http_port: "8101"
+    fake-storadge-2-replica-2:
+      config:
+        advertise_uri: "192.168.16.2:4001"
+        http_port: "8102"
+    fake-storadge-1-replica-1:
+      config:
+        advertise_uri: "192.168.16.2:4002"
+        http_port: "8103"
+    storage-2:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.2:4003"
+        http_port: "8104"
+    storage-2-replica-2:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.2:4004"
+        http_port: "8105"
+    storage-1-replica-1:
+      config:
+        memtx_memory: 1179869184
+        vinyl_memory: 10345452343
+        advertise_uri: "192.168.16.2:4005"
+        http_port: "8106"
+    calculator-1:
+      config:
+        advertise_uri: "192.168.16.1:4007"
+        http_port: "8108"
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        weight: 10
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    fake-storadge-1-replicaset:
+      vars:
+        replicaset_alias: fake-storadge-1
+        weight: 10
+        failover_priority:
+          - fake-storadge-1
+          - fake-storadge-1-replica-1
+          - fake-storadge-1-replica-2
+        roles:
+          - storage
+      hosts:
+        fake-storadge-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        weight: 10
+        failover_priority:
+          - storage-1
+          - storage-1-replica-1
+          - storage-1-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-1: ~
+    api-1-replicaset:
+      vars:
+        replicaset_alias: api-1
+        weight: 10
+        failover_priority:
+          - api-1
+        roles:
+          - api
+      hosts:
+        api-1: ~
+    fake-storadge-2-replicaset:
+      vars:
+        replicaset_alias: fake-storadge-2
+        weight: 10
+        failover_priority:
+          - fake-storadge-2
+          - fake-storadge-2-replica-1
+          - fake-storadge-2-replica-2
+        roles:
+          - storage
+      hosts:
+        fake-storadge-2: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        weight: 10
+        failover_priority:
+          - storage-2
+          - storage-2-replica-1
+          - storage-2-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-2: ~
+    calculator-1-replicaset:
+      vars:
+        replicaset_alias: calculator-1
+        weight: 10
+        failover_priority:
+          - calculator-1
+        roles:
+          - calculator
+      hosts:
+        calculator-1: ~
+    host-1:
+      vars:
+        ansible_host: 192.168.16.1
+      hosts:
+        router-1: ~
+        fake-storadge-1: ~
+        fake-storadge-2-replica-1: ~
+        fake-storadge-1-replica-2: ~
+        storage-1: ~
+        storage-2-replica-1: ~
+        storage-1-replica-2: ~
+        api-1: ~
+        stateboard: ~
+    host-2:
+      vars:
+        ansible_host: 192.168.16.2
+      hosts:
+        fake-storadge-2: ~
+        fake-storadge-2-replica-2: ~
+        fake-storadge-1-replica-1: ~
+        storage-2: ~
+        storage-2-replica-2: ~
+        storage-1-replica-1: ~
+        calculator-1: ~

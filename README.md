@@ -1,6 +1,9 @@
-# GENIN
+#GENIN
+---
+![tests](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
 
 - [GENIN](#genin)
+    * [About](#about)
     * [Installation](#installation)
         - [RHEL, Fedora, Rockylinux](#rhel-fedora-rockylinux)
         - [Debian, Ubuntu](#debian-ubuntu)
@@ -16,6 +19,15 @@
     * [License](#license)
 
 ---
+
+## About
+Genin is a tool that allows you to quickly create an inventory of clusters of any size for 
+an ansible cartridge.  
+For example, inventory for a cluster of 50 instances could be over a thousand rows in size. 
+Now imagine that you need to slightly change its configuration. May you want to add new 
+configuration parameter to all storages. Sounds like guaranteed mistake. Genin is the tool 
+that will help you very quickly change the configuration to a new one.
+
 ## Installation
 
 Download and unzip the archive for the desired architecture.
