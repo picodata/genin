@@ -2,8 +2,8 @@
 
 - [GENIN](#genin)
     * [Installation](#installation)
-        - [RHEL, Fedora, Rockylinux](#rhel--fedora--rockylinux)
-        - [Debian, Ubuntu](#debian--ubuntu)
+        - [RHEL, Fedora, Rockylinux](#rhel-fedora-rockylinux)
+        - [Debian, Ubuntu](#debian-ubuntu)
         - [Apple MacOs](#apple-macos)
         - [Windows](#windows)
     * [Usage guide](#usage-guide)
@@ -161,6 +161,7 @@ Half of the work is done, it remains only to generate a ready-made inventory fro
 file. But before doing this, there are a few more configuration options to mention.
 
 Now let's run initialization with additional flags.
+
 ```shell
 genin init --output mycluster.yml
 ```

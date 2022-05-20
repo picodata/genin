@@ -83,7 +83,7 @@ fn test_fs_interaction_read() {
             .try_get_matches_from(vec![
                 "genin",
                 "--source",
-                "test/resources/cluster.genin.yaml",
+                "test/resources/test-cluster.genin.yaml",
             ])
             .unwrap(),
     );
