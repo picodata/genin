@@ -49,13 +49,7 @@ hosts:
       - name: host-2
         ip: 10.99.16.66
 failover:
-  mode: stateful
-  state_provider: stateboard
-  stateboard_params:
-    uri:
-      ip: 10.99.16.66
-      port: 5001
-    password: genin-app
+  mode: eventual
 vars:
   ansible_user: ansible
   ansible_password: ansible

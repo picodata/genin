@@ -1,5 +1,6 @@
-#GENIN
+# GENIN
 ---
+[![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](LICENSE)
 ![tests](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
 
 - [GENIN](#genin)
@@ -21,12 +22,14 @@
 ---
 
 ## About
-Genin is a tool that allows you to quickly create an inventory of clusters of any size for 
-an ansible cartridge.  
-For example, inventory for a cluster of 50 instances could be over a thousand rows in size. 
-Now imagine that you need to slightly change its configuration. May you want to add new 
-configuration parameter to all storages. Sounds like guaranteed mistake. Genin is the tool 
-that will help you very quickly change the configuration to a new one.
+Genin is an inventory generator for Ansible Cartridge. It provides a command-line 
+tool that allows quick creation of inventory for clusters of any size.
+For example, an inventory file for a cluster of 50 instances can easily be of thousand 
+lines or more. Any slight change of the configuration, eg. adding a new configuration 
+option for all storages, means a lot of manual routine and increases the risk of 
+improper or incomplete configuration. Genin  allows you to stay confident while 
+maintaining the configuration file and steer clear of inaccuracies and human errors. 
+Genin is the tool that will help you very quickly change the configuration to a new one.
 
 ## Installation
 
@@ -52,7 +55,10 @@ yum install -y genin
 
 2. If you want to download and install manually please don't forget chose right architecture:
 ```shell
+# Centos 8
 rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
+# Or centos 7
+rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
 ```
 
 #### Debian, Ubuntu
@@ -73,7 +79,7 @@ curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-
 unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 
-Check version:
+Сheck that the installation was successful:
 ```
 genin --version
 ```
@@ -94,8 +100,8 @@ genin init
 As a result, a file `cluster.genin.yaml` will be created in the same directory where `genin`
 was launched.
 > **Note:** if the directory in which the initialization was started already contains a
-> `cluster.genin.yml`, then will be created new file `cluster.genin1.yaml` and
-> `genin` will create a new one.
+> `cluster.genin.yml`, then will be created new file `cluster.genin.copy.yaml` and this will be 
+> repeated every time a new file is created.
 
 Let's check it! Open the file and examine the contents.
 ```yaml
@@ -103,23 +109,49 @@ Let's check it! Open the file and examine the contents.
 # list of instances as an array
 instances:
   # instance looks like item in array
-  - name: storage # (mandatory) instance name
-    type: storage       # (mandatory) instance type (storage, router, custom)
-    count: 2            # (optional) how many masters we want, by default equal 1
-    replicas: 0         # (optional) number of replicas per master, default 0
-    weight: 10          # (optional) instance weight
-    roles: ["storage", "failover-coordinator"] # (optional) list of roles    
-    config:             # (optional) config with arbitrary key-values pairs
-      my_key: my_value  # please do not leave empty blocks
+  - name: router              # (mandatory) instance name
+    type: router              # (mandatory) instance type (storage, router, custom, dummy, replica)
+    count: 1                  # (optional) how many masters we want, by default equal 1
+    replicas: 0               # (optional) number of replicas per master, default for router 0
+    weight: 10                # (optional) instance weight
+    roles:                    # (optional) list of roles    
+      - router
+      - api
+      - failover-coordinator
+    config:                   # (optional) config with arbitrary key-values pairs
+      instance_name: router   # any other configuration parameters in free order
 
-  # all instances generated using the init subcommand will have the same set of parameters
-  - name: router
+  # all another instances generated using the init subcommand will have the same set of parameters
+  - name: storage
     type: storage
-    count: 1
+    count: 2
+    replicas: 2
+    weight: 10
+    roles:
+      - storage
 
-  # this one will be type "custom" and count 1
-  - name: engine
-  # here you can add your own instance
+# map of regions, datacenters, and hosts
+hosts:                    # (important) at least one datacenter must be designated
+  - name: selectel        # (important) at least one datacenter must be designated
+    type: datacenter      # (optional) host type
+    ports:                # (optional) begin binary and http port, by default 8080, 3030
+      http: 8081          # ports can be defined on all levels (region, datacenter, server)
+      binary: 3031
+    hosts: 
+      - name: host-1      # deepest level of hosts config
+        ip: 192.168.16.11
+      - name: host-2
+        ip: 192.168.16.12
+
+# failover parameters
+failover:
+  mode: stateful                      # (optional) failover mode (stateful, eventual, disabled)
+  state_provider: stateboard          # (optional) what is serve failover (stateboard, stateful)
+  stateboard_params:                  # (optional) params for chosen in state_provider failover type
+      uri:
+        ip: 192.168.16.1
+        port: 4401
+      password: "vG?-GG!4sxV8q5:f"
 
 # vars similar to those configured in the TDG inventory
 vars:
@@ -128,45 +160,7 @@ vars:
   cartridge_app_name: my_app
   cartridge_package_path: /tmp/my_app.rpm
   cartridge_cluster_cookie: my_app_cluster_cookie
-
-failover:
-  mode: stateful
-  state_provider: stateboard
-  stateboard_params:
-      uri: "192.168.16.11:3033"
-      password: "vG?-GG!4sxV8q5:f"
-
-# map of datacenters and hosts
-hosts: # (important) all dc's is a key: map objects
-  - name: kavkaz        # (important) at least one datacenter must be designated
-    type: region        # (optional) host type
-    distance: 10
-    ports:              # (optional) begin binary and http port, by default 8080, 3030
-      http: 8091        # ports can be defined on all levels (region, datacenter, server)
-      binary: 3031
-    hosts:
-      - name: dc-1
-        type: datacenter
-        hosts:  # (important) without defined type it will be servers
-          - name: server-1
-            ip: 10.20.3.100
-      - name: dc-2
-        type: datacenter
-        hosts:
-          - name: server-1
-            ip: 10.20.4.100
-  - name: moscow
-    type: region
-    distance: 20
-    hosts:
-      - name: dc-3
-        type: datacenter
-        ports:
-          http: 8091
-          binary: 3031
-        hosts:
-          - name: server-10
-            ip: 10.99.3.100
+  # put here you personally key/value ansible cartridge vars
 ```
 After you have changed those parameters that you needed, save it.
 Half of the work is done, it remains only to generate a ready-made inventory from this
@@ -227,25 +221,101 @@ vars:
   cartridge_cluster_cookie: myapp-cookie
 ```
 
-The difference is not so great, but it is there since we launched it with additional parameters.  
-These parameters added to us `cartridge_failover_params` and `stateboard` instance.
-Now run `genin` in the same folder where `cluster.genin.yml` is stored. You can read more about  
-such failover modes in the [Tarantool](https://www.tarantool.io/ru/doc/1.10/book/cartridge/topics/failover/) documentation.
+Now than we have generated the cluster configuration file, we can start generating inventory.
+
+```shell
+genin build
+```
+
+Done! An inventory file appeared in the same directory where you launched the genin. Now we 
+can set up the cluster.
+```shell
+ansible-playbook -i invetory.yaml playbook.yaml
+```
+
+### Editing config
+
+Let's make our config and let it be as lazy as possible:
+```yaml
+---
+instances:
+  - name: router
+    type: router
+  - name: storage
+    type: storage
+    count: 3
+    replicas: 2
+
+hosts:
+  - name: selectel
+    type: datacenter
+    hosts:
+      - name: host-1
+        ip: 192.168.16.11
+      - name: host-2
+        ip: 192.168.16.12
+```
+
+Such a config will be completely valid, all parameters not specified by us will be set 
+by default. 
+Let's now extend it to 10 hosts, 10 routers, 10 storages, drop to default (1) number of storage 
+replicas and finally add our new instance type - cache.
+
+```yaml
+---
+instances:
+  - name: router
+    type: router
+    count: 10
+  - name: storage
+    type: storage
+    count: 10
+
+hosts:
+  - name: selectel
+    type: datacenter
+    hosts:
+      - name: host-1
+        ip: 192.168.16.11
+      - name: host-2
+        ip: 192.168.16.12
+      - name: host-3
+        ip: 192.168.16.13
+      - name: host-4
+        ip: 192.168.16.14
+      - name: host-5
+        ip: 192.168.16.15
+      - name: host-6
+        ip: 192.168.16.16
+      - name: host-7
+        ip: 192.168.16.17
+      - name: host-8
+        ip: 192.168.16.18
+      - name: host-9
+        ip: 192.168.16.19
+      - name: host-10
+        ip: 192.168.16.20
+```
+As a result, the difference between the config for 2 instances and a large cluster
+is not so great, but the finished inventory will be 5 times more inventory.
+
+In addition to lazy configuration, there are more options for lazy failover.
+```shell
+genin init --failover-mode disabled
+```
+This completely removes all the parameters of the failover at any of the stages.
+```shell
+genin build --failover-state-provider etcd2 # eg genin build -F etcd2
+```
+This option will replace the type of the entity serving the failover.
+Much more you can see here [Tarantool](https://www.tarantool.io/ru/doc/1.10/book/cartridge/topics/failover/).
+> **Note:** Print flag only neaded to better visibility of result
 
 But the main thing is that now nothing prevents us from generating inventory. Let's do it!
 ```shell
-genin build --print
+genin build
 ```
-> **Note:** Print flag only neaded to better visibility of result
-
-Command `build` signalize that `genin` should build inventory.
-Flag `--print` (short `-s`) will additionally show us the distribution of instances by hosts.
-If the program did not return any errors, then our inventory was successfully generated and
-written to disk in the same  directory where `genin` was launched.
-Time to check result!
-```yaml
-TODO
-```
+> **Note:** Failover option works for all `genin` subcommands.
 
 ### Flags and options
 
@@ -301,14 +371,12 @@ git clone git@github.com:picodata/genin.git
 ```
 
 Second you should install rust build tools.
-
-Debian like, Centos, RHEL, Fedora, Macos.
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 > **Note:** You should refresh `$PATH` variable for access to calling `rust binaries`.
 
-After install all required tools, we should build and install `genin`.
+After install all required tools, you should build and install `genin`.
 ```
 cd genin
 rustup override set nightly

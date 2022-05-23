@@ -1,0 +1,9 @@
+name: InteragtionTest
+on: [pull_request]
+jobs:
+  test:
+    name: Run integrations tests
+    runs-on: [self-hosted, genin]
+    steps:
+      - name: dummy
+        run: echo "hello"
