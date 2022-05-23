@@ -1,5 +1,8 @@
 name: UnitTest
-on: [push]
+on:
+  push:
+    branches-ignore:
+      - master
 jobs:
   test:
     name: Cargo run tests

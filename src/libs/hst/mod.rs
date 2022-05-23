@@ -67,7 +67,7 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.1".parse().unwrap()),
+                    ip: IP::Server("192.168.16.11".parse().unwrap()),
                     hosts: HostsVariants::None,
                 },
                 Host {
@@ -75,7 +75,7 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.2".parse().unwrap()),
+                    ip: IP::Server("192.168.16.12".parse().unwrap()),
                     hosts: HostsVariants::None,
                 },
             ])),

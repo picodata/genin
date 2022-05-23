@@ -4,31 +4,68 @@ on:
     branches:
       - master
     tags:
-      - '*'
+      - '0.**'
 env:
-  VERSION: 0.3.0
   YUM_REGISTRY: https://binary.picodata.io/repository/yum
+  RAW_REGISTRY: https://binary.picodata.io/repository/raw
 jobs:
   build:
     name: Build genin binary
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rust-builder-nightly:latest
+    outputs:
+      app_version: ${{ steps.get_last_tag.outputs.app_version }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Get version from tag
-        run: echo "VERSION=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+        id: get_last_tag
+        run: |
+          export VERSION=$(git describe --tags --abbrev=0)
+          echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
         run: make build
-      - name: Run pack binaries
-        run: make pack
-      - name: Archive build artifacts
+      - name: Archive apple x64_86 binary
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts.zip
-          path: target/package/*
+          name: x86_64-apple-darwin.zip
+          path: target/x86_64-apple-darwin/release/genin
+      - name: Archive windows x64_86 binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86_64-pc-windows-gnu.zip
+          path: target/x86_64-pc-windows-gnu/release/genin.exe
+      - name: Archive gnu binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86_64-unknown-linux-gnu.zip
+          path: target/x86_64-unknown-linux-gnu/release/genin
+      - name: Archive musl binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl.zip
+          path: target/x86_64-unknown-linux-musl/release/genin
+
+  musl-bin:
+    name: Upload musl binary
+    needs: build
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/rust-builder-nightly:latest
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
+    steps:
+      - name: Download builded binary
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl.zip
+      - run: ls -la
+      - name: Upload archive with binary
+        run: |
+          tar -czvf genin-${{ env.VERSION }}-x86_64-musl.tar.gz genin
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
 
   centos7:
     name: Build centos 7 rpm
@@ -36,20 +73,23 @@ jobs:
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/centos:centos7
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Download builded binary
         uses: actions/download-artifact@v3
         with:
-          name: artifacts.zip
-          path: .
-      - run: yum install -y rpm-build rpm-devel rpmdevtools make
-      - run: sed -ie "s/\${VERSION}/${VERSION}/g" build/el7/genin.x86_64.spec
-      - run: rpmdev-setuptree
-      - run: rpmbuild -bb build/el7/genin.x86_64.spec
-      - run: mv ~/rpmbuild/RPMS/x86_64/genin-${VERSION}-1.el7.x86_64.rpm genin-${VERSION}-1.el7.x86_64.rpm
-      - run: 'curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file genin-${VERSION}-1.el7.x86_64.rpm ${YUM_REGISTRY}/el/7/x86_64/os/genin-${VERSION}-1.el7.x86_64.rpm'
+          name: x86_64-unknown-linux-musl.zip
+          path: ./x86_64-unknown-linux-musl/
+      - name: Build rpm
+        run: | 
+          yum install -y rpm-build rpm-devel rpmdevtools make
+          sed -ie "s/\${VERSION}/${VERSION}/g" build/el7/genin.x86_64.spec
+          rpmdev-setuptree
+          rpmbuild -bb build/el7/genin.x86_64.spec
+          curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el7.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm
 
   centos8:
     name: Build centos 8 prm
@@ -57,17 +97,47 @@ jobs:
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rockylinux:8
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Download builded binary
         uses: actions/download-artifact@v3
         with:
-          name: artifacts.zip
-          path: .
-      - run: yum install -y rpm-build rpm-devel rpmdevtools make
-      - run: sed -ie "s/\${VERSION}/${VERSION}/g" build/el8/genin.x86_64.spec
-      - run: rpmdev-setuptree
-      - run: rpmbuild -bb build/el8/genin.x86_64.spec
-      - run: mv ~/rpmbuild/RPMS/x86_64/genin-${VERSION}-1.el8.x86_64.rpm genin-${VERSION}-1.el8.x86_64.rpm
-      - run: 'curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file genin-${VERSION}-1.el8.x86_64.rpm ${YUM_REGISTRY}/el/7/x86_64/os/genin-${VERSION}-1.el8.x86_64.rpm'
+          name: x86_64-unknown-linux-musl.zip
+          path: ./x86_64-unknown-linux-musl/
+      - name: Build rpm
+        run: |
+          yum install -y rpm-build rpm-devel rpmdevtools make
+          sed -ie "s/\${VERSION}/${VERSION}/g" build/el8/genin.x86_64.spec
+          rpmdev-setuptree
+          rpmbuild -bb build/el8/genin.x86_64.spec
+          curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
+
+  release:
+    name: Create new release
+    needs: [build, centos7, centos8]
+    runs-on: [ self-hosted, genin ]
+    steps:
+      - name: Create genin Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.app_version }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: genin v${{ github.ref }}
+          body: |
+            ---
+            - [genin v${{ env.VERSION }}](#genin-v${{ env.VERSION }})
+              * [executable](#executable)
+              * [Centos x86_64](#centos-x86_64)
+            
+            ### Executable
+            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
+            
+            ### Centos x86_64:
+            [genin-${{ env.VERSION }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm)
+            [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
+

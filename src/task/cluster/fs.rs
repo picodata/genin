@@ -62,7 +62,7 @@ impl FsInteraction {
     /// - source file wrong format
     pub fn read(&self) -> Result<Vec<u8>, TaskError> {
         let mut file = File::open(self.source.as_ref().ok_or_else(|| {
-            TaskError::InternalError(InternalError::Undefined(
+            TaskError::InternalError(InternalError::UndefinedError(
                 "Error while trying to read source file. Source file: None".into(),
             ))
         })?)

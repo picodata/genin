@@ -1,19 +1,20 @@
 mod args;
 mod cluster;
 mod inv;
+mod flv;
 
 use crate::task::{
     cluster::{
+        Context,
         fs::{CLUSTER_YAML, INVENTORY_YAML},
         scheme::Scheme,
-        Context,
     },
     inv::Inventory,
 };
 use genin::libs::error::{CommandLineError, ConfigError, TaskError};
 use log::info;
 
-use self::cluster::{fs::FsInteraction, Cluster};
+use self::cluster::{Cluster, fs::FsInteraction};
 
 /// А function that launches an application and walks it through the state stages.
 pub fn run() -> Result<(), TaskError> {
@@ -116,7 +117,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             _ => Err(TaskError::CommandLineError(
-                CommandLineError::SubcommandMissingError("Subcommand missing!".into()),
+                CommandLineError::SubcommandError("subcommand missing".into()),
             )),
         })?
         .map_self(|Task(Context((scheme_fn, data_fn, fs_fn)))| {

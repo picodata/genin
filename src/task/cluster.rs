@@ -1,4 +1,3 @@
-mod flv;
 pub(in crate::task) mod fs;
 pub(in crate::task) mod hosts;
 pub(in crate::task) mod scheme;
@@ -12,7 +11,7 @@ use genin::libs::{
 };
 use serde::{Deserialize, Serialize};
 
-use flv::Failover;
+use crate::task::flv::Failover;
 
 use super::{Functor, MapSelf};
 

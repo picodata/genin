@@ -51,14 +51,18 @@ impl From<CommandLineError> for TaskError {
 #[derive(Debug, PartialEq)]
 pub enum InternalError {
     InstancesSpreadingError,
-    Undefined(String),
+    FieldDeserializationError(String),
+    StructDeserializationError(String),
+    UndefinedError(String),
 }
 
 impl Display for InternalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InstancesSpreadingError => write!(f, "InstancesSpreadingError"),
-            Self::Undefined(s) => write!(f, "error: {}", s),
+            Self::FieldDeserializationError(s) => write!(f, "FieldDeserializationError: {}", s),
+            Self::StructDeserializationError(s) => write!(f, "StructDeserializationError: {}", s),
+            Self::UndefinedError(s) => write!(f, "UndefinedError: {}", s),
         }
     }
 }
@@ -90,15 +94,17 @@ impl Error for ConfigError {}
 
 #[derive(Debug, PartialEq)]
 pub enum CommandLineError {
-    UnknownSubcommandError(String),
-    SubcommandMissingError(String),
+    SubcommandError(String),
+    OptionError(String),
+    ValueError(String),
 }
 
 impl Display for CommandLineError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UnknownSubcommandError(s) => write!(f, "UnknownSubcommandError: {}", s),
-            Self::SubcommandMissingError(s) => write!(f, "SubcommandMissingError: {}", s),
+            Self::SubcommandError(s) => write!(f, "SubcommandError: {}", s),
+            Self::OptionError(s) => write!(f, "OptionError: {}", s),
+            Self::ValueError(s) => writeln!(f, "ValueError: {}", s)
         }
     }
 }
