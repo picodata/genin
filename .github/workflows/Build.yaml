@@ -18,12 +18,10 @@ jobs:
       app_version: ${{ steps.get_last_tag.outputs.app_version }}
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Get version from tag
         id: get_last_tag
         run: |
-          export VERSION=$(git describe --tags --abbrev=0)
+          export VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
           echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
         run: make build
