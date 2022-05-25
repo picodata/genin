@@ -51,7 +51,7 @@ jobs:
     needs: build
     runs-on: [self-hosted, genin]
     container:
-      image: docker.binary.picodata.io/rust-builder-nightly:latest
+      image: docker.binary.picodata.io/rockylinux:8
     env:
       VERSION: ${{ needs.build.outputs.app_version }}
     steps:
@@ -59,11 +59,33 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: x86_64-unknown-linux-musl.zip
+          path: .
       - run: ls -la
       - name: Upload archive with binary
         run: |
           tar -czvf genin-${{ env.VERSION }}-x86_64-musl.tar.gz genin
           curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
+
+  apple:
+    name: Upload MacOSX binary
+    needs: build
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/rockylinux:8
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Download builded binary
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-apple-darwin.zip
+          path: .
+      - name: Build rpm
+        run: |
+          tar -czvf genin-${{ env.VERSION }}-x86_64-macos.tar.gz genin
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-macos.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-macos.tar.gz
 
   centos7:
     name: Build centos 7 rpm
@@ -115,7 +137,7 @@ jobs:
 
   release:
     name: Create new release
-    needs: [build, centos7, centos8]
+    needs: [build, centos7, centos8, apple, musl-bin]
     runs-on: [ self-hosted, genin ]
     steps:
       - name: Create genin Release
@@ -135,7 +157,9 @@ jobs:
             ### Executable
             [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
             
+            ### MacOSX
+            [genin-${{ env.VERSION }}-x86_64-macos.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-macos.tar.gz)
+            
             ### Centos x86_64:
             [genin-${{ env.VERSION }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm)
             [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
-
