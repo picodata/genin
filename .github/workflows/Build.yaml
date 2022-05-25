@@ -6,6 +6,7 @@ on:
     tags:
       - '0.**'
 env:
+  VERSION: 0.3.0
   YUM_REGISTRY: https://binary.picodata.io/repository/yum
   RAW_REGISTRY: https://binary.picodata.io/repository/raw
 jobs:
