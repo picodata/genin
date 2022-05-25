@@ -1,7 +1,8 @@
 # GENIN
 ---
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/picodata/genin)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/picodata/genin/IntegRationTest/master?label=test&logo=test)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](LICENSE)
-![tests](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
 
 - [GENIN](#genin)
     * [About](#about)

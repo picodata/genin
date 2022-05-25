@@ -126,8 +126,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: genin v${{ github.ref }}
+          tag_name: ${{ env.VERSION }}
+          release_name: genin v${{ env.VERSION }}
           body: |
             ---
             - [genin v${{ env.VERSION }}](#genin-v${{ env.VERSION }})
