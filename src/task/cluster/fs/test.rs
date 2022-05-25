@@ -90,7 +90,7 @@ fn test_fs_interaction_errors() {
 
     assert_eq!(
         fs.read(),
-        Err(TaskError::InternalError(InternalError::Undefined(
+        Err(TaskError::InternalError(InternalError::UndefinedError(
             "Error while trying to read source file. Source file: None".into(),
         )))
     );
@@ -99,7 +99,7 @@ fn test_fs_interaction_errors() {
 
     assert_eq!(
         fs.read(),
-        Err(TaskError::InternalError(InternalError::Undefined(
+        Err(TaskError::InternalError(InternalError::UndefinedError(
             "Error while trying to read source file. Source file: None".to_string()
         )))
     );

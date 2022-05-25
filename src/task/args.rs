@@ -15,7 +15,7 @@ pub(super) fn read() -> ArgMatches {
             .help("Set logging level based on -v (debug) or -vv (trace)")])
         .subcommands(vec![
             Command::new("build")
-                .about("Generate inventory based on cluster.genin.yaml configuration or arguments")
+                .about("Generate inventory based on cluster.genin.yaml configuration")
                 .args(&[
                     Arg::new("source")
                         .long("source")
@@ -60,7 +60,7 @@ pub(super) fn read() -> ArgMatches {
                         .help("(string): failover state provider"),
                 ]),
             Command::new("init")
-                .about("Init genin and create cluster.genin.yml")
+                .about("Init genin and create cluster.genin.yaml configuration")
                 .args(&[
                     Arg::new("output")
                         .long("output")
@@ -81,7 +81,7 @@ pub(super) fn read() -> ArgMatches {
                         .short('F')
                         .takes_value(true)
                         .default_value("stateboard")
-                        .help("(string): failover state provider (etcd2, stateboard)"),
+                        .help("(string): failover state provider (etcd2, stateboard, disabled)"),
                     Arg::new("print")
                         .long("print")
                         .short('p')
@@ -93,7 +93,7 @@ pub(super) fn read() -> ArgMatches {
             Command::new("inspect")
                 .override_help("Generate and show cluster scheme whithout saving")
                 .about(
-                    "Read cluster.genin.yaml config or inventory.yaml \
+                    "Read cluster.genin.yaml configuration or inventory.yaml \
                         and display cluster schema. This command is needed \
                         for a quick overview of the cluster distribution.",
                 )
