@@ -1,5 +1,9 @@
-name: InteragtionTest
-on: [pull_request]
+name: IntegrationTest
+on:
+  push:
+    branches:
+      - master
+      - pull_request
 jobs:
   test:
     name: Run integrations tests

@@ -4,9 +4,11 @@ on:
     branches:
       - master
     tags:
-      - '0.*'
+      - '0.**'
 env:
+  VERSION: 0.3.0
   YUM_REGISTRY: https://binary.picodata.io/repository/yum
+  RAW_REGISTRY: https://binary.picodata.io/repository/raw
 jobs:
   build:
     name: Build genin binary
@@ -22,7 +24,7 @@ jobs:
       - name: Get version from tag
         id: get_last_tag
         run: |
-          export VERSION=$(git describe --tags --abbrev=0)
+          export VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
           echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
         run: make build
@@ -60,8 +62,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: x86_64-unknown-linux-musl.zip
-      - name: Build rpm
-        run: 'curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file x86_64-unknown-linux-musl.zip ${RAW_REGISTRY}/genin/genin-${VERSION}-x86_64-musl.zip'
+      - run: ls -la
+      - name: Upload archive with binary
+        run: |
+          tar -czvf genin-${{ env.VERSION }}-x86_64-musl.tar.gz genin
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
 
   centos7:
     name: Build centos 7 rpm
@@ -85,8 +90,7 @@ jobs:
           sed -ie "s/\${VERSION}/${VERSION}/g" build/el7/genin.x86_64.spec
           rpmdev-setuptree
           rpmbuild -bb build/el7/genin.x86_64.spec
-          sleep 10000
-          'curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${VERSION}-1.el7.x86_64.rpm ${YUM_REGISTRY}/el/7/x86_64/os/genin-${VERSION}-1.el7.x86_64.rpm'
+          curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el7.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm
 
   centos8:
     name: Build centos 8 prm
@@ -110,22 +114,31 @@ jobs:
           sed -ie "s/\${VERSION}/${VERSION}/g" build/el8/genin.x86_64.spec
           rpmdev-setuptree
           rpmbuild -bb build/el8/genin.x86_64.spec
-          'curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${VERSION}-1.el8.x86_64.rpm ${YUM_REGISTRY}/el/8/x86_64/os/genin-${VERSION}-1.el8.x86_64.rpm'
+          curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
 
   release:
     name: Create new release
-    needs: [centos7, centos8]
+    needs: [build, centos7, centos8]
     runs-on: [ self-hosted, genin ]
     steps:
-      - name: Create rhel7 Release
+      - name: Create genin Release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.build.outputs.app_version }}
         with:
-          tag_name: ${{ needs.build.outputs.app_version }}
-          release_name: Release genin-${{ needs.build.outputs.app_version }}
+          tag_name: ${{ env.VERSION }}
+          release_name: genin v${{ env.VERSION }}
           body: |
-            [genin-${{ needs.build.outputs.app_version }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ needs.build.outputs.app_version }}-1.el7.x86_64.rpm)
-            [genin-${{ needs.build.outputs.app_version }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ needs.build.outputs.app_version }}-1.el8.x86_64.rpm)
-          draft: false
-          prerelease: false
+            ---
+            - [genin v${{ env.VERSION }}](#genin-v${{ env.VERSION }})
+              * [executable](#executable)
+              * [Centos x86_64](#centos-x86_64)
+            
+            ### Executable
+            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
+            
+            ### Centos x86_64:
+            [genin-${{ env.VERSION }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm)
+            [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
+
