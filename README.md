@@ -1,4 +1,4 @@
-# GENIN
+ GENIN
 ---
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](LICENSE)
 ![tests](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
@@ -8,12 +8,12 @@
     * [Installation](#installation)
         - [RHEL, Fedora, Rockylinux](#rhel-fedora-rockylinux)
         - [Debian, Ubuntu](#debian-ubuntu)
-        - [Apple MacOs](#apple-macos)
+        - [macOS](#macos)
         - [Windows](#windows)
     * [Usage guide](#usage-guide)
         + [Inventory generation](#inventory-generation)
         + [Flags and options](#flags-and-options)
-    * [Build from sources](#build-from-sources)
+    * [Building from sources](#building-from-sources)
     * [Contributing](#contributing)
     * [Versioning](#versioning)
     * [Authors](#authors)
@@ -23,22 +23,24 @@
 
 ## About
 Genin is an inventory generator for Ansible Cartridge. It provides a command-line 
-tool that allows quick creation of inventory for clusters of any size.
+tool that allows quick inventory creation for clusters of any size.
 For example, an inventory file for a cluster of 50 instances can easily be of thousand 
 lines or more. Any slight change of the configuration, eg. adding a new configuration 
 option for all storages, means a lot of manual routine and increases the risk of 
 improper or incomplete configuration. Genin  allows you to stay confident while 
 maintaining the configuration file and steer clear of inaccuracies and human errors. 
-Genin is the tool that will help you very quickly change the configuration to a new one.
+Genin is the tool that will help you very quickly roll out cluster configuration updates.
 
 ## Installation
 
 Download and unzip the archive for the desired architecture.
 
-#### RHEL, Fedora, Rockylinux
-Target distribution RHEL, Fedora, Rockylinux has two installation methods.
+#### RHEL, CentOS, Rockylinux, Fedora
+There are two installation methods supported for RRHEL, CentOS, Rockylinux and Fedora.
+
 1. Installation using the package manager.
-Call this command with sudo rights:
+
+Copy and paste the following command into your terminal window:
 ```shell
 sudo bash -c 'cat <<\EOF >> /etc/yum.repos.d/picotools.repo
 [picodata.io]
@@ -48,36 +50,40 @@ enabled=1
 gpgcheck=0
 EOF'
 ```
-And now just install **genin**:
+After that install **Genin**:
 ```shell
-yum install -y genin
+sudo yum install -y genin
 ```
 
-2. If you want to download and install manually please don't forget chose right architecture:
+2. If you want to install `rpm` packages directly without adding our repository, please don't forget to pick the right package for your OS version:
 ```shell
-# Centos 8
-rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
-# Or centos 7
-rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
+# RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
+# RHEL 7.x, CentOS 7.x
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el7.x86_64.rpm
 ```
 
 #### Debian, Ubuntu
-It is also possible to install a `deb` package on `debian` based distros:
+We provide the `deb` Genin package for `debian`-based Linux distributions including the Ubuntu family. Use the following command to download and install the package:
 ```shell
 curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.1.amd64.deb && sudo dpkg -i genin-0.3.1.amd64.deb
 ```
 
-#### Apple MacOs
+#### macOS
+Use the following command to grab and install Genin in macOS (10.10+):
 ```shell
 curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-darwin-amd64.zip 
 unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
 ```
+The application can then be found under the `~/bin` directory. Make sure the directory is in your $PATH.
 
 #### Windows
+Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
 curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-windows-amd64.zip 
 unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
+The application can then be found under the `.cargo/bin` folder inside your user profile folder. Make sure it is in your %PATH%.
 
 Сheck that the installation was successful:
 ```
@@ -88,22 +94,28 @@ genin --version
 ## Usage guide
 
 ### Inventory generation
+ 
+First, let's generate a simple cluster for the `Vagrant` virtual environment. 
+For that `Genin` will need a `yaml` file with a concise list of cluster details. That is a minimal cluster 
+configuration file that features `Genin's` own formatting. As long as users will likely need to have a descriptive template of that file, `Genin` can automatically generate it with a built-in dedicated subcommand:
 
-First, let's generate a simple cluster for the `Vagrant`.  
-`Genin` works on the basis of a configuration in the form of a `yaml` file in which the
-cluster parameters will be minimally described. This file has its own description principle.
-So for the simplicity we use `genin` built-in generation of this file. Just enter subcommand
-`init`.
 ```shell
 genin init
 ```
-As a result, a file `cluster.genin.yaml` will be created in the same directory where `genin`
-was launched.
-> **Note:** if the directory in which the initialization was started already contains a
-> `cluster.genin.yml`, then will be created new file `cluster.genin.copy.yaml` and this will be 
-> repeated every time a new file is created.
+This will result in creating the `cluster.genin.yaml` file in the current directory.
 
-Let's check it! Open the file and examine the contents.
+> **Note:** If the `cluster.genin.yml` file already exists in current directory, then the new file will be named `cluster.genin.copy.yaml`.
+> The `genin init` command will always append the `.copy` suffix to the file's name if the expected file exists.
+
+Also, you can explicitly set the configuration file name:
+
+```shell
+genin init --output mycluster.yml
+```
+> **Note:** Use the `--output` flag together with the full path to `mycluster.yml` to specify the directory where the final cluster files will be saved.
+
+Now you can open the file and examine the syntax.
+
 ```yaml
 ---
 # list of instances as an array
@@ -162,80 +174,28 @@ vars:
   cartridge_cluster_cookie: my_app_cluster_cookie
   # put here you personally key/value ansible cartridge vars
 ```
-After you have changed those parameters that you needed, save it.
-Half of the work is done, it remains only to generate a ready-made inventory from this
-file. But before doing this, there are a few more configuration options to mention.
 
-Now let's run initialization with additional flags.
+Replace the stubs with the actual values of your hosts and their parameters and save the file.
 
-```shell
-genin init --output mycluster.yml
-```
-> **Note:** Note that the path where the finished cluster file will be saved can be set with
-> the `--output` flag.
 
-Now let's check what is the difference from the previous initialization `mycluster.yml`.
-```yaml
----
----
-instances:
-  - name: router
-    type: router
-    count: 1
-    replicas: 0
-    weight: 10
-    roles:
-      - router
-      - api
-      - failover-coordinator
-  - name: storage
-    type: storage
-    count: 2
-    replicas: 2
-    weight: 10
-    roles:
-      - storage
-hosts:
-  - name: selectel
-    type: datacenter
-    ports:
-      http: 8081
-      binary: 3031
-    hosts:
-      - name: host-1
-        ip: 192.168.16.1
-      - name: host-2
-        ip: 192.168.16.2
-failover:                       # (important) failover parameters
-  mode: stateful                # (important) only stateful mode has state provider. By default, stateful.
-  state_provider: stateboard    # (important) state provider can be etcd2 or stateboard
-  stateboard_params:
-    uri:
-      ip: 192.168.16.1          # (optional) listening address
-      port: 4401                # (optional) listening port
-    password: change_me         # (optional) stateboard password should be same as in stateboard params
-vars:
-  ansible_user: root
-  ansible_password: change_me
-  cartridge_app_name: myapp
-  cartridge_cluster_cookie: myapp-cookie
-```
-
-Now than we have generated the cluster configuration file, we can start generating inventory.
+So far you are already half way through getting things done! Use the resulted `Genin` configuration file to generate the final inventory file.
+Here is the required command for that:
 
 ```shell
 genin build
 ```
 
-Done! An inventory file appeared in the same directory where you launched the genin. Now we 
-can set up the cluster.
+Done! The `inventory.yaml` file will appear in the same directory where you launched `Genin`. Now we 
+can set up the cluster:
+
 ```shell
-ansible-playbook -i invetory.yaml playbook.yaml
+ansible-playbook -i inventory.yaml playbook.yaml
 ```
 
 ### Editing config
 
-Let's make our config and let it be as lazy as possible:
+The initial cluster configuration file can be slimmed down to the following minimal variant:
+
 ```yaml
 ---
 instances:
@@ -256,10 +216,10 @@ hosts:
         ip: 192.168.16.12
 ```
 
-Such a config will be completely valid, all parameters not specified by us will be set 
-by default. 
-Let's now extend it to 10 hosts, 10 routers, 10 storages, drop to default (1) number of storage 
-replicas and finally add our new instance type - cache.
+This is a perfectly valid and working configuration file. The rest of the parameters wil use their default values.
+ 
+Let's now extend the configuration file with a more real-world example featuring 10 hosts, 10 routers, 10 storages, and a default number of storage 
+replicas (1). We will also define a different instance type - `cache`.
 
 ```yaml
 ---
@@ -296,107 +256,101 @@ hosts:
       - name: host-10
         ip: 192.168.16.20
 ```
-As a result, the difference between the config for 2 instances and a large cluster
-is not so great, but the finished inventory will be 5 times more inventory.
+The actual difference between the 2 instances configuration and a large cluster configuration
+is not that great, whereas the resulting inventory file for the large cluster will be 5 times bigger.
 
-In addition to lazy configuration, there are more options for lazy failover.
+Let's take a look at few more helpful configuration flags, this time regarding the failover capability:
+
 ```shell
 genin init --failover-mode disabled
 ```
-This completely removes all the parameters of the failover at any of the stages.
+The above option completely removes all failover parameters for all stages.
+
 ```shell
 genin build --failover-state-provider etcd2 # eg genin build -F etcd2
 ```
-This option will replace the type of the entity serving the failover.
-Much more you can see here [Tarantool](https://www.tarantool.io/ru/doc/1.10/book/cartridge/topics/failover/).
-> **Note:** Print flag only neaded to better visibility of result
+The above option will redefine the type of the entity serving the failover.
 
-But the main thing is that now nothing prevents us from generating inventory. Let's do it!
-```shell
-genin build
-```
-> **Note:** Failover option works for all `genin` subcommands.
+For more options see the [Tarantool documentation](https://www.tarantool.io/ru/doc/1.10/book/cartridge/topics/failover/).
+
+> **Note:** Failover options work for all `genin` subcommands.
 
 ### Flags and options
 
-First, you can always change the path to the file with the cluster configuration.
-The `--source` (short `-s`) and `--output` (short `-o`) flags serve this purpose.
-It is recommended to use the `.genin.` suffix for naming convenience.
+Here we describe few other useful flags and options that you might want to use with `genin`. 
+First, you can always change paths of both source and target configuration files usin the `--source` (short `-s`) and `--output` (short `-o`) flags respectively.
+We recommend using the `.genin.` suffix for naming convenience. Here is the example command in two variants:
 ```shell
 genin build --source /home/user/path/my_cluster.genin.yml --output /home/tarantool/cluster-new/my_hosts.yml
 genin build -s /home/user/path/my_cluster.genin.yml -o /home/tarantool/cluster-new/my_hosts.yml
 ```
 
-The next, of course, a very useful option is verbose output of logs. You can
-control it with the flags `-v` from one to three `-vvv`. Single `v` means *INFO*, double means
-*DEBUG*, and three or more means *TRACE*.
+Next, there is a very useful option for controlling the log output. There are three supported log levels that you can enable using the `-v` flag with a desired number of extra `v` letters for more verbosity (up to `-vvv`). Single `v` means *INFO*, double means
+*DEBUG*, and three or more mean *TRACE*.
 ```
 genin build -vvv
 ```
 > **Note:** All commands without source and output options always check for files in the current 
-> directory (cluster.genin.yaml, inventory.yaml)
+> directory (namely cluster.genin.yaml, inventory.yaml)
 
-The `--print-opts` (short `-p`) flag will allow you to select the print output options. By default, 
-only the distribution of instances by host will be shown.
-```shell
-genin build -s colorized, ports
-```
+The `--print-opts` (short `-p`) flag allows you to select the print output options. By default, 
+only the distribution of instances over the hosts is shown.
 
-Sometimes it can be useful to quickly change the `failover-mode` using flag without changing
-the cluster configuration, or on initial step. Possible variants `statefull`, `eventual`, 
-`disabled` (by default `statefull`).
+
+Sometimes it can be useful to quickly change the `failover-mode` using the flag without changing
+the cluster configuration. This can be done during the first initialization stage (`genin init`), or later on with other `Genin` subcommands. Possible variants of the flag values are `stateful` (default), `eventual`, 
+`disabled`.
 ```shell
 genin init --failover-mode eventual
 ```
 
-> **Note:** This option works with *failover-state-provider*. When choosing a failover mode
-> *stateful*, you can set the *failover-state-provider* (stateboard or etcd2).
+> **Note:** Setting the failover mode to *stateful* allows using the *failover-state-provider* flag (possible values are `stateboard` or `etcd2`).
 
 ```shell
 genin init --failover-mode stateful --failover-state-provider etcd2
 ```
 
-You can also set sensitive information using the options. For example user and password for 
-server there you're deploying cluster, or cluster cookie.
+You can also provide personal information or credentials using these options, such as user and password for the
+server where the cluster is being deployed, or the cluster cookie.
 ```shell
 genin build --ansible-user dmitry.travyan --ansible-password ddfqd
 genin build --cartridge-cluster-cookie R68sJfV4C2hLrWC3
 ```
 
-## Build from sources
+## Building from sources
 
-At first, you need to clone the source code.
+At first you need to clone the source code.
 ```shell
-git clone git@github.com:picodata/genin.git
+git clone https://github.com/picodata/genin.git
 ```
 
-Second you should install rust build tools.
+Second, you need to install Rust build tools.
 ```shell
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-> **Note:** You should refresh `$PATH` variable for access to calling `rust binaries`.
+> **Note:** You should refresh the `$PATH` variable to get access to locally installed `rust binaries`.
 
-After install all required tools, you should build and install `genin`.
-```
+After installing all required tools it is time to build and install `genin`.
+```shell
 cd genin
 rustup override set nightly
 cargo +nightly build --release
 cargo +nightly install --path .
 ```
 
-> **Note:** Do not forget to install build tools before building `genin`.
+> **Note:** Do not forget to install build tools and dependencies before building `genin`.
 >
-> Debian like:
+> For Debian-based distributions:
 > ```shell
 > sudo apt install -y build-essential
 > ```
-> RHEL, Centos, Fedora
+> For Red Hat-based distributions (RHEL, CentOS, Fedora):
 > ```
 > sudo yum install -y gcc
 > ```
-> No additional action is required for macOS.
+> For macOS make sure you have `Command Line Developer Tools` installed (`xcode-select --install`).
 
-And now let's check the version.
+Сheck that the installation was successful:
 ```shell
 genin --version
 ```
@@ -419,4 +373,4 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## License
 
-This project is licensed under the BSD License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the BSD License - see the [LICENSE](LICENSE) file for details.
