@@ -23,7 +23,7 @@ jobs:
       - name: Get version from tag
         id: get_last_tag
         run: |
-          export VERSION=$(git describe --tags --abbrev=0)
+          export VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
           echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
         run: make build
