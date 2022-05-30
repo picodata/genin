@@ -135,6 +135,30 @@ jobs:
           rpmbuild -bb build/el8/genin.x86_64.spec
           curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
 
+  debian:
+    name: Build deb package
+    needs: build
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/debian:11
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Download builded binary
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl.zip
+          path: ./genin-${{ env.VERSION }}.amd64/usr/bin/
+      - name: Build rpm
+        run: |
+          apt update ; install -y curl
+          mkdir -p genin-${VERSION}.amd64/DEBIAN
+          sed -ie "s/\${{ env.VERSION }}/${{ env.VERSION }}/g" build/control
+          cp build/control genin-${{ env.VERSION }}.amd64/DEBIAN/ ; dpkg-deb --build --root-owner-group genin-${{ env.VERSION }}.amd64
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}.amd64.deb ${{ env.APT_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb'
+
   release:
     name: Create new release
     needs: [build, centos7, centos8, apple, musl-bin]

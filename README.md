@@ -3,11 +3,13 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/picodata/genin)
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/picodata/genin/IntegrationTest/master?label=test&logo=test)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](LICENSE)
+[![en](https://img.shields.io/badge/lang-en-cyan.svg)](https://github.com/picodata/genin/blob/master/README.md)
+[![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/picodata/genin/blob/master/README.ru.md)
 
 - [GENIN](#genin)
     * [About](#about)
     * [Installation](#installation)
-        - [RHEL, Fedora, Rockylinux](#rhel-fedora-rockylinux)
+        - [RHEL, Fedora, Rockylinux](#rhel-centos-rockylinux-fedora)
         - [Debian, Ubuntu](#debian-ubuntu)
         - [macOS](#macos)
         - [Windows](#windows)
@@ -37,7 +39,7 @@ Genin is the tool that will help you very quickly roll out cluster configuration
 Download and unzip the archive for the desired architecture.
 
 #### RHEL, CentOS, Rockylinux, Fedora
-There are two installation methods supported for RRHEL, CentOS, Rockylinux and Fedora.
+There are two installation methods supported for RHEL, CentOS, Rockylinux and Fedora.
 
 1. Installation using the package manager.
 
@@ -56,13 +58,14 @@ After that install **Genin**:
 sudo yum install -y genin
 ```
 
-2. If you want to install `rpm` packages directly without adding our repository, please don't forget to pick the right package for your OS version:
+2. If you want to install `rpm` packages directly without adding our repository.
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
 sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
 sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el7.x86_64.rpm
 ```
+> **Note:** please don't forget to pick the right package for your OS version.
 
 #### Debian, Ubuntu
 We provide the `deb` Genin package for `debian`-based Linux distributions including the Ubuntu family. Use the following command to download and install the package:
@@ -76,7 +79,8 @@ Use the following command to grab and install Genin in macOS (10.10+):
 curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-darwin-amd64.zip 
 unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
 ```
-The application can then be found under the `~/bin` directory. Make sure the directory is in your $PATH.
+> **Note:** The application can then be found under the `~/bin` directory. 
+> Make sure the directory is in your `$PATH`.
 
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
@@ -84,7 +88,8 @@ Use the following command to grab and install Genin in Windows 7 64 bit or newer
 curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-windows-amd64.zip 
 unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
-The application can then be found under the `.cargo/bin` folder inside your user profile folder. Make sure it is in your %PATH%.
+> **Note:** The application can then be found under the `.cargo/bin` folder inside 
+> your user profile folder. Make sure it is in your `%PATH%`.
 
 Сheck that the installation was successful:
 ```
