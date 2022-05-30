@@ -61,23 +61,23 @@ sudo yum install -y genin
 2. If you want to install `rpm` packages directly without adding our repository.
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.2-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.2-1.el7.x86_64.rpm
 ```
 > **Note:** please don't forget to pick the right package for your OS version.
 
 #### Debian, Ubuntu
 We provide the `deb` Genin package for `debian`-based Linux distributions including the Ubuntu family. Use the following command to download and install the package:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.1.amd64.deb && sudo dpkg -i genin-0.3.1.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.2.amd64.deb && sudo dpkg -i genin-0.3.2.amd64.deb
 ```
 
 #### macOS
 Use the following command to grab and install Genin in macOS (10.10+):
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-darwin-amd64.zip 
-unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.2-darwin-amd64.zip -o genin-0.3.2-darwin-amd64.zip 
+unzip genin-0.3.2-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory. 
 > Make sure the directory is in your `$PATH`.
@@ -85,8 +85,8 @@ unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-windows-amd64.zip 
-unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.2-darwin-amd64.zip -o genin-0.3.2-windows-amd64.zip 
+unzip.exe genin-0.3.2-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** The application can then be found under the `.cargo/bin` folder inside 
 > your user profile folder. Make sure it is in your `%PATH%`.

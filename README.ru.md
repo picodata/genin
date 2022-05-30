@@ -3,6 +3,8 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/picodata/genin)
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/picodata/genin/IntegrationTest/master?label=test&logo=test)
 [![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](LICENSE)
+[![en](https://img.shields.io/badge/lang-en-cyan.svg)](https://github.com/picodata/genin/blob/master/README.md)
+[![ru](https://img.shields.io/badge/lang-ru-green.svg)](https://github.com/picodata/genin/blob/master/README.ru.md)
 
 - [GENIN](#genin)
     * [Что такое генин?](#что-такое-genin)
@@ -18,7 +20,7 @@
     * [Сборка их исходников](#сборка-из-исходников)
     * [Contributing](#contributing)
     * [Версионирование](#версионирование)
-    * [Авторы](#aвторы)
+    * [Авторы](#авторство)
     * [Лицензия](#лицензия)
 
 ---
@@ -37,6 +39,14 @@ Genin это генератор инваентаря для `Ansible Cartridge`.
 
 Genin уже заранее скомпилирован под разные архитектуры и для установки требуется
 только скачать бинарный файл, или установить пакет.
+
+#### Linux bin файл
+
+Универсальный исполняемый файл:
+```shell
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.3.2-x86_64-musl.tar.gz
+tar -xvf genin-0.3.2-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+```
 
 #### RHEL, CentOS, Rockylinux, Fedora
 
@@ -63,9 +73,9 @@ sudo yum install -y genin
 2. Так же вы можете установить пакет `rpm` напрямую без добавления нашего репозитория:
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.1-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.2-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.2-1.el7.x86_64.rpm
 ```
 > **Note:** будьте внимательны, так как при выборе не правильной версии ос могут быть ошибки 
 > при установке `rpm` 
@@ -75,19 +85,21 @@ sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.1
 Установка возможна так же как и для `rhel` в двух вариантах:
 1. С помощью добавления репозитория:
 ```shell
-
+sudo apt-key add https://binary.picodata.io/repository/raw/gpg/public.gpg.key
+sudo add-apt-repository https://binary.picodata.io/repository/jammy
+sudo apt update ; sudo apt install genin
 ```
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.1.amd64.deb && sudo dpkg -i genin-0.3.1.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.2.amd64.deb && sudo dpkg -i genin-0.3.2.amd64.deb
 ```
 
 #### MacOSX
 Используйте следующие команды для загрузки и установки Genin на macOS (10.10+):
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-darwin-amd64.zip 
-unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.3.2-x86_64-macosx.tar.gz
+unzip genin-0.3.2-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** Genin будет распакован в директорию `~/bin`. Перед использованием приложения 
 > пожалуйста удостоверьтесь что `~/bin` добавлена в переменную окружения `$PATH`
@@ -96,8 +108,8 @@ unzip genin-0.3.1-darwin-amd64.zip -d ~/bin/
 Используйте следующие команды для скачивания и установки Genin на операционных системах
 Windows 7 64 и новее.
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.1-darwin-amd64.zip -o genin-0.3.1-windows-amd64.zip 
-unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.3.2-win64.zip
+unzip.exe genin-0.3.2-win64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** Genin будет распакован в директорию `.cargo/bin` которая находится в домашнем
 > каталоге важего пользователя. Перед использованием приложения пожалуйста удостоверьтесь 
@@ -107,7 +119,7 @@ unzip.exe genin-0.3.1-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 genin --version
 ```
-Если вы видите сообщение `genin 0.3.1` значит установка прошла успешно.
+Если вы видите сообщение `genin 0.3.2` значит установка прошла успешно.
 
 ---
 ## Руководство по использованию
@@ -402,18 +414,18 @@ genin --version
 Приветствуются любые pull requests. Для масштабных изменений пожалуйста предварительно 
 откройте issue и опишите изменения которых вы хотите внести.
 
-## Versioning
+## Версионирование
 
 Для версионирования используется соглашение [SemVer](http://semver.org/). Выход
 релизов определяется с помощью тегов на HEAD ветки вносящей изменения.
 Список версий смотрите в [тегах репозитория](https://github.com/picodata/genin/tags).
 
-## Авторы
+## Авторство
 
 - **Dmitry Travyan**
 
 © 2020-2022 Picodata.io https://github.com/picodata
 
-## Линцезия
+## Лицензия
 
 Этот проект распостраняется под лицензией BSD-2. Подробнее в файле линеции [LICENSE](LICENSE).

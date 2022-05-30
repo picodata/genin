@@ -7,6 +7,7 @@ on:
       - '0.**'
 env:
   YUM_REGISTRY: https://binary.picodata.io/repository/yum
+  DEB_REGISTRY: https://binary.picodata.io/repository/ubuntu
   RAW_REGISTRY: https://binary.picodata.io/repository/raw
 jobs:
   build:
@@ -64,7 +65,7 @@ jobs:
       - name: Upload archive with binary
         run: |
           tar -czvf genin-${{ env.VERSION }}-x86_64-musl.tar.gz genin
-          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/bin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
 
   apple:
     name: Upload MacOSX binary
@@ -84,8 +85,8 @@ jobs:
           path: .
       - name: Build rpm
         run: |
-          tar -czvf genin-${{ env.VERSION }}-x86_64-macos.tar.gz genin
-          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-macos.tar.gz ${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-macos.tar.gz
+          tar -czvf genin-${{ env.VERSION }}-x86_64-macosx.tar.gz genin
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-macosx.tar.gz ${{ env.RAW_REGISTRY }}/genin/osx/genin-${{ env.VERSION }}-x86_64-macosx.tar.gz
 
   centos7:
     name: Build centos 7 rpm
@@ -151,17 +152,17 @@ jobs:
         with:
           name: x86_64-unknown-linux-musl.zip
           path: ./genin-${{ env.VERSION }}.amd64/usr/bin/
-      - name: Build rpm
+      - name: Build deb
         run: |
-          apt update ; install -y curl
-          mkdir -p genin-${VERSION}.amd64/DEBIAN
-          sed -ie "s/\${{ env.VERSION }}/${{ env.VERSION }}/g" build/control
+          apt update ; apt install -y curl
+          mkdir -p genin-${{ env.VERSION }}.amd64/DEBIAN
+          sed -ie "s/\${VERSION}/${{ env.VERSION }}/g" build/control
           cp build/control genin-${{ env.VERSION }}.amd64/DEBIAN/ ; dpkg-deb --build --root-owner-group genin-${{ env.VERSION }}.amd64
-          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}.amd64.deb ${{ env.APT_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb'
+          curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}.amd64.deb ${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb
 
   release:
     name: Create new release
-    needs: [build, centos7, centos8, apple, musl-bin]
+    needs: [build, centos7, centos8, apple, musl-bin, debian]
     runs-on: [ self-hosted, genin ]
     steps:
       - name: Create genin Release
@@ -176,14 +177,19 @@ jobs:
             ---
             - [genin v${{ env.VERSION }}](#genin-v${{ env.VERSION }})
               * [executable](#executable)
+              * [MacOSX](#macosx)
               * [Centos x86_64](#centos-x86_64)
+              * [Debian x86_64](#debian-x86_64)
             
             ### Executable
-            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
+            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/bin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
             
             ### MacOSX
-            [genin-${{ env.VERSION }}-x86_64-macos.tar.gz](${{ env.RAW_REGISTRY }}/genin/genin-${{ env.VERSION }}-x86_64-macos.tar.gz)
+            [genin-${{ env.VERSION }}-x86_64-macos.tar.gz](${{ env.RAW_REGISTRY }}/genin/osx/genin-${{ env.VERSION }}-x86_64-macosx.tar.gz)
             
             ### Centos x86_64:
             [genin-${{ env.VERSION }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm)
             [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
+
+            ### Debian x86_64
+            [genin-${{ env.VERSION }}.amd64.deb](${{ env.APT_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb)
