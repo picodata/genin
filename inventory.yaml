@@ -1,0 +1,94 @@
+---
+all:
+  vars:
+    ansible_user: root
+    ansible_password: change_me
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: "8081"
+    storage-1:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: "8082"
+    storage-2-replica-1:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: "8083"
+    storage-1-replica-2:
+      config:
+        advertise_uri: "192.168.16.11:3034"
+        http_port: "8084"
+    stateboard:
+      stateboard: true
+      config:
+        listen: "0.0.0.0:4401"
+        password: change_me
+    storage-2:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: "8082"
+    storage-2-replica-2:
+      config:
+        advertise_uri: "192.168.16.12:3033"
+        http_port: "8083"
+    storage-1-replica-1:
+      config:
+        advertise_uri: "192.168.16.12:3034"
+        http_port: "8084"
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        weight: 10
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - api
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        weight: 10
+        failover_priority:
+          - storage-1
+          - storage-1-replica-1
+          - storage-1-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-1: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        weight: 10
+        failover_priority:
+          - storage-2
+          - storage-2-replica-1
+          - storage-2-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-2: ~
+    host-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        storage-1: ~
+        storage-2-replica-1: ~
+        storage-1-replica-2: ~
+        stateboard: ~
+    host-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        storage-2: ~
+        storage-2-replica-2: ~
+        storage-1-replica-1: ~

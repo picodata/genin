@@ -1,0 +1,2267 @@
+---
+all:
+  vars:
+    ansible_user: root
+    ansible_password: change_me
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: "../some/myapp.rpm"
+  hosts:
+    router-1:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5000"
+        http_port: "9000"
+    router-6:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5000"
+        http_port: "9000"
+    router-11:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5000"
+        http_port: "9000"
+    router-16:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5000"
+        http_port: "9000"
+    router-21:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5000"
+        http_port: "9000"
+    storage-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-6:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-11:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-16:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-21:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-26:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-31:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-36:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-41:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-46:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5001"
+        http_port: "9001"
+    storage-50-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5002"
+        http_port: "9002"
+    storage-49-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5003"
+        http_port: "9003"
+    storage-45-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5007"
+        http_port: "9007"
+    storage-44-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5008"
+        http_port: "9008"
+    storage-40-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5012"
+        http_port: "9012"
+    storage-39-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5013"
+        http_port: "9013"
+    storage-35-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5017"
+        http_port: "9017"
+    storage-34-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5018"
+        http_port: "9018"
+    storage-30-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5022"
+        http_port: "9022"
+    storage-29-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5023"
+        http_port: "9023"
+    storage-25-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5027"
+        http_port: "9027"
+    storage-24-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5028"
+        http_port: "9028"
+    storage-20-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5032"
+        http_port: "9032"
+    storage-19-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5033"
+        http_port: "9033"
+    storage-15-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5037"
+        http_port: "9037"
+    storage-14-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5038"
+        http_port: "9038"
+    storage-10-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5042"
+        http_port: "9042"
+    storage-9-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5043"
+        http_port: "9043"
+    storage-5-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5047"
+        http_port: "9047"
+    storage-4-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.11:5048"
+        http_port: "9048"
+    input_processor-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5052"
+        http_port: "9052"
+    input_processor-6:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.11:5052"
+        http_port: "9052"
+    router-2:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5000"
+        http_port: "9000"
+    router-7:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5000"
+        http_port: "9000"
+    router-12:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5000"
+        http_port: "9000"
+    router-17:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5000"
+        http_port: "9000"
+    router-22:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5000"
+        http_port: "9000"
+    storage-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-7:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-12:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-17:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-22:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-27:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-32:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-37:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-42:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-47:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5001"
+        http_port: "9001"
+    storage-50-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5002"
+        http_port: "9002"
+    storage-46-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5006"
+        http_port: "9006"
+    storage-45-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5007"
+        http_port: "9007"
+    storage-41-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5011"
+        http_port: "9011"
+    storage-40-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5012"
+        http_port: "9012"
+    storage-36-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5016"
+        http_port: "9016"
+    storage-35-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5017"
+        http_port: "9017"
+    storage-31-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5021"
+        http_port: "9021"
+    storage-30-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5022"
+        http_port: "9022"
+    storage-26-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5026"
+        http_port: "9026"
+    storage-25-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5027"
+        http_port: "9027"
+    storage-21-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5031"
+        http_port: "9031"
+    storage-20-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5032"
+        http_port: "9032"
+    storage-16-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5036"
+        http_port: "9036"
+    storage-15-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5037"
+        http_port: "9037"
+    storage-11-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5041"
+        http_port: "9041"
+    storage-10-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5042"
+        http_port: "9042"
+    storage-6-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5046"
+        http_port: "9046"
+    storage-5-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5047"
+        http_port: "9047"
+    storage-1-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.12:5051"
+        http_port: "9051"
+    input_processor-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5052"
+        http_port: "9052"
+    input_processor-7:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.12:5052"
+        http_port: "9052"
+    router-3:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5000"
+        http_port: "9000"
+    router-8:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5000"
+        http_port: "9000"
+    router-13:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5000"
+        http_port: "9000"
+    router-18:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5000"
+        http_port: "9000"
+    router-23:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5000"
+        http_port: "9000"
+    storage-3:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-8:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-13:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-18:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-23:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-28:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-33:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-38:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-43:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-48:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5001"
+        http_port: "9001"
+    storage-47-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5005"
+        http_port: "9005"
+    storage-46-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5006"
+        http_port: "9006"
+    storage-42-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5010"
+        http_port: "9010"
+    storage-41-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5011"
+        http_port: "9011"
+    storage-37-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5015"
+        http_port: "9015"
+    storage-36-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5016"
+        http_port: "9016"
+    storage-32-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5020"
+        http_port: "9020"
+    storage-31-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5021"
+        http_port: "9021"
+    storage-27-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5025"
+        http_port: "9025"
+    storage-26-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5026"
+        http_port: "9026"
+    storage-22-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5030"
+        http_port: "9030"
+    storage-21-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5031"
+        http_port: "9031"
+    storage-17-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5035"
+        http_port: "9035"
+    storage-16-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5036"
+        http_port: "9036"
+    storage-12-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5040"
+        http_port: "9040"
+    storage-11-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5041"
+        http_port: "9041"
+    storage-7-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5045"
+        http_port: "9045"
+    storage-6-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5046"
+        http_port: "9046"
+    storage-2-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5050"
+        http_port: "9050"
+    storage-1-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.13:5051"
+        http_port: "9051"
+    input_processor-3:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.13:5052"
+        http_port: "9052"
+    router-4:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5000"
+        http_port: "9000"
+    router-9:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5000"
+        http_port: "9000"
+    router-14:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5000"
+        http_port: "9000"
+    router-19:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5000"
+        http_port: "9000"
+    router-24:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5000"
+        http_port: "9000"
+    storage-4:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-9:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-14:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-19:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-24:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-29:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-34:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-39:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-44:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-49:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5001"
+        http_port: "9001"
+    storage-48-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5004"
+        http_port: "9004"
+    storage-47-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5005"
+        http_port: "9005"
+    storage-43-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5009"
+        http_port: "9009"
+    storage-42-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5010"
+        http_port: "9010"
+    storage-38-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5014"
+        http_port: "9014"
+    storage-37-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5015"
+        http_port: "9015"
+    storage-33-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5019"
+        http_port: "9019"
+    storage-32-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5020"
+        http_port: "9020"
+    storage-28-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5024"
+        http_port: "9024"
+    storage-27-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5025"
+        http_port: "9025"
+    storage-23-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5029"
+        http_port: "9029"
+    storage-22-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5030"
+        http_port: "9030"
+    storage-18-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5034"
+        http_port: "9034"
+    storage-17-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5035"
+        http_port: "9035"
+    storage-13-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5039"
+        http_port: "9039"
+    storage-12-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5040"
+        http_port: "9040"
+    storage-8-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5044"
+        http_port: "9044"
+    storage-7-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5045"
+        http_port: "9045"
+    storage-3-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5049"
+        http_port: "9049"
+    storage-2-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.14:5050"
+        http_port: "9050"
+    input_processor-4:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.14:5052"
+        http_port: "9052"
+    router-5:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5000"
+        http_port: "9000"
+    router-10:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5000"
+        http_port: "9000"
+    router-15:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5000"
+        http_port: "9000"
+    router-20:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5000"
+        http_port: "9000"
+    router-25:
+      config:
+        memtx_memory: 1073741824
+        zone: kavkaz
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5000"
+        http_port: "9000"
+    storage-5:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-10:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-15:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-20:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-25:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-30:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-35:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-40:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-45:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-50:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5001"
+        http_port: "9001"
+    storage-49-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5003"
+        http_port: "9003"
+    storage-48-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5004"
+        http_port: "9004"
+    storage-44-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5008"
+        http_port: "9008"
+    storage-43-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5009"
+        http_port: "9009"
+    storage-39-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5013"
+        http_port: "9013"
+    storage-38-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5014"
+        http_port: "9014"
+    storage-34-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5018"
+        http_port: "9018"
+    storage-33-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5019"
+        http_port: "9019"
+    storage-29-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5023"
+        http_port: "9023"
+    storage-28-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5024"
+        http_port: "9024"
+    storage-24-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5028"
+        http_port: "9028"
+    storage-23-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5029"
+        http_port: "9029"
+    storage-19-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5033"
+        http_port: "9033"
+    storage-18-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5034"
+        http_port: "9034"
+    storage-14-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5038"
+        http_port: "9038"
+    storage-13-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5039"
+        http_port: "9039"
+    storage-9-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5043"
+        http_port: "9043"
+    storage-8-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5044"
+        http_port: "9044"
+    storage-4-replica-1:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5048"
+        http_port: "9048"
+    storage-3-replica-2:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        memtx_memory: 1073741824
+        advertise_uri: "192.168.16.15:5049"
+        http_port: "9049"
+    input_processor-5:
+      config:
+        cartridge_cluster_cookie: Qwerty123
+        advertise_uri: "192.168.16.15:5052"
+        http_port: "9052"
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        weight: 0
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    router-6-replicaset:
+      vars:
+        replicaset_alias: router-6
+        weight: 0
+        failover_priority:
+          - router-6
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-6: ~
+    router-11-replicaset:
+      vars:
+        replicaset_alias: router-11
+        weight: 0
+        failover_priority:
+          - router-11
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-11: ~
+    router-16-replicaset:
+      vars:
+        replicaset_alias: router-16
+        weight: 0
+        failover_priority:
+          - router-16
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-16: ~
+    router-21-replicaset:
+      vars:
+        replicaset_alias: router-21
+        weight: 0
+        failover_priority:
+          - router-21
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-21: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        weight: 0
+        failover_priority:
+          - storage-1
+          - storage-1-replica-1
+          - storage-1-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-1: ~
+    storage-6-replicaset:
+      vars:
+        replicaset_alias: storage-6
+        weight: 0
+        failover_priority:
+          - storage-6
+          - storage-6-replica-1
+          - storage-6-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-6: ~
+    storage-11-replicaset:
+      vars:
+        replicaset_alias: storage-11
+        weight: 0
+        failover_priority:
+          - storage-11
+          - storage-11-replica-1
+          - storage-11-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-11: ~
+    storage-16-replicaset:
+      vars:
+        replicaset_alias: storage-16
+        weight: 0
+        failover_priority:
+          - storage-16
+          - storage-16-replica-1
+          - storage-16-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-16: ~
+    storage-21-replicaset:
+      vars:
+        replicaset_alias: storage-21
+        weight: 0
+        failover_priority:
+          - storage-21
+          - storage-21-replica-1
+          - storage-21-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-21: ~
+    storage-26-replicaset:
+      vars:
+        replicaset_alias: storage-26
+        weight: 0
+        failover_priority:
+          - storage-26
+          - storage-26-replica-1
+          - storage-26-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-26: ~
+    storage-31-replicaset:
+      vars:
+        replicaset_alias: storage-31
+        weight: 0
+        failover_priority:
+          - storage-31
+          - storage-31-replica-1
+          - storage-31-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-31: ~
+    storage-36-replicaset:
+      vars:
+        replicaset_alias: storage-36
+        weight: 0
+        failover_priority:
+          - storage-36
+          - storage-36-replica-1
+          - storage-36-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-36: ~
+    storage-41-replicaset:
+      vars:
+        replicaset_alias: storage-41
+        weight: 0
+        failover_priority:
+          - storage-41
+          - storage-41-replica-1
+          - storage-41-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-41: ~
+    storage-46-replicaset:
+      vars:
+        replicaset_alias: storage-46
+        weight: 0
+        failover_priority:
+          - storage-46
+          - storage-46-replica-1
+          - storage-46-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-46: ~
+    input_processor-1-replicaset:
+      vars:
+        replicaset_alias: input_processor-1
+        weight: 0
+        failover_priority:
+          - input_processor-1
+        roles:
+          - input_processor
+      hosts:
+        input_processor-1: ~
+    input_processor-6-replicaset:
+      vars:
+        replicaset_alias: input_processor-6
+        weight: 0
+        failover_priority:
+          - input_processor-6
+        roles:
+          - input_processor
+      hosts:
+        input_processor-6: ~
+    router-2-replicaset:
+      vars:
+        replicaset_alias: router-2
+        weight: 0
+        failover_priority:
+          - router-2
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-2: ~
+    router-7-replicaset:
+      vars:
+        replicaset_alias: router-7
+        weight: 0
+        failover_priority:
+          - router-7
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-7: ~
+    router-12-replicaset:
+      vars:
+        replicaset_alias: router-12
+        weight: 0
+        failover_priority:
+          - router-12
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-12: ~
+    router-17-replicaset:
+      vars:
+        replicaset_alias: router-17
+        weight: 0
+        failover_priority:
+          - router-17
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-17: ~
+    router-22-replicaset:
+      vars:
+        replicaset_alias: router-22
+        weight: 0
+        failover_priority:
+          - router-22
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-22: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        weight: 0
+        failover_priority:
+          - storage-2
+          - storage-2-replica-1
+          - storage-2-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-2: ~
+    storage-7-replicaset:
+      vars:
+        replicaset_alias: storage-7
+        weight: 0
+        failover_priority:
+          - storage-7
+          - storage-7-replica-1
+          - storage-7-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-7: ~
+    storage-12-replicaset:
+      vars:
+        replicaset_alias: storage-12
+        weight: 0
+        failover_priority:
+          - storage-12
+          - storage-12-replica-1
+          - storage-12-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-12: ~
+    storage-17-replicaset:
+      vars:
+        replicaset_alias: storage-17
+        weight: 0
+        failover_priority:
+          - storage-17
+          - storage-17-replica-1
+          - storage-17-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-17: ~
+    storage-22-replicaset:
+      vars:
+        replicaset_alias: storage-22
+        weight: 0
+        failover_priority:
+          - storage-22
+          - storage-22-replica-1
+          - storage-22-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-22: ~
+    storage-27-replicaset:
+      vars:
+        replicaset_alias: storage-27
+        weight: 0
+        failover_priority:
+          - storage-27
+          - storage-27-replica-1
+          - storage-27-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-27: ~
+    storage-32-replicaset:
+      vars:
+        replicaset_alias: storage-32
+        weight: 0
+        failover_priority:
+          - storage-32
+          - storage-32-replica-1
+          - storage-32-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-32: ~
+    storage-37-replicaset:
+      vars:
+        replicaset_alias: storage-37
+        weight: 0
+        failover_priority:
+          - storage-37
+          - storage-37-replica-1
+          - storage-37-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-37: ~
+    storage-42-replicaset:
+      vars:
+        replicaset_alias: storage-42
+        weight: 0
+        failover_priority:
+          - storage-42
+          - storage-42-replica-1
+          - storage-42-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-42: ~
+    storage-47-replicaset:
+      vars:
+        replicaset_alias: storage-47
+        weight: 0
+        failover_priority:
+          - storage-47
+          - storage-47-replica-1
+          - storage-47-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-47: ~
+    input_processor-2-replicaset:
+      vars:
+        replicaset_alias: input_processor-2
+        weight: 0
+        failover_priority:
+          - input_processor-2
+        roles:
+          - input_processor
+      hosts:
+        input_processor-2: ~
+    input_processor-7-replicaset:
+      vars:
+        replicaset_alias: input_processor-7
+        weight: 0
+        failover_priority:
+          - input_processor-7
+        roles:
+          - input_processor
+      hosts:
+        input_processor-7: ~
+    router-3-replicaset:
+      vars:
+        replicaset_alias: router-3
+        weight: 0
+        failover_priority:
+          - router-3
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-3: ~
+    router-8-replicaset:
+      vars:
+        replicaset_alias: router-8
+        weight: 0
+        failover_priority:
+          - router-8
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-8: ~
+    router-13-replicaset:
+      vars:
+        replicaset_alias: router-13
+        weight: 0
+        failover_priority:
+          - router-13
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-13: ~
+    router-18-replicaset:
+      vars:
+        replicaset_alias: router-18
+        weight: 0
+        failover_priority:
+          - router-18
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-18: ~
+    router-23-replicaset:
+      vars:
+        replicaset_alias: router-23
+        weight: 0
+        failover_priority:
+          - router-23
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-23: ~
+    storage-3-replicaset:
+      vars:
+        replicaset_alias: storage-3
+        weight: 0
+        failover_priority:
+          - storage-3
+          - storage-3-replica-1
+          - storage-3-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-3: ~
+    storage-8-replicaset:
+      vars:
+        replicaset_alias: storage-8
+        weight: 0
+        failover_priority:
+          - storage-8
+          - storage-8-replica-1
+          - storage-8-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-8: ~
+    storage-13-replicaset:
+      vars:
+        replicaset_alias: storage-13
+        weight: 0
+        failover_priority:
+          - storage-13
+          - storage-13-replica-1
+          - storage-13-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-13: ~
+    storage-18-replicaset:
+      vars:
+        replicaset_alias: storage-18
+        weight: 0
+        failover_priority:
+          - storage-18
+          - storage-18-replica-1
+          - storage-18-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-18: ~
+    storage-23-replicaset:
+      vars:
+        replicaset_alias: storage-23
+        weight: 0
+        failover_priority:
+          - storage-23
+          - storage-23-replica-1
+          - storage-23-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-23: ~
+    storage-28-replicaset:
+      vars:
+        replicaset_alias: storage-28
+        weight: 0
+        failover_priority:
+          - storage-28
+          - storage-28-replica-1
+          - storage-28-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-28: ~
+    storage-33-replicaset:
+      vars:
+        replicaset_alias: storage-33
+        weight: 0
+        failover_priority:
+          - storage-33
+          - storage-33-replica-1
+          - storage-33-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-33: ~
+    storage-38-replicaset:
+      vars:
+        replicaset_alias: storage-38
+        weight: 0
+        failover_priority:
+          - storage-38
+          - storage-38-replica-1
+          - storage-38-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-38: ~
+    storage-43-replicaset:
+      vars:
+        replicaset_alias: storage-43
+        weight: 0
+        failover_priority:
+          - storage-43
+          - storage-43-replica-1
+          - storage-43-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-43: ~
+    storage-48-replicaset:
+      vars:
+        replicaset_alias: storage-48
+        weight: 0
+        failover_priority:
+          - storage-48
+          - storage-48-replica-1
+          - storage-48-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-48: ~
+    input_processor-3-replicaset:
+      vars:
+        replicaset_alias: input_processor-3
+        weight: 0
+        failover_priority:
+          - input_processor-3
+        roles:
+          - input_processor
+      hosts:
+        input_processor-3: ~
+    router-4-replicaset:
+      vars:
+        replicaset_alias: router-4
+        weight: 0
+        failover_priority:
+          - router-4
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-4: ~
+    router-9-replicaset:
+      vars:
+        replicaset_alias: router-9
+        weight: 0
+        failover_priority:
+          - router-9
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-9: ~
+    router-14-replicaset:
+      vars:
+        replicaset_alias: router-14
+        weight: 0
+        failover_priority:
+          - router-14
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-14: ~
+    router-19-replicaset:
+      vars:
+        replicaset_alias: router-19
+        weight: 0
+        failover_priority:
+          - router-19
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-19: ~
+    router-24-replicaset:
+      vars:
+        replicaset_alias: router-24
+        weight: 0
+        failover_priority:
+          - router-24
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-24: ~
+    storage-4-replicaset:
+      vars:
+        replicaset_alias: storage-4
+        weight: 0
+        failover_priority:
+          - storage-4
+          - storage-4-replica-1
+          - storage-4-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-4: ~
+    storage-9-replicaset:
+      vars:
+        replicaset_alias: storage-9
+        weight: 0
+        failover_priority:
+          - storage-9
+          - storage-9-replica-1
+          - storage-9-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-9: ~
+    storage-14-replicaset:
+      vars:
+        replicaset_alias: storage-14
+        weight: 0
+        failover_priority:
+          - storage-14
+          - storage-14-replica-1
+          - storage-14-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-14: ~
+    storage-19-replicaset:
+      vars:
+        replicaset_alias: storage-19
+        weight: 0
+        failover_priority:
+          - storage-19
+          - storage-19-replica-1
+          - storage-19-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-19: ~
+    storage-24-replicaset:
+      vars:
+        replicaset_alias: storage-24
+        weight: 0
+        failover_priority:
+          - storage-24
+          - storage-24-replica-1
+          - storage-24-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-24: ~
+    storage-29-replicaset:
+      vars:
+        replicaset_alias: storage-29
+        weight: 0
+        failover_priority:
+          - storage-29
+          - storage-29-replica-1
+          - storage-29-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-29: ~
+    storage-34-replicaset:
+      vars:
+        replicaset_alias: storage-34
+        weight: 0
+        failover_priority:
+          - storage-34
+          - storage-34-replica-1
+          - storage-34-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-34: ~
+    storage-39-replicaset:
+      vars:
+        replicaset_alias: storage-39
+        weight: 0
+        failover_priority:
+          - storage-39
+          - storage-39-replica-1
+          - storage-39-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-39: ~
+    storage-44-replicaset:
+      vars:
+        replicaset_alias: storage-44
+        weight: 0
+        failover_priority:
+          - storage-44
+          - storage-44-replica-1
+          - storage-44-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-44: ~
+    storage-49-replicaset:
+      vars:
+        replicaset_alias: storage-49
+        weight: 0
+        failover_priority:
+          - storage-49
+          - storage-49-replica-1
+          - storage-49-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-49: ~
+    input_processor-4-replicaset:
+      vars:
+        replicaset_alias: input_processor-4
+        weight: 0
+        failover_priority:
+          - input_processor-4
+        roles:
+          - input_processor
+      hosts:
+        input_processor-4: ~
+    router-5-replicaset:
+      vars:
+        replicaset_alias: router-5
+        weight: 0
+        failover_priority:
+          - router-5
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-5: ~
+    router-10-replicaset:
+      vars:
+        replicaset_alias: router-10
+        weight: 0
+        failover_priority:
+          - router-10
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-10: ~
+    router-15-replicaset:
+      vars:
+        replicaset_alias: router-15
+        weight: 0
+        failover_priority:
+          - router-15
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-15: ~
+    router-20-replicaset:
+      vars:
+        replicaset_alias: router-20
+        weight: 0
+        failover_priority:
+          - router-20
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-20: ~
+    router-25-replicaset:
+      vars:
+        replicaset_alias: router-25
+        weight: 0
+        failover_priority:
+          - router-25
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-25: ~
+    storage-5-replicaset:
+      vars:
+        replicaset_alias: storage-5
+        weight: 0
+        failover_priority:
+          - storage-5
+          - storage-5-replica-1
+          - storage-5-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-5: ~
+    storage-10-replicaset:
+      vars:
+        replicaset_alias: storage-10
+        weight: 0
+        failover_priority:
+          - storage-10
+          - storage-10-replica-1
+          - storage-10-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-10: ~
+    storage-15-replicaset:
+      vars:
+        replicaset_alias: storage-15
+        weight: 0
+        failover_priority:
+          - storage-15
+          - storage-15-replica-1
+          - storage-15-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-15: ~
+    storage-20-replicaset:
+      vars:
+        replicaset_alias: storage-20
+        weight: 0
+        failover_priority:
+          - storage-20
+          - storage-20-replica-1
+          - storage-20-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-20: ~
+    storage-25-replicaset:
+      vars:
+        replicaset_alias: storage-25
+        weight: 0
+        failover_priority:
+          - storage-25
+          - storage-25-replica-1
+          - storage-25-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-25: ~
+    storage-30-replicaset:
+      vars:
+        replicaset_alias: storage-30
+        weight: 0
+        failover_priority:
+          - storage-30
+          - storage-30-replica-1
+          - storage-30-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-30: ~
+    storage-35-replicaset:
+      vars:
+        replicaset_alias: storage-35
+        weight: 0
+        failover_priority:
+          - storage-35
+          - storage-35-replica-1
+          - storage-35-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-35: ~
+    storage-40-replicaset:
+      vars:
+        replicaset_alias: storage-40
+        weight: 0
+        failover_priority:
+          - storage-40
+          - storage-40-replica-1
+          - storage-40-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-40: ~
+    storage-45-replicaset:
+      vars:
+        replicaset_alias: storage-45
+        weight: 0
+        failover_priority:
+          - storage-45
+          - storage-45-replica-1
+          - storage-45-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-45: ~
+    storage-50-replicaset:
+      vars:
+        replicaset_alias: storage-50
+        weight: 0
+        failover_priority:
+          - storage-50
+          - storage-50-replica-1
+          - storage-50-replica-2
+        roles:
+          - storage
+      hosts:
+        storage-50: ~
+    input_processor-5-replicaset:
+      vars:
+        replicaset_alias: input_processor-5
+        weight: 0
+        failover_priority:
+          - input_processor-5
+        roles:
+          - input_processor
+      hosts:
+        input_processor-5: ~
+    host-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        router-6: ~
+        router-11: ~
+        router-16: ~
+        router-21: ~
+        storage-1: ~
+        storage-6: ~
+        storage-11: ~
+        storage-16: ~
+        storage-21: ~
+        storage-26: ~
+        storage-31: ~
+        storage-36: ~
+        storage-41: ~
+        storage-46: ~
+        storage-50-replica-1: ~
+        storage-49-replica-2: ~
+        storage-45-replica-1: ~
+        storage-44-replica-2: ~
+        storage-40-replica-1: ~
+        storage-39-replica-2: ~
+        storage-35-replica-1: ~
+        storage-34-replica-2: ~
+        storage-30-replica-1: ~
+        storage-29-replica-2: ~
+        storage-25-replica-1: ~
+        storage-24-replica-2: ~
+        storage-20-replica-1: ~
+        storage-19-replica-2: ~
+        storage-15-replica-1: ~
+        storage-14-replica-2: ~
+        storage-10-replica-1: ~
+        storage-9-replica-2: ~
+        storage-5-replica-1: ~
+        storage-4-replica-2: ~
+        input_processor-1: ~
+        input_processor-6: ~
+    host-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        router-2: ~
+        router-7: ~
+        router-12: ~
+        router-17: ~
+        router-22: ~
+        storage-2: ~
+        storage-7: ~
+        storage-12: ~
+        storage-17: ~
+        storage-22: ~
+        storage-27: ~
+        storage-32: ~
+        storage-37: ~
+        storage-42: ~
+        storage-47: ~
+        storage-50-replica-2: ~
+        storage-46-replica-1: ~
+        storage-45-replica-2: ~
+        storage-41-replica-1: ~
+        storage-40-replica-2: ~
+        storage-36-replica-1: ~
+        storage-35-replica-2: ~
+        storage-31-replica-1: ~
+        storage-30-replica-2: ~
+        storage-26-replica-1: ~
+        storage-25-replica-2: ~
+        storage-21-replica-1: ~
+        storage-20-replica-2: ~
+        storage-16-replica-1: ~
+        storage-15-replica-2: ~
+        storage-11-replica-1: ~
+        storage-10-replica-2: ~
+        storage-6-replica-1: ~
+        storage-5-replica-2: ~
+        storage-1-replica-1: ~
+        input_processor-2: ~
+        input_processor-7: ~
+    host-3:
+      vars:
+        ansible_host: 192.168.16.13
+      hosts:
+        router-3: ~
+        router-8: ~
+        router-13: ~
+        router-18: ~
+        router-23: ~
+        storage-3: ~
+        storage-8: ~
+        storage-13: ~
+        storage-18: ~
+        storage-23: ~
+        storage-28: ~
+        storage-33: ~
+        storage-38: ~
+        storage-43: ~
+        storage-48: ~
+        storage-47-replica-1: ~
+        storage-46-replica-2: ~
+        storage-42-replica-1: ~
+        storage-41-replica-2: ~
+        storage-37-replica-1: ~
+        storage-36-replica-2: ~
+        storage-32-replica-1: ~
+        storage-31-replica-2: ~
+        storage-27-replica-1: ~
+        storage-26-replica-2: ~
+        storage-22-replica-1: ~
+        storage-21-replica-2: ~
+        storage-17-replica-1: ~
+        storage-16-replica-2: ~
+        storage-12-replica-1: ~
+        storage-11-replica-2: ~
+        storage-7-replica-1: ~
+        storage-6-replica-2: ~
+        storage-2-replica-1: ~
+        storage-1-replica-2: ~
+        input_processor-3: ~
+    host-4:
+      vars:
+        ansible_host: 192.168.16.14
+      hosts:
+        router-4: ~
+        router-9: ~
+        router-14: ~
+        router-19: ~
+        router-24: ~
+        storage-4: ~
+        storage-9: ~
+        storage-14: ~
+        storage-19: ~
+        storage-24: ~
+        storage-29: ~
+        storage-34: ~
+        storage-39: ~
+        storage-44: ~
+        storage-49: ~
+        storage-48-replica-1: ~
+        storage-47-replica-2: ~
+        storage-43-replica-1: ~
+        storage-42-replica-2: ~
+        storage-38-replica-1: ~
+        storage-37-replica-2: ~
+        storage-33-replica-1: ~
+        storage-32-replica-2: ~
+        storage-28-replica-1: ~
+        storage-27-replica-2: ~
+        storage-23-replica-1: ~
+        storage-22-replica-2: ~
+        storage-18-replica-1: ~
+        storage-17-replica-2: ~
+        storage-13-replica-1: ~
+        storage-12-replica-2: ~
+        storage-8-replica-1: ~
+        storage-7-replica-2: ~
+        storage-3-replica-1: ~
+        storage-2-replica-2: ~
+        input_processor-4: ~
+    host-5:
+      vars:
+        ansible_host: 192.168.16.15
+      hosts:
+        router-5: ~
+        router-10: ~
+        router-15: ~
+        router-20: ~
+        router-25: ~
+        storage-5: ~
+        storage-10: ~
+        storage-15: ~
+        storage-20: ~
+        storage-25: ~
+        storage-30: ~
+        storage-35: ~
+        storage-40: ~
+        storage-45: ~
+        storage-50: ~
+        storage-49-replica-1: ~
+        storage-48-replica-2: ~
+        storage-44-replica-1: ~
+        storage-43-replica-2: ~
+        storage-39-replica-1: ~
+        storage-38-replica-2: ~
+        storage-34-replica-1: ~
+        storage-33-replica-2: ~
+        storage-29-replica-1: ~
+        storage-28-replica-2: ~
+        storage-24-replica-1: ~
+        storage-23-replica-2: ~
+        storage-19-replica-1: ~
+        storage-18-replica-2: ~
+        storage-14-replica-1: ~
+        storage-13-replica-2: ~
+        storage-9-replica-1: ~
+        storage-8-replica-2: ~
+        storage-4-replica-1: ~
+        storage-3-replica-2: ~
+        input_processor-5: ~

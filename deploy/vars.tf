@@ -26,7 +26,7 @@ variable "os_auth_url" {
 }
 
 variable "project_id" {
-  default = "26001df9c2144fdcad88f361cdc2f593"
+  type = string
 }
 
 variable "os_region" {
@@ -45,7 +45,7 @@ variable "subnet_cidr" {
 }
 
 variable "genin_hosts_count" {
-  default = 2
+  default = 3
 }
 
 variable "genin_hosts_vcpus" {

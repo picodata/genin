@@ -1,0 +1,58 @@
+---
+instances:
+  - name: storage
+    type: storage
+    count: 6
+    replicas: 2
+    weight: 10
+    roles:
+      - app.roles.storage
+  - name: router
+    type: router
+    count: 3
+    replicas: 0
+    weight: 10
+    roles:
+      - app.roles.api
+      - failover-coordinator
+  - name: engine
+    type: engine
+    count: 1
+    replicas: 0
+    weight: 10
+    roles:
+      - app.roles.engine
+hosts:
+  - name: selectel
+    type: datacenter
+    ports:
+      http: 8081
+      binary: 3031
+    hosts:
+      - name: genin_01_host
+        ip: 192.168.16.101
+      - name: genin_02_host
+        ip: 192.168.16.101
+      - name: genin_03_host
+        ip: 192.168.16.103
+      - name: genin_04_host
+        ip: 192.168.16.104
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri:
+      ip: 192.168.16.101
+      port: 3001
+    password: picoadm
+vars:
+  ansible_user: picoadm
+  ansible_password: picoadm
+  cartridge_app_name: genin-app
+  cartridge_cluster_cookie: genin-app-cluster-cookie
+  cartridge_failover_params:
+    mode: stateful
+    state_provider: stateboard
+    stateboard_params:
+      uri: "192.168.16.101:3001"
+      password: picoadm

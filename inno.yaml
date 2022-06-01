@@ -1,0 +1,63 @@
+---
+instances:
+  - name: router
+    type: router
+    count: 25
+    roles: [ router, failover-coordinator]
+    config:
+      memtx_memory: 1073741824
+      zone: "kavkaz"
+      cartridge_cluster_cookie: "Qwerty123"
+  - name: storage
+    type: storage
+    count: 50
+    replicas: 2
+    roles:
+      - storage
+    config:
+      cartridge_cluster_cookie: "Qwerty123"
+      memtx_memory: 1073741824
+  - name: input_processor
+    type: custom
+    count: 7
+    roles: [input_processor]
+    config:
+      cartridge_cluster_cookie: "Qwerty123"
+hosts:
+  - name: kavkaz
+    type: region
+    hosts:
+    - name: ksvm
+      type: datacenter
+      ports:
+        http: 9000
+        binary: 5000
+      hosts:
+        - name: host-1
+          ip: 192.168.16.11
+        - name: host-2
+          ip: 192.168.16.12
+        - name: host-3
+          ip: 192.168.16.13
+        - name: host-4
+          ip: 192.168.16.14
+        - name: host-5
+          ip: 192.168.16.15
+failover:
+  mode: stateful
+  state_provider: etcd2
+  ectd2:
+    prefix: cartridge/myapp
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.16.11:5699"
+      - "http://192.168.16.12:5699"
+      - "http://192.168.16.13:5699"
+    username: change_me
+    password: change_me
+vars:
+  ansible_user: root
+  ansible_password: change_me
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: ../some/myapp.rpm

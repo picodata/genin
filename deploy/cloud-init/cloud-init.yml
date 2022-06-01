@@ -1,0 +1,24 @@
+#cloud-config
+---
+timezone: "UTC"
+
+runcmd:
+  - [ sed, -i, 's/#MaxSessions 10/MaxSessions 99/g', /etc/ssh/sshd_config ]
+  - [ sed, -i, -e, '$aUseDNS no', /etc/ssh/sshd_config ]
+  - [ sed, -i, 's/SELINUX=enforcing/SELINUX=disabled/g', /etc/selinux/config ]
+  - [ sed, -i, -e, '$a192.168.32.101    genin_01_host', /etc/hosts ]
+  - [ sed, -i, -e, '$a192.168.32.102    genin_02_host', /etc/hosts ]
+  - [ sed, -i, -e, '$a192.168.32.103    genin_02_host', /etc/hosts ]
+
+users:
+  - name: picoadm
+    groups: [ sudo, docker ]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    passwd: '$6$w7J1BHYgFQw9iQco$Mr0BrJV9NMjGqb7pcYgwl4zK4.hlOdlySE19TRUC1ag3LJmN9Dceg6u3OaBAE9EnKsGfJXRKif3LSh12VwfUJ.'
+
+ssh_pwauth: no
+
+power_state:
+  mode: reboot
+  timeot: 300
