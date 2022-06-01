@@ -27,3 +27,8 @@ node_modules
 !/test/resources/test-*
 /test/resources/test-*-copy*:w
 /.gitlab-ci.yml
+/deploy/.terraform.lock.hcl
+/deploy/.terraform/
+/deploy/.terraform.tfstate.lock.info
+/deploy/terraform.tfstate
+/deploy/terraform.tfstate.backup
