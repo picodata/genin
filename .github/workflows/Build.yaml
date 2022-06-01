@@ -193,4 +193,4 @@ jobs:
             [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
 
             ### Debian x86_64
-            [genin-${{ env.VERSION }}.amd64.deb](${{ env.APT_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb)
+            [genin-${{ env.VERSION }}.amd64.deb](${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb)
