@@ -2,12 +2,12 @@ use std::ops::{Deref, DerefMut};
 
 use genin::libs::{
     error::TaskError,
-    hst::PortsVariants,
+    hst::{Ports, PortsVariants},
     ins::{Instance, Role, Type},
     vrs::Vars,
 };
-use log::{debug, info, trace, warn};
-use prettytable::{Table, Row, Cell};
+use log::{debug, info, trace};
+use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
 
 use crate::task::cluster::hosts::FlatHosts;
@@ -150,7 +150,9 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                                     .map(|instance| right.instances.push(instance))
                                     .unwrap_or_else(|| {});
                             })
-                            .map(|_| warn!("instance moved from left ro right"))
+                            .map(|_| {
+                                debug!("instance moved from {} to {}", left.name(), right.name())
+                            })
                             .unwrap_or_else(|| {});
                     });
                 })
@@ -238,7 +240,7 @@ impl Scheme {
                     self.hosts
                         .deref()
                         .iter()
-                        .map(|host| Cell::new(host.name()).style_spec("b")),
+                        .map(|host| Cell::new(host.name()).with_style(Attr::Bold)),
                 )
                 .collect::<Vec<Cell>>(),
         ));
@@ -250,10 +252,23 @@ impl Scheme {
                         host.instances
                             .get(pos)
                             .map(|instance| match instance.itype {
-                                Type::Router => Cell::new(&instance.name).style_spec("Fb"),
-                                Type::Storage => Cell::new(&instance.name).style_spec("FG"),
-                                Type::Replica => Cell::new(&instance.name).style_spec("Fg"),
-                                _ => Cell::new(&instance.name).style_spec("Fc"),
+                                Type::Router => Cell::new(&Self::instance_table(
+                                    &instance.name,
+                                    &Ports::default(),
+                                ))
+                                .with_style(Attr::ForegroundColor(color::BLUE)),
+                                Type::Storage => Cell::new(&Self::instance_table(
+                                    &instance.name,
+                                    &Ports::default(),
+                                ))
+                                .with_style(Attr::ForegroundColor(color::BRIGHT_GREEN)),
+                                Type::Replica => Cell::new(&Self::instance_table(
+                                    &instance.name,
+                                    &Ports::default(),
+                                ))
+                                .with_style(Attr::ForegroundColor(color::GREEN)),
+                                _ => Cell::new(&instance.name)
+                                    .with_style(Attr::ForegroundColor(color::CYAN)),
                             })
                             .unwrap_or_else(|| Cell::new(" "))
                     }))
@@ -266,6 +281,16 @@ impl Scheme {
     pub(in crate::task) fn downcast(self) -> Vec<FlatHost> {
         let Scheme { hosts, .. } = self;
         hosts.downcast()
+    }
+
+    fn instance_table(s: &str, p: &Ports) -> String {
+        let mut table = Table::new();
+        table.set_titles(Row::new(vec![Cell::new(s)]));
+        table.add_row(Row::new(vec![
+            Cell::new(&p.http.to_string()),
+            Cell::new(&p.binary.to_string()),
+        ]));
+        table.to_string()
     }
 }
 
