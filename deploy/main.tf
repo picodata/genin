@@ -79,14 +79,13 @@ resource "openstack_compute_flavor_v2" "genin_bastion_flavor" {
   is_public = "false"
 }
 
-resource "openstack_compute_instance_v2" "genin_host" {
-  count             = var.genin_hosts_count
-  name              = "genin_0${1+count.index}_host"
+resource "openstack_compute_instance_v2" "genin_bastion_host" {
+  name              = "genin_bastion_host"
   flavor_id         = openstack_compute_flavor_v2.genin_bastion_flavor.id
   key_pair          = openstack_compute_keypair_v2.dtravyan.id
   availability_zone = var.server_zone
   network {
-    fixed_ip_v4 = "192.168.16.${11+count.index}"
+    fixed_ip_v4 = "192.168.16.64"
     uuid = openstack_networking_network_v2.genin_network.id
   }
 
@@ -103,12 +102,35 @@ resource "openstack_compute_instance_v2" "genin_host" {
   user_data = data.cloudinit_config.cloud_init_bastion.rendered
 }
 
-resource "openstack_networking_floatingip_v2" "genin_floating_it" {
-  pool = "external-network"
+data "cloudinit_config" "cloud_init" {
+  gzip = false
+  base64_encode = false
+  part {
+    content_type = "text/cloud-config"
+    content = file("${path.module}/cloud-init/cloud-init.yml")
+  }
 }
 
-resource "openstack_compute_floatingip_associate_v2" "genin_floating_it" {
-  count = var.genin_hosts_count
-  floating_ip = openstack_networking_floatingip_v2.genin_floating_it.address
-  instance_id = "openstack_compute_instance_v2.genin_0${1+count.index}_trn_host.id"
+resource "openstack_compute_instance_v2" "genin_host" {
+  count             = var.genin_hosts_count
+  name              = "genin_0${1+count.index}_host"
+  flavor_id         = openstack_compute_flavor_v2.genin_bastion_flavor.id
+  key_pair          = openstack_compute_keypair_v2.dtravyan.id
+  availability_zone = var.server_zone
+  network {
+    fixed_ip_v4 = "192.168.16.${101+count.index}"
+    uuid = openstack_networking_network_v2.genin_network.id
+  }
+
+  image_id = data.openstack_images_image_v2.centos_image.id
+
+  vendor_options {
+    ignore_resize_confirmation = true
+  }
+
+  lifecycle {
+    ignore_changes = [image_id]
+  }
+
+  user_data = data.cloudinit_config.cloud_init.rendered
 }

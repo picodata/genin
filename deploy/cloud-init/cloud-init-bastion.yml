@@ -1,0 +1,65 @@
+#cloud-config
+---
+write_files:
+  - path: /home/picoadm/.ssh/id_rsa
+    content: |
+      -----BEGIN OPENSSH PRIVATE KEY-----
+      b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+      NhAAAAAwEAAQAAAQEAmLxSgQhMyvBexJ9FwIzvBGqmqOok4uyxQJ2VspChF/jRM89MMszw
+      siBEETxUzmRjqyPqiQltKCqP0b97xrzDh3Ywm5vIisWakIQRw97ZWgZjw6UEelHr+8NjW0
+      ixNyZn7RTt9sRFKcjzpEkEh+SXwjGtm76XR9IJLWbBlBMHKJxbonSyV1J/E+fswYibBUwW
+      tCKY7FGcADNlN8DjIEhEQGBytUxV39aEILvCqJnwQ+kEr5Qb+HNqd4PFei/pulD2ay40kW
+      lRfuSRNci5JPuz6jLPE0A6098JaykFhww+bLsiJehyc+pRYFw5r0j31rAZQxyNlpPGBoqM
+      BB0bRtXCNQAAA+DiQRq94kEavQAAAAdzc2gtcnNhAAABAQCYvFKBCEzK8F7En0XAjO8Eaq
+      ao6iTi7LFAnZWykKEX+NEzz0wyzPCyIEQRPFTOZGOrI+qJCW0oKo/Rv3vGvMOHdjCbm8iK
+      xZqQhBHD3tlaBmPDpQR6Uev7w2NbSLE3JmftFO32xEUpyPOkSQSH5JfCMa2bvpdH0gktZs
+      GUEwconFuidLJXUn8T5+zBiJsFTBa0IpjsUZwAM2U3wOMgSERAYHK1TFXf1oQgu8KomfBD
+      6QSvlBv4c2p3g8V6L+m6UPZrLjSRaVF+5JE1yLkk+7PqMs8TQDrT3wlrKQWHDD5suyIl6H
+      Jz6lFgXDmvSPfWsBlDHI2Wk8YGiowEHRtG1cI1AAAAAwEAAQAAAQAcRYe0ELg+PF4eYSkF
+      KlE37RHqZGTtiEiLIGBMTE81Y749q9p78MmA/036LsO37Icyb5SDRzZoX/B9L8eWkuxSj8
+      MRmrV1Unx40amEKyTqcBJZbZs1lSJsWM90XzFGdxp3nQ8rRUtUH7lRqJ5pFRwuOwnasV3J
+      UoyWVdXxNdB2aKmnmTUzo4XANF2NgnLVitJz8WgkKkzDIaJx1cL9Ob9ziDcWJkLR3oc6Hw
+      h8cdVUZkDeJsz1bUIAqcEfscY6m494+9fNYQwyrF+6O1YlqJvAejZ830tR1YNLnUWpi48d
+      +i2Jd0SiehdYY+KxT/xe+4ZX9qd7H6g3NisJMoLPS2KBAAAAgQCg2GimOSzwi95jn38NL4
+      eAK2hRpOVun5qDFb92HszFNZlrwc4ChxnT/zAe9nHNOSbC2ZIGiDHFmpbvSihPz5gcR8JT
+      dLy3rmQmohmC9Nuq+TEtrAaU5ROUsW4Y9RHcd5gAy6x8CTCs0fDrBeSkBsWxr1q29Npnc3
+      Udy240g2ys/QAAAIEAyqvWGMKNoU+26V6qkVZbnFH87y72EYzQujlPAPYpWCvwmeXNun35
+      NoIY3lmmS0vsDiEHuKsB5W6x/QOQaX5VYxTCPebYSjfz5upQWmt/+ivlEQ8nqMxS9CbfZj
+      YiIw+JMDBOe5DH9RDKnuTG9ihV/Kv1kuGbYgYgrOuQDo32G1UAAACBAMDsxHEWeT8DuuJM
+      pVkYD3p5BpOcmLLf+Q58BjLiNRu0C63hIRmzrF0IQEk2ccgUQPjpbLsrocXoGAoQIMzkry
+      j3mXdOI4NTgWF/d275Uy2YyIqF4j9TA9GLb05uqjxAksEyrXC4UnU+jg6/ZLOEMMOcLMCN
+      Rc9rH4VAvZYbRcthAAAAKWRtaXRyaWp0cmF2YW5ATWFjQm9vay1Qcm8tRG1pdHJpai0yLm
+      xvY2FsAQ==
+      -----END OPENSSH PRIVATE KEY-----
+    owner: picoadm:picoadm
+    permissions: "0600"
+
+ssh_pwauth: no
+
+package_update: true
+package_reboot_if_required: true
+
+packages:
+  - net-tools
+  - epel-release
+
+runcmd:
+  - [ chown, -R, picoadm:picoadm, /home/picoadm/ ]
+  - [ runuser, -l, picoadm, -c, "restorecon -Rv ~/.ssh" ]
+  - [ sed, -i, 's/UsePAM yes/UsePam no/', /etc/ssh/sshd_config ]
+  - [ sed, -i, -e, '$aUseDNS no', /etc/ssh/sshd_config ]
+
+users:
+  - name: picoadm
+    groups: [ sudo, docker ]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    passwd: '$6$w7J1BHYgFQw9iQco$Mr0BrJV9NMjGqb7pcYgwl4zK4.hlOdlySE19TRUC1ag3LJmN9Dceg6u3OaBAE9EnKsGfJXRKif3LSh12VwfUJ.'
+
+debug:
+  verbose: true
+  output: /var/log/cloud-init-debug.log
+
+power_state:
+  mode: reboot
+  timeot: 300

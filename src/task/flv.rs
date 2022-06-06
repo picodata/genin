@@ -1,12 +1,12 @@
-use std::{fmt::Display, net::IpAddr};
+use std::{collections::HashMap, fmt::Display, net::IpAddr};
 
 use clap::ArgMatches;
-use log::{trace, warn};
+use log::{error, trace, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 
 use genin::libs::error::{CommandLineError, ConfigError, InternalError, TaskError};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 /// Failover enum
 /// ```yaml
 /// failover:
@@ -75,14 +75,92 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+impl<'de> Deserialize<'de> for Failover {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum FailoverHelper {
+            Enabled {
+                mode: Mode,
+                state_provider: StateProvider,
+                #[serde(flatten)]
+                failover_variants: FailoverVariants,
+            },
+            Disabled {
+                mode: Mode,
+            },
+            Test(HashMap<String, Mode>),
+        }
+
+        match FailoverHelper::deserialize(deserializer) {
+            Ok(FailoverHelper::Enabled {
+                mode,
+                state_provider,
+                failover_variants,
+            }) => Ok(Self {
+                mode,
+                state_provider,
+                failover_variants,
+            }),
+            Ok(FailoverHelper::Disabled { mode }) => Ok(Self {
+                mode,
+                state_provider: StateProvider::Disabled,
+                failover_variants: FailoverVariants::Disabled,
+            }),
+            Ok(FailoverHelper::Test(value)) => {
+                error!("{:?}", value);
+                Err(serde::de::Error::missing_field("all"))
+            }
+            Err(e) => {
+                error!("Failover looks like {:?}", e);
+                Err(e)
+            }
+        }
+    }
+}
+
+#[derive(Serialize, PartialEq, Debug)]
 pub(in crate::task) enum Mode {
-    #[serde(rename = "stateful")]
     Stateful,
-    #[serde(rename = "eventual")]
     Eventual,
-    #[serde(rename = "disabled")]
     Disabled,
+}
+
+struct ModeVisitor;
+
+impl<'de> Visitor<'de> for ModeVisitor {
+    type Value = Mode;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(formatter, "expecting one of 'mode' variant")
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        match v {
+            "stateful" | "Stateful" | "STATEFUL" => Ok(Mode::Stateful),
+            "eventual" | "Eventual" | "EVENTUAL" => Ok(Mode::Eventual),
+            "disabled" | "Disabled" | "DISABLED" => Ok(Mode::Disabled),
+            _ => Err(serde::de::Error::invalid_value(
+                serde::de::Unexpected::Other(v),
+                &self,
+            )),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Mode {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(ModeVisitor)
+    }
 }
 
 impl Default for Mode {
@@ -97,9 +175,9 @@ impl<'s> TryFrom<&'s str> for Mode {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         trace!("failover mode: {}", s);
         match s {
-            "stateful" => Ok(Self::Stateful),
-            "eventual" => Ok(Self::Eventual),
-            "disabled" => Ok(Self::Disabled),
+            "stateful" | "Stateful" | "STATEFUL" => Ok(Self::Stateful),
+            "eventual" | "Eventual" | "EVENTUAL" => Ok(Self::Eventual),
+            "disabled" | "Disabled" | "DISABLED" => Ok(Self::Disabled),
             _ => Err(InternalError::FieldDeserializationError(format!(
                 "Unknown failover-mode argument {}",
                 s
@@ -114,7 +192,14 @@ pub(in crate::task) enum StateProvider {
     Stateboard,
     #[serde(rename = "etcd2")]
     ETCD2,
+    #[serde(rename = "disabled")]
     Disabled,
+}
+
+impl Default for StateProvider {
+    fn default() -> Self {
+        Self::Disabled
+    }
 }
 
 impl<'s> TryFrom<&'s str> for StateProvider {
@@ -145,6 +230,12 @@ pub(in crate::task) enum FailoverVariants {
     #[serde(rename = "ectd2")]
     ETCD2Variant(ETCD2Params),
     Disabled,
+}
+
+impl Default for FailoverVariants {
+    fn default() -> Self {
+        Self::Disabled
+    }
 }
 
 impl<'a> TryFrom<&'a str> for FailoverVariants {
