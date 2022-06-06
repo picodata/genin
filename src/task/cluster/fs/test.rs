@@ -34,7 +34,7 @@ fn test_fs_interaction_from_args() {
     assert_eq!(fs.source, None);
     assert_eq!(fs.output, None);
 
-    let fs = fs.check(Some("cluster.genin.yaml"), Some("inventory.yaml"));
+    let fs = fs.check(Some("cluster.genin.yaml"), Some("inventory.yaml"), false);
 
     assert_eq!(fs.source, None);
     assert_eq!(fs.output, Some(PathBuf::from("inventory.yaml")));
@@ -45,7 +45,7 @@ fn test_fs_interaction_from_args() {
             .try_get_matches_from(vec!["genin", "init"])
             .unwrap(),
     )
-    .check(None, Some("cluster.genin.yaml"));
+    .check(None, Some("cluster.genin.yaml"), false);
 
     assert_eq!(fs.source, None);
     assert_eq!(fs.output, Some(PathBuf::from("cluster.genin.yaml")));
@@ -68,7 +68,7 @@ fn test_fs_interaction_wrong_ext() {
             ])
             .unwrap(),
     )
-    .check(None, None);
+    .check(None, None, false);
     println!("source file state:  {:?}", fs.read());
     assert!(fs.read().is_ok());
 }
@@ -86,7 +86,7 @@ fn test_fs_interaction_errors() {
             .try_get_matches_from(vec!["genin"])
             .unwrap(),
     )
-    .check(None, Some("test/output/inventory.yaml"));
+    .check(None, Some("test/output/inventory.yaml"), false);
 
     assert_eq!(
         fs.read(),
@@ -95,7 +95,7 @@ fn test_fs_interaction_errors() {
         )))
     );
 
-    let fs = fs.check(Some("not-exists.yaml"), None);
+    let fs = fs.check(Some("not-exists.yaml"), None, false);
 
     assert_eq!(
         fs.read(),
@@ -118,7 +118,7 @@ fn test_fs_interaction_file_exists() {
             .try_get_matches_from(vec!["genin"])
             .unwrap(),
     )
-    .check(None, None);
+    .check(None, None, false);
 
     assert_eq!(
         fs.output,

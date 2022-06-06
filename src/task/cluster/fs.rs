@@ -7,7 +7,7 @@ use std::{
 
 use clap::ArgMatches;
 use genin::libs::error::{ConfigError, InternalError, TaskError};
-use log::warn;
+use log::{debug, warn, trace};
 
 use crate::task::MapSelf;
 
@@ -32,7 +32,7 @@ impl<'a> From<&'a ArgMatches> for FsInteraction {
 impl FsInteraction {
     /// After string args transofrmed to `PathBuf` this function should check
     /// `soure` and `output` existence, and replace to default value
-    pub fn check(self, source: Option<&str>, output: Option<&str>) -> Self {
+    pub fn check(self, source: Option<&str>, output: Option<&str>, force: bool) -> Self {
         Self {
             source: self
                 .source
@@ -51,7 +51,14 @@ impl FsInteraction {
                         .to_str()
                         .map(|path_str| (path, path_str.to_string()))
                 })
-                .map(|(path, path_str)| as_copy(path, path_str)),
+                .map(|(path, path_str)| {
+                    force
+                        .then(|| {
+                            debug!("output file will be overrided because flag force defined");
+                            path.clone()
+                        })
+                        .unwrap_or_else(|| as_copy(path, path_str))
+                }),
         }
     }
 
@@ -66,19 +73,19 @@ impl FsInteraction {
                 "Error while trying to read source file. Source file: None".into(),
             ))
         })?)
-        .map_err(|e| {
+        .map_err(|err| {
             TaskError::ConfigError(ConfigError::FileContentError(format!(
                 "Error then opening file {}! Err: {}",
                 self.source.as_ref().unwrap().to_str().unwrap(),
-                e
+                err
             )))
         })?;
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).map_err(|e| {
+        file.read_to_end(&mut buffer).map_err(|err| {
             TaskError::ConfigError(ConfigError::FileContentError(format!(
                 "Error then opening file {}! Err: {}",
                 self.source.as_ref().unwrap().to_str().unwrap(),
-                e
+                err
             )))
         })?;
         Ok(buffer)
@@ -148,6 +155,7 @@ fn right_ext(path: PathBuf, path_str: String, second_try: bool) -> Option<PathBu
     ) {
         (false, Some("yml"), false) => {
             let new_path_str = path_str.replace(".yml", ".yaml");
+            trace!("file_exists: false, extension: .yml, second_try: false");
             warn!(
                 "file {} does not exists, trying to open {}",
                 path_str, &new_path_str
@@ -156,6 +164,7 @@ fn right_ext(path: PathBuf, path_str: String, second_try: bool) -> Option<PathBu
         }
         (false, Some("yaml"), false) => {
             let new_path_str = path_str.replace(".yaml", ".yml");
+            trace!("file_exists: false, extension: .yaml, second_try: false");
             warn!(
                 "file {} does not exists, trying to open {}",
                 path_str, &new_path_str

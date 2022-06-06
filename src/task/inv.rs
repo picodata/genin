@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use genin::libs::{
     error::{ConfigError, TaskError},
-    ins::{Instance, Role, Type, is_false},
+    ins::{is_false, Instance, Role, Type},
     vrs::Vars,
 };
 use indexmap::IndexMap;
@@ -75,6 +75,12 @@ impl TryFrom<Scheme> for Inventory {
                         (
                             format!("{}-replicaset", instance.parent),
                             InventoryReplicaset {
+                                hosts: replicasets
+                                    .get(&instance.name)
+                                    .cloned().unwrap_or_default()
+                                    .into_iter()
+                                    .map(|member| (member, Value::Null))
+                                    .collect(),
                                 vars: InventoryVars::ReplicasetInventoryVars {
                                     replicaset_alias: instance.parent.to_string(),
                                     weight: instance.weight,
@@ -83,9 +89,6 @@ impl TryFrom<Scheme> for Inventory {
                                         .unwrap_or_default(),
                                     roles: instance.roles.clone(),
                                 },
-                                hosts: vec![(instance.parent.to_string(), Value::Null)]
-                                    .into_iter()
-                                    .collect(),
                             },
                         )
                     }),
