@@ -27,7 +27,7 @@ pub struct Instance {
     pub count: usize,
     #[serde(default)]
     pub replicas: usize,
-    #[serde(default, skip_serializing_if = "is_zero")]
+    #[serde(default = "default_weight", skip_serializing_if = "is_zero")]
     pub weight: usize,
     #[serde(default, skip_serializing_if = "is_false")]
     pub stateboard: bool,
@@ -251,3 +251,6 @@ pub fn is_false(v: &bool) -> bool {
     !*v
 }
 
+pub fn default_weight() -> usize {
+    10
+}

@@ -21,7 +21,6 @@ pub(super) fn read() -> ArgMatches {
                         .long("source")
                         .short('s')
                         .takes_value(true)
-                        .default_value("cluster.genin.yml")
                         .help(
                             "Absolute or relative path of the file with \
                             the description of the cluster to be generated",
@@ -33,6 +32,14 @@ pub(super) fn read() -> ArgMatches {
                         .help(
                             "The absolute or relative path where the \
                             ready-made cluster inventory will be saved."
+                        ),
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .takes_value(false)
+                        .help(
+                            "Used to overwrite the output file, whether \
+                            or not it exists." 
                         ),
                     Arg::new("ansible-user")
                         .long("ansible-user")
@@ -52,10 +59,12 @@ pub(super) fn read() -> ArgMatches {
                         .help("(string): cluster cookie for all cluster instances"),
                     Arg::new("failover-mode")
                         .long("failover-mode")
+                        .short('m')
                         .takes_value(true)
                         .help("(string): failover mode (statefull, eventual, disabled)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
+                        .short('F')
                         .takes_value(true)
                         .help("(string): failover state provider"),
                 ]),
@@ -70,9 +79,17 @@ pub(super) fn read() -> ArgMatches {
                             "The absolute or relative path where the \
                             ready-made cluster inventory will be saved.",
                         ),
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .takes_value(false)
+                        .help(
+                            "Used to overwrite the output file, whether \
+                            or not it exists." 
+                        ),
                     Arg::new("failover-mode")
                         .long("failover-mode")
-                        .short('f')
+                        .short('m')
                         .takes_value(true)
                         .default_value("stateful")
                         .help("(string): failover mode (stateful, eventual, disabled)"),
@@ -98,14 +115,29 @@ pub(super) fn read() -> ArgMatches {
                         for a quick overview of the cluster distribution.",
                 )
                 .args(&[
+                    Arg::new("output")
+                        .long("output")
+                        .short('o')
+                        .takes_value(true)
+                        .help(
+                            "The absolute or relative path where the \
+                            ready-made cluster inventory will be saved.",
+                        ),
                     Arg::new("source")
                         .long("source")
                         .short('s')
                         .takes_value(true)
-                        .default_value("cluster.genin.yaml")
                         .help(
                             "Absolute or relative path of the file with \
                             the description of the cluster to be should displayed",
+                        ),
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .takes_value(false)
+                        .help(
+                            "Used to overwrite the output file, whether \
+                            or not it exists." 
                         ),
                     Arg::new("export-csv")
                         .long("export-csv")
@@ -126,7 +158,6 @@ pub(super) fn read() -> ArgMatches {
                         .long("source")
                         .short('s')
                         .takes_value(true)
-                        .default_value("inventory.yaml")
                         .help(
                             "Absolute or relative path of the file with \
                             the ready cluster inventory.",
@@ -138,6 +169,14 @@ pub(super) fn read() -> ArgMatches {
                         .help(
                             "The absolute or relative path where the \
                             cluster.genin.yaml will be saved.",
+                        ),
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .takes_value(false)
+                        .help(
+                            "Used to overwrite the output file, whether \
+                            or not it exists." 
                         ),
                 ]),
         ])

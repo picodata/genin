@@ -50,7 +50,7 @@ pub fn run() -> Result<(), TaskError> {
     Task(args)
         .map(|args| match args.subcommand() {
             Some(("init", args)) => FsInteraction::from(args)
-                .check(None, Some(CLUSTER_YAML))
+                .check(None, Some(CLUSTER_YAML), args.is_present("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(args)?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, data, fs)| {
@@ -70,7 +70,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("build", args)) => FsInteraction::from(args)
-                .check(Some(CLUSTER_YAML), Some(INVENTORY_YAML))
+                .check(Some(CLUSTER_YAML), Some(INVENTORY_YAML), args.is_present("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, _data, fs)| {
@@ -91,7 +91,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("inspect", args)) => FsInteraction::from(args)
-                .check(Some(CLUSTER_YAML), None)
+                .check(Some(CLUSTER_YAML), None, args.is_present("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, _, _)| {
@@ -104,7 +104,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("reverse", args)) => FsInteraction::from(args)
-                .check(Some(INVENTORY_YAML), None)
+                .check(Some(INVENTORY_YAML), None, args.is_present("force"))
                 .map_self(|fs| Ok(Context((Inventory::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&Cluster::default())?, data, fs)))?
                 .map(|(scheme, _data, fs)| {
