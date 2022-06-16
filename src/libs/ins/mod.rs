@@ -11,11 +11,11 @@ pub struct Instances(Vec<Instance>);
 /// Some tarantool cartridge instace
 ///
 /// ```yaml
-///     - name: "catalogue"
-///       type: "storage"
-///       count: 1
-///       replicas: 2
-///       weight: 10
+/// - name: "catalogue"
+///   type: "storage"
+///   count: 1
+///   replicas: 2
+///   weight: 10
 /// ```
 pub struct Instance {
     pub name: String,
@@ -91,10 +91,13 @@ impl Instances {
 }
 
 impl Instance {
+    /// Check that instance spreading should be forsed through hosts
     pub fn can_be_same(&self) -> bool {
         matches!(self.itype, Type::Router | Type::Storage | Type::Replica)
     }
 
+    /// Multiply instances to `count`
+    /// if instance is a storage and has replicas, multiply them too
     pub fn multiply(&self) -> Vec<Vec<Instance>> {
         let mut result = vec![(1..=self.count)
             .map(|master_num| Instance {
@@ -139,7 +142,6 @@ impl Instance {
                         }))
                         .collect::<Vec<Instance>>()
                 })
-                .rev()
                 .collect(),
 
             _ => Vec::new(),
