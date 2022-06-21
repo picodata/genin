@@ -111,7 +111,6 @@ impl Instance {
                 roles: self.roles.clone(),
                 config: self.config.clone(),
             })
-            .rev()
             .collect()];
         result.extend(match self.itype {
             Type::Storage => (1..=self.count)
@@ -129,17 +128,20 @@ impl Instance {
                             config: self.config.clone(),
                         })
                         .rev()
-                        .chain((1..=master_num).map(|num| Instance {
-                            name: format!("dummy-{}", num),
-                            parent: format!("dummy-{}", num),
-                            count: 1,
-                            replicas: 0,
-                            itype: Type::Dummy,
-                            weight: self.weight,
-                            stateboard: false,
-                            roles: self.roles.clone(),
-                            config: self.config.clone(),
-                        }))
+                        .chain(
+                            (1..=master_num)
+                                .map(|num| Instance {
+                                    name: format!("dummy-{}", num),
+                                    parent: format!("dummy-{}", num),
+                                    count: 1,
+                                    replicas: 0,
+                                    itype: Type::Dummy,
+                                    weight: self.weight,
+                                    stateboard: false,
+                                    roles: self.roles.clone(),
+                                    config: self.config.clone(),
+                                })
+                        )
                         .collect::<Vec<Instance>>()
                 })
                 .collect(),
