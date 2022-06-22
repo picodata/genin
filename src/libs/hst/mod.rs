@@ -177,7 +177,8 @@ impl PortsVariants {
             p.binary += 1;
         }
     }
-
+    
+    /// if port varinants `None` init them as default
     pub fn or_else(&mut self, ports: Ports) {
         if let PortsVariants::None = self {
             *self = PortsVariants::Ports(ports);

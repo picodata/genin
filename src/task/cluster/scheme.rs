@@ -2,12 +2,12 @@ use std::ops::{Deref, DerefMut};
 
 use genin::libs::{
     error::TaskError,
-    hst::PortsVariants,
+    hst::{Ports, PortsVariants},
     ins::{Instance, Role, Type},
     vrs::Vars,
 };
 use log::{debug, info, trace, warn};
-use prettytable::{Table, Row, Cell};
+use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
 
 use crate::task::cluster::hosts::FlatHosts;
@@ -17,6 +17,7 @@ use super::{hosts::FlatHost, Cluster};
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,
     pub(in crate::task) vars: Vars,
+    pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
 
 impl<'a> TryFrom<&'a Cluster> for Scheme {
@@ -41,122 +42,100 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         // - spread custom
 
         let mut hosts = FlatHosts::try_from(&cluster.hosts)?;
-        let mut replicasets = Vec::new();
-        let mut another_replicasets = Vec::new();
-
-        cluster.instances.iter().for_each(|instance| {
-            instance
-                .can_be_same()
-                .then(|| {
-                    replicasets
-                        .is_empty()
-                        .then(|| replicasets.push(vec![instance]))
-                        .unwrap_or_else(|| {
-                            replicasets.iter_mut().for_each(|repl| {
-                                repl.last()
-                                    .unwrap()
-                                    .count
-                                    .eq(&instance.count)
-                                    .then(|| repl.push(instance))
-                                    .unwrap_or_else(|| another_replicasets.push(instance))
-                            })
-                        })
-                })
-                .unwrap_or_else(|| another_replicasets.push(instance))
-        });
-
         let mut ports = PortsVariants::None;
+        ports.or_else(hosts[0].ports);
 
-        replicasets.push(another_replicasets);
-        replicasets.into_iter().for_each(|replicaset| {
-            // Each iteration is Vec with non multiplied instances
-            // 1. multiply instance to `count()` and collect it as vector
-            // 2. add replicase for each instance if hi is replicated
-            replicaset
-                .into_iter()
-                .fold(Vec::new(), |mut acc: Vec<Vec<Instance>>, instance| {
-                    acc.extend(instance.multiply());
-                    acc
-                })
-                .into_iter()
-                .for_each(|mut multiplied_instances| {
-                    // if port already some add 1
-                    ports.up();
-                    debug!(
-                        "mutliplied: {:?}",
-                        &multiplied_instances
+        // Each iteration is Vec with non multiplied instance
+        // 1. multiply instance to `count()` and collect it as vector of vectors with Instance
+        // 2. spread across hosts
+        // 3. represent them as table with empty (dummy) cells
+        //replicaset
+        cluster
+            .instances
+            .iter()
+            .flat_map(|instance| instance.multiply())
+            .rev()
+            .fold(
+                vec![Vec::new(), Vec::new()],
+                |mut acc: Vec<Vec<Instance>>, instances| {
+                    trace!(
+                        "{:?}",
+                        instances
                             .iter()
                             .map(|ins| ins.name.as_str())
                             .collect::<Vec<&str>>()
                     );
-                    debug!("starting port {:?}", &ports);
-                    (0..hosts.len())
-                        .cycle()
-                        .scan((), |_, index| {
-                            trace!("working with host with index {}", index);
-                            multiplied_instances.pop().map(|mut instance| {
-                                instance
-                                    .is_not_dummy()
-                                    .then(|| {
-                                        ports.or_else(hosts[index].ports);
-                                        trace!(
-                                            "pushing {} to host with index {}",
-                                            instance.name,
-                                            index
-                                        );
-                                        instance.config.insert(
-                                            "advertise_uri".into(),
-                                            Value::String(format!(
-                                                "{}:{}",
-                                                hosts[index].ip.to_string(),
-                                                ports.binary_or_default()
-                                            )),
-                                        );
-                                        instance.config.insert(
-                                            "http_port".into(),
-                                            Value::String(ports.http_or_default().to_string()),
-                                        );
-                                        hosts.deref_mut()[index].instances.push(instance)
-                                    })
-                                    .or(None)
-                            })
+                    match instances.last() {
+                        Some(Instance {
+                            itype: Type::Router | Type::Storage | Type::Dummy | Type::Replica,
+                            ..
+                        }) => acc.push(instances),
+                        _ => acc[0].extend(instances),
+                    }
+                    acc
+                },
+            )
+            .into_iter()
+            .rev()
+            .for_each(|mut instances| {
+                trace!(
+                    "resulted instances: {:?}",
+                    instances
+                        .iter()
+                        .map(|instance| instance.name.as_str())
+                        .collect::<Vec<&str>>()
+                );
+                debug!("starting port {:?}", &ports);
+                // Ports should upped after
+                // 1. new instance
+                // 2. hosts loop ended
+                (0..hosts.len())
+                    .cycle()
+                    .scan((), |_, index| {
+                        trace!("working with host with index {}", index);
+                        instances.pop().map(|instance| {
+                            instance
+                                .is_not_dummy()
+                                .then(|| {
+                                    trace!(
+                                        "pushing {} to host with index {}",
+                                        instance.name,
+                                        index
+                                    );
+                                    hosts.deref_mut()[index].instances.push(instance)
+                                })
+                                .or(None)
                         })
-                        .for_each(|_| {});
+                    })
+                    .for_each(|_| {});
+            });
+        let ports_vec = (1..=hosts[0].instances.len())
+            .map(|_| {
+                let (http, binary) = (ports.http_or_default(), ports.binary_or_default());
+                ports.up();
+                (http, binary)
+            })
+            .collect::<Vec<(u16, u16)>>();
+
+        hosts.iter_mut().for_each(|flhosts| {
+            warn!("instances len: {}", flhosts.instances.len());
+            let ip = flhosts.ip.to_string();
+            flhosts
+                .instances
+                .iter_mut()
+                .enumerate()
+                .for_each(|(index, instance)| {
+                    warn!("index: {} ports_vec: {:?}", index, ports_vec);
+                    instance.config.insert(
+                        "advertise_uri".into(),
+                        Value::String(format!("{}:{}", ip, ports_vec[index].1)),
+                    );
+                    instance.config.insert(
+                        "http_port".into(),
+                        Value::String(ports_vec[index].0.to_string()),
+                    );
                 });
         });
-
-        (1..hosts.len()).for_each(|iteration| {
-            let (left, right) = hosts.split_at_mut(iteration);
-            left.last_mut()
-                .map(|left| {
-                    right.iter_mut().rev().for_each(|right| {
-                        left.instances
-                            .last()
-                            .map(|llast| {
-                                llast.itype.eq(&Type::Custom)
-                                    && right
-                                        .instances
-                                        .last()
-                                        .map(|rlast| !rlast.parent.eq(&llast.parent))
-                                        .unwrap_or_else(|| false)
-                                    && left.instances.len() > right.instances.len()
-                                    && left.instances.len() - right.instances.len() >= 2
-                            })
-                            .unwrap_or_else(|| false)
-                            .then(|| {
-                                trace!("moving instance from {} to {}", left.name(), right.name());
-                                left.instances
-                                    .pop()
-                                    .map(|instance| right.instances.push(instance))
-                                    .unwrap_or_else(|| {});
-                            })
-                            .map(|_| warn!("instance moved from left ro right"))
-                            .unwrap_or_else(|| {});
-                    });
-                })
-                .unwrap_or_else(|| {});
-        });
-
         // Add stateboard entity
         //
         // cartridge_failover_params:
@@ -208,6 +187,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         Ok(Scheme {
             hosts,
             vars: cluster.vars.clone(),
+            ports_vec,
         })
     }
 }
@@ -232,40 +212,58 @@ impl Scheme {
         let mut table = Table::new();
 
         table.set_titles(Row::new(
-            vec![Cell::new("")]
+            vec![Cell::new("ports").with_style(Attr::Bold)]
                 .into_iter()
                 .chain(
                     self.hosts
                         .deref()
                         .iter()
-                        .map(|host| Cell::new(host.name()).style_spec("b")),
+                        .map(|host| Cell::new(host.name()).with_style(Attr::Bold)),
                 )
                 .collect::<Vec<Cell>>(),
         ));
-        (0..self.hosts.max_len()).for_each(|pos| {
-            table.add_row(Row::new(
-                vec![Cell::new(format!("{}", pos).as_str())]
-                    .into_iter()
-                    .chain(self.hosts.iter().map(|host| {
-                        host.instances
-                            .get(pos)
-                            .map(|instance| match instance.itype {
-                                Type::Router => Cell::new(&instance.name).style_spec("Fb"),
-                                Type::Storage => Cell::new(&instance.name).style_spec("FG"),
-                                Type::Replica => Cell::new(&instance.name).style_spec("Fg"),
-                                _ => Cell::new(&instance.name).style_spec("Fc"),
-                            })
-                            .unwrap_or_else(|| Cell::new(" "))
-                    }))
-                    .collect::<Vec<Cell>>(),
-            ));
-        });
+
+        self.ports_vec
+            .iter()
+            .enumerate()
+            .for_each(|(pos, (http, binary))| {
+                table.add_row(Row::new(
+                    vec![Cell::new(format!("{}/{}", http, binary).as_str())]
+                        .into_iter()
+                        .chain(self.hosts.iter().map(|host| {
+                            host.instances
+                                .get(pos)
+                                .map(|instance| match instance.itype {
+                                    Type::Router => Cell::new(&instance.name)
+                                        .with_style(Attr::ForegroundColor(color::BLUE)),
+                                    Type::Storage => Cell::new(&instance.name)
+                                        .with_style(Attr::ForegroundColor(color::BRIGHT_GREEN)),
+                                    Type::Replica => Cell::new(&instance.name)
+                                        .with_style(Attr::ForegroundColor(color::GREEN)),
+                                    _ => Cell::new(&instance.name)
+                                        .with_style(Attr::ForegroundColor(color::CYAN)),
+                                })
+                                .unwrap_or_else(Cell::default)
+                        }))
+                        .collect::<Vec<Cell>>(),
+                ));
+            });
         table.printstd();
     }
 
     pub(in crate::task) fn downcast(self) -> Vec<FlatHost> {
         let Scheme { hosts, .. } = self;
         hosts.downcast()
+    }
+
+    fn instance_table(s: &str, p: &Ports) -> String {
+        let mut table = Table::new();
+        table.set_titles(Row::new(vec![Cell::new(s)]));
+        table.add_row(Row::new(vec![
+            Cell::new(&p.http.to_string()),
+            Cell::new(&p.binary.to_string()),
+        ]));
+        table.to_string()
     }
 }
 

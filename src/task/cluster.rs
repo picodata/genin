@@ -16,77 +16,78 @@ use crate::task::flv::Failover;
 use super::{Functor, MapSelf};
 
 #[derive(Default, Serialize, Deserialize)]
+/// Cluster is a `genin` specific configuration file
+/// ```rust
+/// Cluster {
+///     // Array of instances in free order
+///     // instances:
+///     // - name: "catalogue"
+///     //   type: "storage"
+///     //   count: 1
+///     //   replicas: 2
+///     //   weight: 10
+///     instance: Instaces 
+///     // Array or arrays with hosts parameters
+///     // hosts:
+///     //     - name: kavkaz
+///     //       type: region
+///     //       distance: 10
+///     //       ports:
+///     //         http: 8091
+///     //         binary: 3031
+///     //       hosts:
+///     //         - name: dc-1
+///     //           type: datacenter
+///     //           hosts:
+///     //             - name: server-1
+///     //               ip: 10.20.3.100
+///     //         - name: dc-2
+///     //           type: datacenter
+///     //           hosts:
+///     //             - name: server-1
+///     //               ip: 10.20.4.100
+///     //     - name: moscow
+///     //       type: region
+///     //       distance: 20
+///     //       hosts:
+///     //         - name: dc-3
+///     //           type: datacenter
+///     //           ports:
+///     //             http: 8091
+///     //             binary: 3031
+///     //           hosts:
+///     //             - name: server-10
+///     //               ip: 10.99.3.100
+///     hosts: Hosts,
+///     // Failover coordinator struct.
+///     // If cluster should be without failover (`failover_mode: "disabled"`)
+///     // this field will be skipped
+///     // failover:
+///     //     mode: stateful
+///     //     state_provider: stateboard
+///     //     stateboard_params:
+///     //         uri: "10.99.3.100:4001"
+///     //         password: "vG?-GG!4sxV8q5:f"
+///     failover: Failover,
+///     // Ansible cartridge vars in freedom format
+///     // vars:
+///     //     ansible_user: "admin"
+///     //     ansible_password: "'88{bvTp9Gbj<J"m"
+///     //     cartridge_bootstrap_vshard: true
+///     //     cartridge_app_name: "tarantool-cluster"
+///     //     cartridge_cluster_cookie: "tarantool-cluster-cookie"
+///     //     wait_cluster_has_no_issues_retries: 20
+///     //     instance_start_retries: 20
+///     // Although declaring wars does not allow declaring all parameters,
+///     // the most important ones will still be added during inventory generation
+///     vars: Vars,
+/// }
+/// ```
 pub(in crate::task) struct Cluster {
-    /// Array of instances in free order
-    /// ```yaml
-    /// instances:
-    ///     - name: "catalogue"
-    ///       type: "storage"
-    ///       count: 1
-    ///       replicas: 2
-    ///       weight: 10
-    /// ```
     pub(in crate::task) instances: Instances,
-    /// Array or arrays with hosts parameters
-    /// ```yaml
-    /// hosts:
-    ///     - name: kavkaz
-    ///       type: region
-    ///       distance: 10
-    ///       ports:
-    ///         http: 8091
-    ///         binary: 3031
-    ///       hosts:
-    ///         - name: dc-1
-    ///           type: datacenter
-    ///           hosts:
-    ///             - name: server-1
-    ///               ip: 10.20.3.100
-    ///         - name: dc-2
-    ///           type: datacenter
-    ///           hosts:
-    ///             - name: server-1
-    ///               ip: 10.20.4.100
-    ///     - name: moscow
-    ///       type: region
-    ///       distance: 20
-    ///       hosts:
-    ///         - name: dc-3
-    ///           type: datacenter
-    ///           ports:
-    ///             http: 8091
-    ///             binary: 3031
-    ///           hosts:
-    ///             - name: server-10
-    ///               ip: 10.99.3.100
-    /// ```
     pub(in crate::task) hosts: Hosts,
     #[serde(default)]
-    /// Failover coordinator struct.
-    /// If cluster should be without failover (`failover_mode: "disabled"`)
-    /// this field will be skipped
-    /// ```yaml
-    /// failover:
-    ///     mode: stateful
-    ///     state_provider: stateboard
-    ///     stateboard_params:
-    ///         uri: "10.99.3.100:4001"
-    ///         password: "vG?-GG!4sxV8q5:f"
-    /// ```
     pub(in crate::task) failover: Failover,
-    /// Ansible cartridge vars in freedom format
-    /// ```yaml
-    /// vars:
-    ///     ansible_user: "admin"
-    ///     ansible_password: "'88{bvTp9Gbj<J"m"
-    ///     cartridge_bootstrap_vshard: true
-    ///     cartridge_app_name: "tarantool-cluster"
-    ///     cartridge_cluster_cookie: "tarantool-cluster-cookie"
-    ///     wait_cluster_has_no_issues_retries: 20
-    ///     instance_start_retries: 20
-    /// ```
-    /// Although declaring wars does not allow declaring all parameters,
-    /// the most important ones will still be added during inventory generation
     pub(in crate::task) vars: Vars,
 }
 

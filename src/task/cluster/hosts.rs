@@ -43,6 +43,7 @@ pub(in crate::task) struct FlatHost {
     pub(in crate::task) instances: Vec<Instance>,
 }
 
+#[allow(unused)]
 impl FlatHosts {
     /// Recursively iterate over datacentres and inners.
     /// Create list of hosts and return it.
