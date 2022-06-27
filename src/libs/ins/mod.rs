@@ -111,6 +111,7 @@ impl Instance {
                 roles: self.roles.clone(),
                 config: self.config.clone(),
             })
+            .rev()
             .collect()];
         result.extend(match self.itype {
             Type::Storage => (1..=self.count)

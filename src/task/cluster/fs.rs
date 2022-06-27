@@ -134,7 +134,7 @@ fn get_path<'a>(args: &'a ArgMatches, id: &'a str) -> Option<PathBuf> {
     let hook = take_hook();
     set_hook(Box::new(|_| {}));
 
-    let present = catch_unwind(|| {
+    let present = catch_unwind(move || {
         args.is_present(id)
             .then(|| args.value_of(id).map(PathBuf::from))
             .flatten()

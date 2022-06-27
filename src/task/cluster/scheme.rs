@@ -118,14 +118,14 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
             .collect::<Vec<(u16, u16)>>();
 
         hosts.iter_mut().for_each(|flhosts| {
-            warn!("instances len: {}", flhosts.instances.len());
+            trace!("instances len: {}", flhosts.instances.len());
             let ip = flhosts.ip.to_string();
             flhosts
                 .instances
                 .iter_mut()
                 .enumerate()
                 .for_each(|(index, instance)| {
-                    warn!("index: {} ports_vec: {:?}", index, ports_vec);
+                    trace!("index: {} ports_vec: {:?}", index, ports_vec);
                     instance.config.insert(
                         "advertise_uri".into(),
                         Value::String(format!("{}:{}", ip, ports_vec[index].1)),
