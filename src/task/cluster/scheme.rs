@@ -44,6 +44,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         let mut hosts = FlatHosts::try_from(&cluster.hosts)?;
         let mut ports = PortsVariants::None;
         ports.or_else(hosts[0].ports);
+       //use std::any::type_name;
 
         // Each iteration is Vec with non multiplied instance
         // 1. multiply instance to `count()` and collect it as vector of vectors with Instance
@@ -54,10 +55,9 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
             .instances
             .iter()
             .flat_map(|instance| instance.multiply())
-            .rev()
             .fold(
                 vec![Vec::new(), Vec::new()],
-                |mut acc: Vec<Vec<Instance>>, instances| {
+                |mut acc: Vec<Vec<Instance>>, mut instances| {
                     trace!(
                         "{:?}",
                         instances
@@ -65,18 +65,30 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                             .map(|ins| ins.name.as_str())
                             .collect::<Vec<&str>>()
                     );
+                   
                     match instances.last() {
                         Some(Instance {
-                            itype: Type::Router | Type::Storage | Type::Dummy | Type::Replica,
+                            itype: Type::Router | Type::Storage | Type::Replica,
                             ..
-                        }) => acc.push(instances),
-                        _ => acc[0].extend(instances),
+                        }) => {
+                            instances.reverse();
+                            acc.push(instances)
+                        },
+                        Some(Instance {
+                            itype: Type::Dummy ,
+                            ..
+                        }) => {
+                            acc.push(instances)
+                        },
+                        _ => {
+                            instances.reverse();
+                            acc[0].extend(instances)
+                        }
                     }
                     acc
                 },
             )
             .into_iter()
-            .rev()
             .for_each(|mut instances| {
                 trace!(
                     "resulted instances: {:?}",
