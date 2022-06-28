@@ -55,6 +55,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
             .instances
             .iter()
             .flat_map(|instance| instance.multiply())
+            .rev()
             .fold(
                 vec![Vec::new(), Vec::new()],
                 |mut acc: Vec<Vec<Instance>>, mut instances| {
@@ -89,6 +90,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                 },
             )
             .into_iter()
+            .rev()
             .for_each(|mut instances| {
                 trace!(
                     "resulted instances: {:?}",
