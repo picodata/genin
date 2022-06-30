@@ -38,7 +38,28 @@ impl Default for Vars {
     }
 }
 
+impl Vars {
+    pub fn get_user(&self) -> String {
+        self.ansible_user.clone()
+    }
+
+    pub fn get_pass(&self) -> String {
+        self.ansible_password.clone()
+    }
+
+    pub fn get_app_name(&self) -> String {
+        self.cartridge_app_name.clone()
+    }
+
+    pub fn get_cookie(&self) -> String {
+        self.cartridge_cluster_cookie.clone()
+    }
+
+    pub fn get_another(&self) -> Value {
+        self.another_fields.clone()
+    }
+}
+
 pub fn change_me() -> String {
     "CHANGE_ME".into()
 }
-
