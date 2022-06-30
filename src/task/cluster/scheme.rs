@@ -291,13 +291,4 @@ impl Scheme {
 }
 
 #[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_spreading_to_servers() {
-        let _cluster = Cluster::default();
-
-        //assert_eq!(Scheme::try_from(&cluster).unwrap(), scheme);
-    }
-}
+mod test;
