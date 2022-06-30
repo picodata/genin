@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_yaml::Value;
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone)]
 /// Inventory vars with hardcoded important fields
@@ -26,6 +27,26 @@ pub struct Vars {
     another_fields: Value,
 }
 
+enum VarsField {
+    AnsibleUser,
+    AnsiblePassword,
+    CartridgeAppName,
+    CartridgeClusterCookie,
+    AnotherFields
+}
+
+impl VarsField {
+    fn as_str(&self) -> String {
+        match self {
+            VarsField::AnsibleUser => "ansible_user".to_string(),
+            VarsField::AnsiblePassword => "ansible_password".to_string(),
+            VarsField::CartridgeAppName => "cartridge_app_name".to_string(),
+            VarsField::CartridgeClusterCookie => "cartridge_cluster_cookie".to_string(),
+            VarsField::AnotherFields => "another_fields".to_string(),
+        }
+    }
+}
+
 impl Default for Vars {
     fn default() -> Self {
         Self {
@@ -39,24 +60,24 @@ impl Default for Vars {
 }
 
 impl Vars {
-    pub fn get_user(&self) -> String {
-        self.ansible_user.clone()
-    }
+    pub fn get_hashmap(&self) -> HashMap<String, Value> {
+        let mut vars: HashMap<String, Value> = HashMap::from([
+            (VarsField::AnsibleUser.as_str(), Value::String(self.ansible_user.clone())),
+            (VarsField::AnsiblePassword.as_str(), Value::String(self.ansible_password.clone())),
+            (VarsField::CartridgeAppName.as_str(), Value::String(self.cartridge_app_name.clone())),
+            (VarsField::CartridgeClusterCookie.as_str(), Value::String(self.cartridge_cluster_cookie.clone()))
+        ]);
 
-    pub fn get_pass(&self) -> String {
-        self.ansible_password.clone()
-    }
-
-    pub fn get_app_name(&self) -> String {
-        self.cartridge_app_name.clone()
-    }
-
-    pub fn get_cookie(&self) -> String {
-        self.cartridge_cluster_cookie.clone()
-    }
-
-    pub fn get_another(&self) -> Value {
-        self.another_fields.clone()
+        self.another_fields
+            .clone()
+            .as_mapping()
+            .unwrap()
+            .into_iter()
+            .for_each( |var| {
+                vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
+            });
+        
+        vars
     }
 }
 

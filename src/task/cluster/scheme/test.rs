@@ -9,7 +9,7 @@ fn test_spreading_to_servers() {
 #[test]
 fn test_etcd2_failover_from_yaml() {
     let source = "test/resources/test-etcd2_from_yaml.yaml";
-    let output = "test/tmp_outputs/test-etcd2_from_yaml_out.yaml";
+    let output = "test/outputs/test-etcd2_from_yaml_out.yaml";
 
     let cluster = Cluster::try_from(
         std::fs::read(source)
@@ -52,7 +52,7 @@ fn test_etcd2_failover_from_yaml() {
 #[test]
 fn test_stateboard_failover_from_yaml() {
     let source = "test/resources/test-stateboard_from_yaml.yaml";
-    let output = "test/tmp_outputs/test-stateboard_from_yaml_out.yaml";
+    let output = "test/outputs/test-stateboard_from_yaml_out.yaml";
 
     let cluster = Cluster::try_from(
         std::fs::read(source)

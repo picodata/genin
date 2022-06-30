@@ -177,23 +177,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     });
             });
 
-        let mut vars: HashMap<String, Value> = HashMap::from([
-            ("ansible_user".to_string(), Value::String(cluster.vars.get_user())),
-            ("ansible_password".to_string(), Value::String(cluster.vars.get_pass())),
-            ("cartridge_app_name".to_string(), Value::String(cluster.vars.get_app_name())),
-            ("cartridge_cluster_cookie".to_string(), Value::String(cluster.vars.get_cookie()))
-        ]);
-        
-        cluster
-            .vars
-            .get_another()
-            .as_mapping()
-            .unwrap()
-            .into_iter()
-            .for_each( |var| {
-                vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
-            });
-        
+        let mut vars: HashMap<String, Value> = cluster.vars.get_hashmap();
 
         vars.insert(
             "cartridge_failover_params".to_string(), 
