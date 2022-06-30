@@ -3,13 +3,12 @@ use std::ops::{Deref, DerefMut};
 use genin::libs::{
     error::{ConfigError, TaskError},
     ins::{is_false, Instance, Role, Type},
-    vrs::Vars,
 };
 use indexmap::IndexMap;
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-
+use std::collections::HashMap;
 use super::cluster::scheme::Scheme;
 
 #[derive(Serialize, Deserialize)]
@@ -128,7 +127,7 @@ impl TryFrom<Scheme> for Inventory {
 
 #[derive(Serialize, Deserialize)]
 pub(in crate::task) struct InventoryParts {
-    vars: Vars,
+    vars: HashMap<String, Value>,
     hosts: IndexMap<String, InventoryHost>,
     children: IndexMap<String, InventoryReplicaset>,
 }

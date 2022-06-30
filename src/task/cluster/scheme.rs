@@ -4,11 +4,11 @@ use genin::libs::{
     error::TaskError,
     hst::{Ports, PortsVariants},
     ins::{Instance, Role, Type},
-    vrs::Vars,
 };
 use log::{debug, info, trace, warn};
 use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
+use std::collections::HashMap;
 
 use crate::task::cluster::hosts::FlatHosts;
 
@@ -16,7 +16,7 @@ use super::{hosts::FlatHost, Cluster};
 
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,
-    pub(in crate::task) vars: Vars,
+    pub(in crate::task) vars: HashMap<String, Value>,
     pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
 
@@ -177,6 +177,29 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     });
             });
 
+        let mut vars: HashMap<String, Value> = HashMap::from([
+            ("ansible_user".to_string(), Value::String(cluster.vars.get_user())),
+            ("ansible_password".to_string(), Value::String(cluster.vars.get_pass())),
+            ("cartridge_app_name".to_string(), Value::String(cluster.vars.get_app_name())),
+            ("cartridge_cluster_cookie".to_string(), Value::String(cluster.vars.get_cookie()))
+        ]);
+        
+        cluster
+            .vars
+            .get_another()
+            .as_mapping()
+            .unwrap()
+            .into_iter()
+            .for_each( |var| {
+                vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
+            });
+        
+
+        vars.insert(
+            "cartridge_failover_params".to_string(), 
+            cluster.failover.clone().to_mapping()
+        );
+        
         hosts.iter().for_each(|host| {
             trace!("Host: {}", host.name());
             host.instances.iter().for_each(|instance| {
@@ -186,7 +209,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
 
         Ok(Scheme {
             hosts,
-            vars: cluster.vars.clone(),
+            vars,
             ports_vec,
         })
     }
