@@ -200,20 +200,27 @@ impl Failover {
             },
             _ => {
                 let mut flv = serde_yaml::Mapping::new();
-                flv.insert(
-                    Value::String("mode".to_string()),
-                    Value::String(format!("{:?}", self.mode.clone()).to_lowercase())
-                );
-                
-                flv.insert(
-                    Value::String("state_provider".to_string()),
-                    Value::String(format!("{:?}", self.state_provider.clone()).to_lowercase())
-                );
-                
-                //get tuple("stateboard_params" or "etcd2_params", Value::Mapping)
-                let params = self.failover_variants.clone().to_mapping();
-                flv.insert(params.0, params.1);
-                 
+                if self.failover_variants.is_disabled() {
+                    flv.insert(
+                        Value::String("mode".to_string()),
+                        Value::String(format!("{:?}", Mode::Disabled).to_lowercase())
+                    );
+                } else {
+                    flv.insert(
+                        Value::String("mode".to_string()),
+                        Value::String(format!("{:?}", self.mode.clone()).to_lowercase())
+                    );
+                    
+                    flv.insert(
+                        Value::String("state_provider".to_string()),
+                        Value::String(format!("{:?}", self.state_provider.clone()).to_lowercase())
+                    );
+                    
+                    //get tuple("stateboard_params" or "etcd2_params", Value::Mapping)
+                    let params = self.failover_variants.clone().to_mapping();
+                    flv.insert(params.0, params.1);
+                }
+
                 Value::Mapping(flv)
             }
        }

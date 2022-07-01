@@ -67,15 +67,16 @@ impl Vars {
             (VarsField::CartridgeAppName.as_str(), Value::String(self.cartridge_app_name.clone())),
             (VarsField::CartridgeClusterCookie.as_str(), Value::String(self.cartridge_cluster_cookie.clone()))
         ]);
-
-        self.another_fields
-            .clone()
-            .as_mapping()
-            .unwrap()
-            .into_iter()
-            .for_each( |var| {
-                vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
-            });
+        
+        match self.another_fields.clone().as_mapping() {
+            Some(fields_mapping) => {
+                fields_mapping.into_iter()
+                    .for_each( |var| {
+                        vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
+                    });
+            },
+            None => {}
+        }
         
         vars
     }
