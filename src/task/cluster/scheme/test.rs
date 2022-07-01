@@ -1,6 +1,20 @@
 use super::*;
 
+use std::sync::Once;
+
+static INIT: Once = Once::new();
+
+pub fn initialize() {
+    INIT.call_once(|| {
+        match std::path::Path::new("test/outputs").exists() {
+            false => { std::fs::create_dir("test/outputs").unwrap(); },
+            true => {},
+        };
+    });
+}
+
 fn test_spreading_to_servers() {
+    initialize();
     let _cluster = Cluster::default();
 
     //assert_eq!(Scheme::try_from(&cluster).unwrap(), scheme);
@@ -8,6 +22,7 @@ fn test_spreading_to_servers() {
 
 #[test]
 fn test_etcd2_failover_from_yaml() {
+    initialize();
     let source = "test/resources/test-etcd2_from_yaml.yaml";
     let output = "test/outputs/test-etcd2_from_yaml_out.yaml";
 
@@ -51,6 +66,7 @@ fn test_etcd2_failover_from_yaml() {
 
 #[test]
 fn test_stateboard_failover_from_yaml() {
+    initialize();
     let source = "test/resources/test-stateboard_from_yaml.yaml";
     let output = "test/outputs/test-stateboard_from_yaml_out.yaml";
 
