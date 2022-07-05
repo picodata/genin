@@ -126,8 +126,11 @@ impl<'de> Deserialize<'de> for Failover {
 
 #[derive(Serialize, PartialEq, Debug, Clone)]
 pub(in crate::task) enum Mode {
+    #[serde(rename = "stateful")]
     Stateful,
+    #[serde(rename = "eventual")]
     Eventual,
+    #[serde(rename = "disabled")]
     Disabled,
 }
 
