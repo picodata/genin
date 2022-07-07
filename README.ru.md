@@ -386,7 +386,7 @@ rustup override set nightly
 получившийся бинарный файл файл.
 ```shell
 cargo +nightly build --release
-cargo +nightly install --path .
+install -m 001 target/release/genin /usr/local/bin/
 ```
 
 > **Note:** Возможно при сборке из исходников, вам понадобятся какие либо 

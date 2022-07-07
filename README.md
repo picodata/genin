@@ -341,7 +341,7 @@ After installing all required tools it is time to build and install `genin`.
 cd genin
 rustup override set nightly
 cargo +nightly build --release
-cargo +nightly install --path .
+install -m 001 target/release/genin /usr/local/bin/
 ```
 
 > **Note:** Do not forget to install build tools and dependencies before building `genin`.
