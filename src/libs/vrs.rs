@@ -1,6 +1,6 @@
+use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
 use serde_yaml::Value;
-use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone)]
 /// Inventory vars with hardcoded important fields
@@ -27,6 +27,7 @@ pub struct Vars {
     another_fields: Value,
 }
 
+#[allow(unused)]
 enum VarsField {
     AnsibleUser,
     AnsiblePassword,
@@ -60,8 +61,8 @@ impl Default for Vars {
 }
 
 impl Vars {
-    pub fn get_hashmap(&self) -> HashMap<String, Value> {
-        let mut vars: HashMap<String, Value> = HashMap::from([
+    pub fn get_hashmap(&self) -> IndexMap<String, Value> {
+        let mut vars: IndexMap<String, Value> = IndexMap::from([
             (VarsField::AnsibleUser.as_str(), Value::String(self.ansible_user.clone())),
             (VarsField::AnsiblePassword.as_str(), Value::String(self.ansible_password.clone())),
             (VarsField::CartridgeAppName.as_str(), Value::String(self.cartridge_app_name.clone())),

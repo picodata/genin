@@ -362,6 +362,14 @@ genin build --ansible-user dmitry.travyan --ansible-password ddfqd
 genin build --cartridge-cluster-cookie R68sJfV4C2hLrWC3
 ```
 
+Как было сказано ранее, по умолчанию `Genin` будет создавать копии файлов, если по
+указанному пути уже существует целевой файл. Для того что бы принудительно 
+перезаписать целевой файл, существует флаг `--force` (или короткий `-f`).
+```shell
+genin build -o my-cluster.yml
+genin build -o my-cluster.yml --force
+```
+
 ## Сборка из исходников
 
 Первым делом устанавливаем язык программироования `Rust`.

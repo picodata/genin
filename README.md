@@ -316,11 +316,19 @@ genin init --failover-mode eventual
 genin init --failover-mode stateful --failover-state-provider etcd2
 ```
 
-You can also provide personal information or credentials using these options, such as user and password for the
-server where the cluster is being deployed, or the cluster cookie.
+You can also provide personal information or credentials using these options, such as user and 
+password for the server where the cluster is being deployed, or the cluster cookie.
 ```shell
 genin build --ansible-user dmitry.travyan --ansible-password ddfqd
 genin build --cartridge-cluster-cookie R68sJfV4C2hLrWC3
+```
+
+As we have known from earlier paragraphs, by default `Genin` will create the copy of the file 
+if the target file already exists in the specified path. Use the`--force` flag (or short `-f`) 
+to explicitly overwrite the target.
+```shell
+genin build -o my-cluster.yml
+genin build -o my-cluster.yml --force
 ```
 
 ## Building from sources

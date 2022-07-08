@@ -5,10 +5,10 @@ use genin::libs::{
     hst::{Ports, PortsVariants},
     ins::{Instance, Role, Type},
 };
-use log::{debug, info, trace, warn};
+use indexmap::IndexMap;
+use log::{debug, info, trace};
 use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
-use std::collections::HashMap;
 
 use crate::task::cluster::hosts::FlatHosts;
 
@@ -16,7 +16,7 @@ use super::{hosts::FlatHost, Cluster};
 
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,
-    pub(in crate::task) vars: HashMap<String, Value>,
+    pub(in crate::task) vars: IndexMap<String, Value>,
     pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
 
@@ -109,7 +109,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     })
                     .for_each(|_| {});
             });
-        let ports_vec = (1..=hosts[0].instances.len())
+        let ports_vec = (1..=hosts.max_len())
             .map(|_| {
                 let (http, binary) = (ports.http_or_default(), ports.binary_or_default());
                 ports.up();
@@ -177,7 +177,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     });
             });
 
-        let mut vars: HashMap<String, Value> = cluster.vars.get_hashmap();
+        let mut vars: IndexMap<String, Value> = cluster.vars.get_hashmap();
 
         vars.insert(
             "cartridge_failover_params".to_string(), 

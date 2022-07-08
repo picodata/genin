@@ -13,6 +13,7 @@ pub fn initialize() {
     });
 }
 
+#[allow(unused)]
 fn test_spreading_to_servers() {
     initialize();
     let _cluster = Cluster::default();
