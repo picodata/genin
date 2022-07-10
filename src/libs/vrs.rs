@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use serde::{Serialize, Deserialize};
 use serde_yaml::Value;
 
@@ -26,6 +27,27 @@ pub struct Vars {
     another_fields: Value,
 }
 
+#[allow(unused)]
+enum VarsField {
+    AnsibleUser,
+    AnsiblePassword,
+    CartridgeAppName,
+    CartridgeClusterCookie,
+    AnotherFields
+}
+
+impl VarsField {
+    fn as_str(&self) -> String {
+        match self {
+            VarsField::AnsibleUser => "ansible_user".to_string(),
+            VarsField::AnsiblePassword => "ansible_password".to_string(),
+            VarsField::CartridgeAppName => "cartridge_app_name".to_string(),
+            VarsField::CartridgeClusterCookie => "cartridge_cluster_cookie".to_string(),
+            VarsField::AnotherFields => "another_fields".to_string(),
+        }
+    }
+}
+
 impl Default for Vars {
     fn default() -> Self {
         Self {
@@ -38,7 +60,29 @@ impl Default for Vars {
     }
 }
 
+impl Vars {
+    pub fn get_hashmap(&self) -> IndexMap<String, Value> {
+        let mut vars: IndexMap<String, Value> = IndexMap::from([
+            (VarsField::AnsibleUser.as_str(), Value::String(self.ansible_user.clone())),
+            (VarsField::AnsiblePassword.as_str(), Value::String(self.ansible_password.clone())),
+            (VarsField::CartridgeAppName.as_str(), Value::String(self.cartridge_app_name.clone())),
+            (VarsField::CartridgeClusterCookie.as_str(), Value::String(self.cartridge_cluster_cookie.clone()))
+        ]);
+        
+        match self.another_fields.clone().as_mapping() {
+            Some(fields_mapping) => {
+                fields_mapping.into_iter()
+                    .for_each( |var| {
+                        vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
+                    });
+            },
+            None => {}
+        }
+        
+        vars
+    }
+}
+
 pub fn change_me() -> String {
     "CHANGE_ME".into()
 }
-

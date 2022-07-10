@@ -65,3 +65,4 @@ vars:
   ansible_password: ansible
   cartridge_app_name: genin-app
   cartridge_cluster_cookie: genin-app-secret-cookie
+

@@ -8,33 +8,18 @@ instances:
     roles:
       - logger
       - notifier
-  - name: op-t
-    type: custom
-    count: 5
-    replicas: 0
-    weight: 10
-    roles:
-      - output_processor
-      - task_runner
   - name: c-ip
     type: custom
-    count: 5
+    count: 2
     replicas: 0
     weight: 10
     roles:
       - connector
       - input_processor
       - failover-coordinator
-  - name: sch
-    type: custom
-    count: 2
-    replicas: 0
-    weight: 10
-    roles:
-      - scheduler
   - name: storage
     type: storage
-    count: 3
+    count: 2
     replicas: 2
     weight: 10
     roles:
@@ -65,5 +50,4 @@ vars:
   ansible_password: vagrant
   cartridge_app_name: tdg
   cartridge_cluster_cookie: myapp-cookie
-  cartridge_package_path: ./tdg-1.7.17-0-g2a5b4bd18.rpm```
 

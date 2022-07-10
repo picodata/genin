@@ -4,9 +4,9 @@ use genin::libs::{
     error::TaskError,
     hst::{Ports, PortsVariants},
     ins::{Instance, Role, Type},
-    vrs::Vars,
 };
-use log::{debug, info, trace, warn};
+use indexmap::IndexMap;
+use log::{debug, info, trace};
 use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
 
@@ -16,7 +16,7 @@ use super::{hosts::FlatHost, Cluster};
 
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,
-    pub(in crate::task) vars: Vars,
+    pub(in crate::task) vars: IndexMap<String, Value>,
     pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
 
@@ -109,7 +109,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     })
                     .for_each(|_| {});
             });
-        let ports_vec = (1..=hosts[0].instances.len())
+        let ports_vec = (1..=hosts.max_len())
             .map(|_| {
                 let (http, binary) = (ports.http_or_default(), ports.binary_or_default());
                 ports.up();
@@ -177,6 +177,13 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     });
             });
 
+        let mut vars: IndexMap<String, Value> = cluster.vars.get_hashmap();
+
+        vars.insert(
+            "cartridge_failover_params".to_string(), 
+            cluster.failover.clone().to_mapping()
+        );
+        
         hosts.iter().for_each(|host| {
             trace!("Host: {}", host.name());
             host.instances.iter().for_each(|instance| {
@@ -186,7 +193,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
 
         Ok(Scheme {
             hosts,
-            vars: cluster.vars.clone(),
+            vars,
             ports_vec,
         })
     }
@@ -268,13 +275,4 @@ impl Scheme {
 }
 
 #[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_spreading_to_servers() {
-        let _cluster = Cluster::default();
-
-        //assert_eq!(Scheme::try_from(&cluster).unwrap(), scheme);
-    }
-}
+mod test;
