@@ -84,7 +84,7 @@ jobs:
         with:
           name: x86_64-apple-darwin.zip
           path: .
-      - name: Build rpm
+      - name: Build binary
         run: |
           tar -czvf genin-${{ env.VERSION }}-x86_64-macosx.tar.gz genin
           curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-macosx.tar.gz ${{ env.RAW_REGISTRY }}/genin/osx/genin-${{ env.VERSION }}-x86_64-macosx.tar.gz
@@ -107,11 +107,23 @@ jobs:
           path: ./x86_64-unknown-linux-musl/
       - name: Build rpm
         run: | 
-          yum install -y rpm-build rpm-devel rpmdevtools make
+          yum install -y rpm-build rpm-devel rpmdevtools make openssh-clients rpm-sign
           sed -ie "s/\${VERSION}/${VERSION}/g" build/el7/genin.x86_64.spec
           rpmdev-setuptree
           rpmbuild -bb build/el7/genin.x86_64.spec
+      - name: Sign rpm package
+        run: |
+          echo -n "${{ secrets.GPG_KEY_KDY }}" | base64 --decode | gpg  --homedir ${GITHUB_WORKSPACE} --import
+          cp build/.rpmmacros ~/.rpmmacros
+          cat /dev/null | setsid rpm --addsign /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el7.x86_64.rpm
+      - name: Upload rpm to binary.picodata.io
+        run: |
           curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el7.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm
+      - name: Archive rpm
+        uses: actions/upload-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}-1.el7.x86_64.rpm
+          path: /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el7.x86_64.rpm
 
   centos8:
     name: Build centos 8 prm
@@ -131,11 +143,23 @@ jobs:
           path: ./x86_64-unknown-linux-musl/
       - name: Build rpm
         run: |
-          yum install -y rpm-build rpm-devel rpmdevtools make
+          yum install -y rpm-build rpm-devel rpmdevtools make openssh-clients rpm-sign
           sed -ie "s/\${VERSION}/${VERSION}/g" build/el8/genin.x86_64.spec
           rpmdev-setuptree
           rpmbuild -bb build/el8/genin.x86_64.spec
+      - name: Sign rpm package
+        run: |
+          echo -n "${{ secrets.GPG_KEY_KDY }}" | base64 --decode | gpg  --homedir ${GITHUB_WORKSPACE} --import
+          cp build/.rpmmacros ~/.rpmmacros
+          cat /dev/null | setsid rpm --addsign /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
+      - name: Upload rpm to binary.picodata.io
+        run: |
           curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm ${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
+      - name: Archive rpm
+        uses: actions/upload-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}-1.el8.x86_64.rpm
+          path: /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
 
   debian:
     name: Build deb package
@@ -161,10 +185,58 @@ jobs:
           sed -ie "s/\${VERSION}/${{ env.VERSION }}/g" build/control
           cp build/control genin-${{ env.VERSION }}.amd64/DEBIAN/ ; dpkg-deb --build --root-owner-group genin-${{ env.VERSION }}.amd64
           curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}.amd64.deb ${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb
+      - name: Archive rpm
+        uses: actions/upload-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}.amd64.deb
+          path: genin-${{ env.VERSION }}.amd64.deb
+
+  publish:
+    name: Publish to download.picodata.io
+    needs: [ build, centos7, centos8, debian ]
+    runs-on: [ self-hosted, genin ]
+    env:
+      VERSION: ${{ needs.build.outputs.app_version }}
+    steps:
+      - name: Download centos7 rpm
+        uses: actions/download-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}-1.el7.x86_64.rpm
+          path: ./centos7/
+      - name: Download centos8 rpm
+        uses: actions/download-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}-1.el8.x86_64.rpm
+          path: ./centos8/
+      - name: Download deb package
+        uses: actions/download-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}.amd64.deb
+          path: ./debian/
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+          name: id_rsa
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+          if_key_exists: replace
+      - name: Upload centos7 rpm to picodata
+        run: |
+          scp -o stricthostkeychecking=no centos7/genin-${{ env.VERSION }}-1.el7.x86_64.rpm  ansible@94.26.239.246:/data/nginx/www/packrepo/tarantool-picodata/el/7/x86_64/
+          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "cd /data/nginx/www/packrepo/tarantool-picodata/el/7/ && createrepo --update x86_64 && gpg --no-tty --yes -u kdy@picodata.io --detach-sign --armor x86_64/repodata/repomd.xml"
+      - name: Upload centos8 rpm to picodata
+        run: |
+          scp -o stricthostkeychecking=no centos8/genin-${{ env.VERSION }}-1.el8.x86_64.rpm  ansible@94.26.239.246:/data/nginx/www/packrepo/tarantool-picodata/el/8/x86_64/
+          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "cd /data/nginx/www/packrepo/tarantool-picodata/el/8/ && createrepo --update x86_64 && gpg --no-tty --yes -u kdy@picodata.io --detach-sign --armor x86_64/repodata/repomd.xml"
+      - name: Upload deb to picodata
+        run: |
+          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "mkdir -p ~/.deb"
+          scp -o stricthostkeychecking=no debian/genin-${{ env.VERSION }}.amd64.deb ansible@94.26.239.246:.deb/
+          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "reprepro -b /data/nginx/www/packrepo/tarantool-picodata/ubuntu/ -C main includedeb focal ~/.deb/genin-${{ env.VERSION }}.amd64.deb; rm ~/.deb/genin-${{ env.VERSION }}.amd64.deb"
 
   release:
     name: Create new release
-    needs: [build, centos7, centos8, apple, musl-bin, debian]
+    needs: [build, centos7, centos8, apple, musl-bin, debian, publish]
     runs-on: [ self-hosted, genin ]
     steps:
       - name: Create genin Release
@@ -195,3 +267,4 @@ jobs:
 
             ### Debian x86_64
             [genin-${{ env.VERSION }}.amd64.deb](${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb)
+
