@@ -6,7 +6,7 @@ use std::{
 };
 
 use clap::ArgMatches;
-use genin::libs::error::{ConfigError, InternalError, TaskError};
+use crate::error::{ConfigError, InternalError, TaskError};
 use log::{debug, warn, trace};
 
 use crate::task::MapSelf;

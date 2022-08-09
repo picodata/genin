@@ -1,6 +1,7 @@
 #![feature(generic_associated_types)]
 
 mod task;
+mod error;
 
 // Application params
 const APP_NAME: &str = env!("CARGO_PKG_NAME");

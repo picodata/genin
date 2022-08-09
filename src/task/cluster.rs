@@ -3,15 +3,13 @@ pub(in crate::task) mod hosts;
 pub(in crate::task) mod scheme;
 
 use clap::ArgMatches;
-use genin::libs::{
-    error::{ConfigError, TaskError},
-    hst::Hosts,
-    ins::Instances,
-    vrs::Vars,
-};
+use crate::task::vrs::Vars;
 use serde::{Deserialize, Serialize};
+use crate::error::{ConfigError, TaskError};
 
 use crate::task::flv::Failover;
+use crate::task::hst::Hosts;
+use crate::task::ins::Instances;
 
 use super::{Functor, MapSelf};
 

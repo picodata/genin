@@ -1,18 +1,16 @@
 use std::ops::{Deref, DerefMut};
 
-use genin::libs::{
-    error::TaskError,
-    hst::{Ports, PortsVariants},
-    ins::{Instance, Role, Type},
-};
+use crate::error::TaskError;
 use indexmap::IndexMap;
 use log::{debug, info, trace};
-use prettytable::{color, Attr, Cell, Row, Table};
+use prettytable::{Attr, Cell, color, Row, Table};
 use serde_yaml::Value;
 
 use crate::task::cluster::hosts::FlatHosts;
+use crate::task::hst::{Ports, PortsVariants};
+use crate::task::ins::{Instance, Role, Type};
 
-use super::{hosts::FlatHost, Cluster};
+use super::{Cluster, hosts::FlatHost};
 
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,

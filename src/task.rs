@@ -2,6 +2,9 @@ mod args;
 mod cluster;
 mod inv;
 mod flv;
+pub mod ins;
+pub mod hst;
+pub mod vrs;
 
 use crate::task::{
     cluster::{
@@ -11,7 +14,7 @@ use crate::task::{
     },
     inv::Inventory,
 };
-use genin::libs::error::{CommandLineError, ConfigError, TaskError};
+use crate::error::{CommandLineError, ConfigError, TaskError};
 use log::info;
 
 use self::cluster::{Cluster, fs::FsInteraction};

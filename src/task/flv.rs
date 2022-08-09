@@ -5,7 +5,7 @@ use log::{error, trace, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use serde_yaml::Value;
 
-use genin::libs::error::{CommandLineError, ConfigError, InternalError, TaskError};
+use crate::error::{CommandLineError, ConfigError, InternalError, TaskError};
 
 
 #[derive(Serialize, Clone, Debug)]

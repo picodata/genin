@@ -1,4 +1,4 @@
-use genin::libs::ins::Type;
+use crate::task::ins::Type;
 
 use super::*;
 
