@@ -24,8 +24,8 @@ fn test_spreading_to_servers() {
 #[test]
 fn test_etcd2_failover_from_yaml() {
     initialize();
-    let source = "test/resources/test-etcd2_from_yaml.yaml";
-    let output = "test/outputs/test-etcd2_from_yaml_out.yaml";
+    let source = "test/resources/test-etcd2-cluster.genin.yaml";
+    let output = "test/outputs/test-etcd2-inventory.yaml";
 
     let cluster = Cluster::try_from(
         std::fs::read(source)

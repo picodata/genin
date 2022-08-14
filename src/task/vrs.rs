@@ -23,6 +23,10 @@ pub struct Vars {
     cartridge_app_name: String,
     #[serde(default = "change_me")]
     cartridge_cluster_cookie: String,
+    #[serde(default = "change_me")]
+    cartridge_package_path: String,
+    #[serde(default = "default_true")]
+    cartridge_bootstrap_vshard: bool,
     #[serde(flatten, skip_serializing_if = "Value::is_null", default)]
     another_fields: Value,
 }
@@ -33,6 +37,7 @@ enum VarsField {
     AnsiblePassword,
     CartridgeAppName,
     CartridgeClusterCookie,
+    CartridgePackagePath,
     AnotherFields
 }
 
@@ -43,6 +48,7 @@ impl VarsField {
             VarsField::AnsiblePassword => "ansible_password".to_string(),
             VarsField::CartridgeAppName => "cartridge_app_name".to_string(),
             VarsField::CartridgeClusterCookie => "cartridge_cluster_cookie".to_string(),
+            VarsField::CartridgePackagePath => "cartridge_package_path".to_string(),
             VarsField::AnotherFields => "another_fields".to_string(),
         }
     }
@@ -55,6 +61,8 @@ impl Default for Vars {
             ansible_password: "change_me".into(),
             cartridge_app_name: "myapp".into(),
             cartridge_cluster_cookie: "myapp-cookie".into(),
+            cartridge_package_path: "/tmp/myapp.rpm".into(),
+            cartridge_bootstrap_vshard: true,
             another_fields: Value::Null,
         }
     }
@@ -85,4 +93,8 @@ impl Vars {
 
 pub fn change_me() -> String {
     "CHANGE_ME".into()
+}
+
+pub fn default_true() -> bool {
+    true
 }

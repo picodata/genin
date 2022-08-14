@@ -67,7 +67,11 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.11".parse().unwrap()),
+                    ip: IP::Server(
+                        "192.168.16.11"
+                            .parse()
+                            .expect("Error then parsing default ip address"),
+                    ),
                     hosts: HostsVariants::None,
                 },
                 Host {
@@ -75,7 +79,11 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.12".parse().unwrap()),
+                    ip: IP::Server(
+                        "192.168.16.12"
+                            .parse()
+                            .expect("Error then parsing default ip address"),
+                    ),
                     hosts: HostsVariants::None,
                 },
             ])),
@@ -177,7 +185,7 @@ impl PortsVariants {
             p.binary += 1;
         }
     }
-    
+
     /// if port varinants `None` init them as default
     pub fn or_else(&mut self, ports: Ports) {
         if let PortsVariants::None = self {
@@ -210,11 +218,12 @@ impl Default for Ports {
     fn default() -> Self {
         Self {
             http: 8081,
-            binary: 3031,
+            binary: 3301,
         }
     }
 }
 
+#[allow(unused)]
 impl Ports {
     pub fn up(&mut self) {
         self.binary += 1;
@@ -280,3 +289,6 @@ impl HostsVariants {
 pub fn is_null(u: &usize) -> bool {
     matches!(u, 0)
 }
+
+#[cfg(test)]
+mod test;
