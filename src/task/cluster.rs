@@ -2,6 +2,7 @@ pub(in crate::task) mod fd;
 pub(in crate::task) mod fs;
 pub(in crate::task) mod hst;
 pub(in crate::task) mod ins;
+pub mod name;
 
 use clap::ArgMatches;
 use indexmap::IndexMap;
@@ -13,12 +14,14 @@ use std::cmp::Ordering;
 use std::fmt::Display;
 use std::net::IpAddr;
 
-use crate::error::GeninError;
+use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::hst::v1::Host;
 use crate::task::cluster::hst::v2::{HostV2, HostV2Config};
-use crate::task::cluster::ins::{v2::Replicaset, Name, Role, Type};
+use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config};
+use crate::task::cluster::ins::{v2::Replicaset, Role, Type};
+use crate::task::cluster::name::Name;
 use crate::task::flv::Failover;
-use crate::task::inventory::Inventory;
+use crate::task::inventory::{Child, HostVars, Inventory};
 use crate::task::vars::Vars;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -130,30 +133,27 @@ impl Default for Cluster {
                 replicasets_count: Some(1),
                 replication_factor: None,
                 weight: None,
-                zone: None,
                 failure_domains: Vec::new(),
                 roles: vec![Role::router(), Role::failover_coordinator()],
-                config: HostV2Config::default(),
+                config: InstanceV2Config::default(),
             },
             Replicaset {
                 name: Name::from("storage").with_index(1),
                 replicasets_count: Some(2),
                 replication_factor: Some(2),
                 weight: None,
-                zone: None,
                 failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
-                config: HostV2Config::default(),
+                config: InstanceV2Config::default(),
             },
             Replicaset {
                 name: Name::from("storage").with_index(2),
                 replicasets_count: Some(2),
                 replication_factor: Some(2),
                 weight: None,
-                zone: None,
                 failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
-                config: HostV2Config::default(),
+                config: InstanceV2Config::default(),
             },
         ];
         let mut host = HostV2::from("cluster")
@@ -176,11 +176,25 @@ impl Default for Cluster {
                     .flat_map(|replicaset| replicaset.instances())
                     .collect(),
             );
+        let failover = Failover::default();
+        if let Some(stb) = failover.as_stateboard() {
+            host.instances.push(InstanceV2 {
+                name: Name::from("stateboard"),
+                stateboard: Some(true),
+                weight: None,
+                failure_domains: host
+                    .get_name_by_address(&stb.uri.address)
+                    .map(|name| vec![name.to_string()])
+                    .unwrap_or_default(),
+                roles: Vec::new(),
+                config: InstanceV2Config::default(),
+            });
+        }
         host.spread();
         Self {
             replicasets,
             hosts: vec![host],
-            failover: Default::default(),
+            failover,
             vars: Default::default(),
         }
     }
@@ -210,8 +224,146 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
 impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
     type Error = GeninError;
 
-    fn try_from(_value: &'a Option<Inventory>) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(inventory: &'a Option<Inventory>) -> Result<Self, Self::Error> {
+        if let Some(inventory) = inventory {
+            Ok(Cluster {
+                replicasets: inventory
+                    .all
+                    .hosts
+                    .iter()
+                    .filter(|(_, host)| !host.stateboard)
+                    .fold(IndexMap::new(), |mut accum, (name, instance)| {
+                        trace!(
+                            "{} {:?} {:?}",
+                            name,
+                            name.parent_index_as_usize(),
+                            name.last_index_as_usize()
+                        );
+                        let entry =
+                            accum
+                                .entry(Name::from(name.get_ancestor()))
+                                .or_insert(Replicaset {
+                                    name: Name::from(name.get_ancestor()),
+                                    replicasets_count: Some(1),
+                                    replication_factor: None,
+                                    weight: None,
+                                    failure_domains: Vec::new(),
+                                    roles: inventory
+                                        .all
+                                        .children
+                                        .get(&name.get_parent_name().clone_with_index("replicaset"))
+                                        .map(|replicaset| match replicaset {
+                                            Child::Replicaset { vars, .. } => vars.roles.clone(),
+                                            _ => unreachable!(),
+                                        })
+                                        .unwrap(),
+                                    config: InstanceV2Config::from(&instance.config).clean_ports(),
+                                });
+                        //TODO: Refactor this in future
+                        match name.len() {
+                            2 => {
+                                if let Some(cnt) = entry.replicasets_count.as_mut() {
+                                    *cnt = name.last_index_as_usize().unwrap().max(*cnt);
+                                }
+                            }
+                            3 => {
+                                if let Some(cnt) = entry.replicasets_count.as_mut() {
+                                    *cnt = name.parent_index_as_usize().unwrap().max(*cnt);
+                                }
+                                if let Some(cnt) = entry.replication_factor.as_mut() {
+                                    *cnt = name.last_index_as_usize().unwrap().max(*cnt);
+                                } else {
+                                    entry.replication_factor =
+                                        Some(name.last_index_as_usize().unwrap());
+                                }
+                            }
+                            _ => {}
+                        }
+                        accum
+                    })
+                    .into_values()
+                    .collect(),
+                hosts: vec![HostV2::from("cluster").with_hosts(
+                    inventory
+                        .all
+                        .children
+                        .iter()
+                        .filter_map(|(name, replicaset)| match replicaset {
+                            Child::Host {
+                                vars:
+                                    HostVars {
+                                        ansible_host,
+                                        additional_config,
+                                    },
+                                ..
+                            } => Some(HostV2 {
+                                name: name.clone(),
+                                config: HostV2Config::from(ansible_host.clone())
+                                    .with_additional_config(additional_config.clone())
+                                    .with_ports(
+                                        inventory
+                                            .all
+                                            .hosts
+                                            .iter()
+                                            .filter(|(_, instance)| !instance.stateboard)
+                                            .fold((u16::MAX, u16::MAX), |accum, (_, instance)| {
+                                                (
+                                                    accum.0.min(instance.config.http_port()),
+                                                    accum.1.min(instance.config.binary_port()),
+                                                )
+                                            }),
+                                    ),
+                                hosts: Vec::new(),
+                                instances: inventory
+                                    .all
+                                    .hosts
+                                    .iter()
+                                    .filter_map(|(name, instance)| {
+                                        let config = HostV2Config::from(&instance.config);
+                                        trace!(
+                                            "ansible_host: {} instance_address: {}",
+                                            ansible_host,
+                                            config.address()
+                                        );
+                                        if ansible_host.eq(&config.address()) {
+                                            Some(InstanceV2 {
+                                                name: name.clone(),
+                                                stateboard: instance.stateboard.then_some(true),
+                                                weight: None,
+                                                failure_domains: Vec::new(),
+                                                roles: Vec::new(),
+                                                config: InstanceV2Config::from(&instance.config),
+                                            })
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect(),
+                            }),
+                            Child::Replicaset { .. } => None,
+                        })
+                        .collect(),
+                )],
+                failover: inventory
+                    .all
+                    .vars
+                    .cartridge_failover_params
+                    .clone()
+                    .ok_or_else(|| {
+                        GeninError::new(
+                            GeninErrorKind::EmptyField,
+                            "inventory vars does not have cartridge_failover_params field",
+                        )
+                    })?,
+                vars: inventory.all.vars.clone(),
+            })
+        } else {
+            Err(GeninError::new(
+                GeninErrorKind::EmptyField,
+                "the cluster cannot be built from the inventory \
+                because the inventory field is empty",
+            ))
+        }
     }
 }
 
@@ -255,6 +407,9 @@ impl<'de> Deserialize<'de> for Cluster {
                     .iter_mut()
                     .flat_map(|replicaset| replicaset.instances())
                     .collect();
+                if let Some(stb) = failover.as_stateboard() {
+                    host.push_stateboard(stb);
+                }
                 host.spread();
                 Cluster {
                     replicasets,
@@ -289,6 +444,9 @@ impl<'de> Deserialize<'de> for Cluster {
                     .iter_mut()
                     .flat_map(|replicaset| replicaset.instances())
                     .collect();
+                if let Some(stb) = failover.as_stateboard() {
+                    host.push_stateboard(stb);
+                }
                 host.spread();
                 Cluster {
                     replicasets,
@@ -472,10 +630,9 @@ impl TopologyMemberV1 {
                 replicasets_count: Some(self.count),
                 replication_factor: TopologyMemberV1::as_replication_factor(self.replicas),
                 weight: TopologyMemberV1::as_weight(self.weight),
-                zone: None,
                 failure_domains: Vec::new(),
                 roles: self.roles.clone(),
-                config: HostV2Config::default().with_additional_config(self.config.clone()),
+                config: InstanceV2Config::from(&self.config),
             })
             .collect()
     }
@@ -504,14 +661,12 @@ struct TopologyMemberV2 {
     replication_factor: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     weight: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    zone: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     failure_domains: Vec<String>,
     #[serde(default)]
     roles: Vec<Role>,
-    #[serde(skip_serializing_if = "HostV2Config::is_none")]
-    config: HostV2Config,
+    #[serde(skip_serializing_if = "InstanceV2Config::is_none")]
+    config: InstanceV2Config,
 }
 
 impl<'de> Deserialize<'de> for TopologyMemberV2 {
@@ -529,13 +684,11 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
             #[serde(default)]
             weight: Option<usize>,
             #[serde(default)]
-            zone: Option<String>,
-            #[serde(default)]
             failure_domains: Vec<String>,
             #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
-            config: HostV2Config,
+            config: InstanceV2Config,
         }
 
         Helper::deserialize(deserializer).map(
@@ -544,7 +697,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
                  replicasets_count,
                  replication_factor,
                  weight,
-                 zone,
                  failure_domains,
                  mut roles,
                  config,
@@ -558,7 +710,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
                     replicasets_count,
                     replication_factor,
                     weight,
-                    zone,
                     failure_domains,
                     roles,
                     config,
@@ -608,7 +759,6 @@ impl TopologyMemberV2 {
                             replicasets_count: replicaset.replicasets_count,
                             replication_factor: replicaset.replication_factor,
                             weight: replicaset.weight,
-                            zone: replicaset.zone.clone(),
                             failure_domains: replicaset.failure_domains.clone(),
                             roles: replicaset.roles.clone(),
                             config: replicaset.config.clone(),
@@ -628,7 +778,6 @@ impl TopologyMemberV2 {
                 replicasets_count: self.replicasets_count,
                 replication_factor: self.replication_factor,
                 weight: self.weight,
-                zone: self.zone.clone(),
                 failure_domains: self.failure_domains.clone(),
                 roles: self.roles.clone(),
                 config: self.config.clone(),

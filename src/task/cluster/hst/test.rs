@@ -5,9 +5,10 @@ use serde::Deserialize;
 use crate::task::cluster::{
     hst::v2::{Address, HostV2, HostV2Config},
     ins::{
-        v2::{InstanceV2, Replicaset},
-        Name, Role,
+        v2::{InstanceV2, InstanceV2Config, Replicaset},
+        Role,
     },
+    name::Name,
     HostV2Helper, TopologyMemberV2,
 };
 
@@ -155,9 +156,8 @@ hosts:
                 replication_factor: Some(10),
                 weight: None,
                 failure_domains: Vec::new(),
-                zone: None,
                 roles: Vec::new(),
-                config: HostV2Config::default(),
+                config: InstanceV2Config::default(),
             }
             .instances(),
         );
@@ -286,73 +286,65 @@ hosts:
             name: Name::from("storage-1-1"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("storage-1-2"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("storage-1-3"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("storage-2-1"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("storage-2-2"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("storage-2-3"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("cache-1"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         InstanceV2 {
             name: Name::from("cache-2"),
             stateboard: Some(false),
             weight: None,
-            zone: None,
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
     ];
 
@@ -449,9 +441,11 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::router(), Role::failover_coordinator()],
                     failure_domains: Vec::new(),
-                    zone: None,
-                    config: HostV2Config::from((8081, 3031))
-                        .with_address(Address::from([192, 168, 123, 11])),
+                    config: InstanceV2Config {
+                        http_port: Some(8081),
+                        binary_port: Some(3031),
+                        ..InstanceV2Config::default()
+                    },
                 },
                 InstanceV2 {
                     name: Name::from("storage").with_index(1).with_index(2),
@@ -459,9 +453,11 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::storage()],
                     failure_domains: Vec::new(),
-                    zone: None,
-                    config: HostV2Config::from((8082, 3032))
-                        .with_address(Address::from([192, 168, 123, 11])),
+                    config: InstanceV2Config {
+                        http_port: Some(8082),
+                        binary_port: Some(3032),
+                        ..InstanceV2Config::default()
+                    },
                 },
                 InstanceV2 {
                     name: Name::from("storage").with_index(2).with_index(2),
@@ -469,9 +465,11 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::storage()],
                     failure_domains: Vec::new(),
-                    zone: None,
-                    config: HostV2Config::from((8083, 3033))
-                        .with_address(Address::from([192, 168, 123, 11])),
+                    config: InstanceV2Config {
+                        http_port: Some(8083),
+                        binary_port: Some(3033),
+                        ..InstanceV2Config::default()
+                    },
                 },
             ]),
             HostV2::from("Server-2")
@@ -484,8 +482,7 @@ fn hosts_v2_spreading() {
                         weight: None,
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
-                        zone: None,
-                        config: HostV2Config::default(),
+                        config: InstanceV2Config::default(),
                     },
                     InstanceV2 {
                         name: Name::from("storage").with_index(2).with_index(1),
@@ -493,8 +490,7 @@ fn hosts_v2_spreading() {
                         weight: None,
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
-                        zone: None,
-                        config: HostV2Config::default(),
+                        config: InstanceV2Config::default(),
                     },
                 ]),
         ])
@@ -596,4 +592,74 @@ fn hosts_v2_print_table() {
 +-------------+-------------+--------------+--------------+--------------+--------------+--------------+--------------+");
 
     assert_eq!(hosts_v2.to_string(), table);
+}
+
+#[test]
+fn hosts_v2_spread_stateboard() {
+    let mut hosts_v2 = HostV2::from("Cluster")
+        .with_hosts(vec![
+            HostV2::from("DC1").with_hosts(vec![
+                HostV2::from("Rack1").with_hosts(vec![
+                    HostV2::from("Server-1")
+                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 11]))),
+                    HostV2::from("Server-2")
+                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 12]))),
+                ]),
+                HostV2::from("Rack2").with_hosts(vec![
+                    HostV2::from("Server-3")
+                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 101]))),
+                    HostV2::from("Server-4")
+                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 102]))),
+                ]),
+            ]),
+            HostV2::from("DC2")
+                .with_hosts(vec![
+                    HostV2::from("Rack1").with_hosts(vec![
+                        HostV2::from("Server-5")
+                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 11]))),
+                        HostV2::from("Server-6")
+                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 12]))),
+                    ]),
+                    HostV2::from("Rack2").with_hosts(vec![
+                        HostV2::from("Server-7")
+                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 101]))),
+                        HostV2::from("Server-8")
+                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 101]))),
+                    ]),
+                ])
+                .with_http_port(25000)
+                .with_binary_port(26000),
+        ])
+        .with_config(HostV2Config::from((8081, 3031)));
+
+    let address = Address::Ip("192.168.66.101".parse().unwrap());
+
+    hosts_v2.instances.push(InstanceV2 {
+        name: Name::from("stateboard"),
+        stateboard: Some(true),
+        weight: None,
+        failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()],
+        roles: Vec::new(),
+        config: InstanceV2Config::default(),
+    });
+
+    hosts_v2.spread();
+
+    assert_eq!(
+        hosts_v2
+            .hosts
+            .last()
+            .unwrap()
+            .hosts
+            .last()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .instances
+            .first()
+            .unwrap()
+            .name,
+        Name::from("stateboard")
+    )
 }

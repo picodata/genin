@@ -18,23 +18,23 @@ use super::flv::{Failover, FailoverVariants, Mode, StateProvider};
 ///     wait_cluster_has_no_issues_retries: 20
 ///     instance_start_retries: 20
 /// ```
-pub(in crate::task) struct Vars {
+pub struct Vars {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) ansible_user: Option<String>,
+    pub ansible_user: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) ansible_password: Option<String>,
+    pub ansible_password: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) cartridge_app_name: Option<String>,
+    pub cartridge_app_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) cartridge_cluster_cookie: Option<String>,
+    pub cartridge_cluster_cookie: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) cartridge_package_path: Option<String>,
+    pub cartridge_package_path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) cartridge_bootstrap_vshard: Option<bool>,
+    pub cartridge_bootstrap_vshard: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) cartridge_failover_params: Option<Failover>,
+    pub cartridge_failover_params: Option<Failover>,
     #[serde(default, flatten, skip_serializing_if = "IndexMap::is_empty")]
-    pub(in crate::task) another_fields: IndexMap<String, Value>,
+    pub another_fields: IndexMap<String, Value>,
 }
 
 impl Default for Vars {

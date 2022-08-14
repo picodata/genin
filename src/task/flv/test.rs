@@ -293,8 +293,8 @@ stateboard_params:
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-            url: Uri {
-                ip: "192.168.16.11".parse().unwrap(),
+            uri: Uri {
+                address: Address::Ip("192.168.16.11".parse().unwrap()),
                 port: DEFAULT_STATEBOARD_PORT,
             },
             password: "some_password".to_string(),
@@ -323,8 +323,8 @@ stateboard_params:
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-            url: Uri {
-                ip: "192.168.16.11".parse().unwrap(),
+            uri: Uri {
+                address: Address::Ip("192.168.16.11".parse().unwrap()),
                 port: DEFAULT_STATEBOARD_PORT,
             },
             password: "some_password".to_string(),
@@ -340,8 +340,8 @@ fn failover_to_str() {
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-            url: Uri {
-                ip: "192.168.16.11".parse().unwrap(),
+            uri: Uri {
+                address: Address::Ip("192.168.16.11".parse().unwrap()),
                 port: DEFAULT_STATEBOARD_PORT,
             },
             password: "some_password".to_string(),

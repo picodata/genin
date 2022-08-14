@@ -1,18 +1,25 @@
+use std::convert::TryFrom;
+
 use indexmap::{IndexMap, IndexSet};
 use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
+use super::cluster::hst::v2::HostV2;
+use super::cluster::ins::v2::InstanceV2;
+use super::flv::Uri;
+use crate::task::cluster::hst::v2::Address;
+use crate::task::cluster::name::Name;
 use crate::task::vars::Vars;
 use crate::task::Cluster;
 use crate::{
     error::{GeninError, GeninErrorKind},
-    task::cluster::ins::{is_false, Role},
+    task::cluster::ins::Role,
 };
 
 #[derive(Serialize, Deserialize)]
-pub(in crate::task) struct Inventory {
-    pub(in crate::task) all: InventoryParts,
+pub struct Inventory {
+    pub all: InventoryParts,
 }
 
 impl<'a> TryFrom<&'a [u8]> for Inventory {
@@ -59,13 +66,14 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                             "inserting values from {} to final inventory",
                             host.name.to_string()
                         );
+                        // Iterate over all instances
                         host.instances.iter().map(|instance| {
                             (
-                                instance.name.to_string(),
+                                instance.name.clone(),
                                 InventoryHost {
                                     stateboard: instance.stateboard.unwrap_or(false),
-                                    zone: instance.zone.clone(),
-                                    config: { instance.config.additional_config() },
+                                    zone: instance.config.zone.clone(),
+                                    config: InvHostConfig::from((instance, *host)),
                                 },
                             )
                         })
@@ -73,41 +81,51 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                     .collect(),
                 children: cl_hosts
                     .iter()
-                    .fold(IndexMap::new(), |mut accum, host| {
-                        host.instances.iter().for_each(|instance| {
-                            let entry = accum
-                                .entry(format!("{}-replicaset", instance.name.get_parent()))
-                                .or_insert(InventoryReplicaset {
-                                    vars: InventoryVars::ReplicasetInventoryVars {
-                                        replicaset_alias: instance.name.get_parent().to_string(),
-                                        weight: instance.weight,
-                                        failover_priority: vec![instance.name.to_string()]
+                    .try_fold(IndexMap::new(), |mut accum, host| {
+                        host.instances
+                            .iter()
+                            .filter(|instance| !instance.is_stateboard())
+                            .try_for_each(|instance| {
+                                let entry = accum
+                                    .entry(
+                                        instance
+                                            .name
+                                            .get_parent_name()
+                                            .clone_with_index("replicaset"),
+                                    )
+                                    .or_insert(Child::Replicaset {
+                                        vars: ReplicasetVars {
+                                            replicaset_alias: instance
+                                                .name
+                                                .get_parent_str()
+                                                .to_string(),
+                                            failover_priority: vec![instance.name.to_string()]
+                                                .into_iter()
+                                                .collect(),
+                                            roles: instance.roles.clone(),
+                                            all_rw: instance.config.all_rw,
+                                            weight: instance.weight,
+                                            vshard_group: instance.config.vshard_group.clone(),
+                                        },
+                                        hosts: vec![(instance.name.to_string(), Value::Null)]
                                             .into_iter()
                                             .collect(),
-                                        roles: instance.roles.clone(),
-                                    },
-                                    hosts: vec![(instance.name.to_string(), Value::Null)]
-                                        .into_iter()
-                                        .collect(),
-                                });
-                            entry.extend_failover_priority(instance.name.to_string());
-                            entry.insert_host(instance.name.to_string(), Value::Null);
-                        });
-                        accum
-                    })
+                                    });
+                                entry.extend_failover_priority(instance.name.to_string())?;
+                                entry.insert_host(instance.name.to_string(), Value::Null);
+                                Ok::<(), GeninError>(())
+                            })?;
+                        Ok(accum)
+                    })?
                     .into_iter()
                     .chain(cl_hosts.iter().fold(IndexMap::new(), |mut accum, host| {
                         accum
-                            .entry(host.name.to_string())
-                            .or_insert(InventoryReplicaset {
-                                vars: InventoryVars::HostInventoryVars(
-                                    vec![(
-                                        String::from("ansible_host"),
-                                        Value::String(host.config.address_to_string()),
-                                    )]
-                                    .into_iter()
-                                    .collect(),
-                                ),
+                            .entry(host.name.clone())
+                            .or_insert(Child::Host {
+                                vars: HostVars {
+                                    ansible_host: host.config.address(),
+                                    additional_config: IndexMap::new(),
+                                },
                                 hosts: host
                                     .instances
                                     .iter()
@@ -129,61 +147,146 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
 }
 
 #[derive(Serialize, Deserialize)]
-pub(in crate::task) struct InventoryParts {
-    vars: Vars,
-    hosts: IndexMap<String, InventoryHost>,
-    children: IndexMap<String, InventoryReplicaset>,
+pub struct InventoryParts {
+    pub vars: Vars,
+    pub hosts: IndexMap<Name, InventoryHost>,
+    pub children: IndexMap<Name, Child>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct InventoryHost {
-    #[serde(default, skip_serializing_if = "is_false")]
-    stateboard: bool,
+    #[serde(default, skip_serializing_if = "InventoryHost::not_stateboard")]
+    pub stateboard: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    zone: Option<String>,
-    config: IndexMap<String, Value>,
+    pub zone: Option<String>,
+    pub config: InvHostConfig,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct InventoryReplicaset {
-    vars: InventoryVars,
-    hosts: IndexMap<String, Value>,
+impl InventoryHost {
+    pub fn not_stateboard(stateboard: &bool) -> bool {
+        !stateboard
+    }
 }
 
-impl InventoryReplicaset {
-    pub fn extend_failover_priority(&mut self, name: String) {
-        match &mut self.vars {
-            InventoryVars::ReplicasetInventoryVars {
-                failover_priority, ..
-            } => {
-                failover_priority.insert(name);
-                failover_priority.sort();
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum InvHostConfig {
+    Instance {
+        advertise_uri: Uri,
+        http_port: u16,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        zone: Option<String>,
+        #[serde(flatten, skip_serializing_if = "IndexMap::is_empty")]
+        additional_config: IndexMap<String, Value>,
+    },
+    Stateboard(IndexMap<String, Value>),
+}
+
+impl<'a> From<(&'a InstanceV2, &'a HostV2)> for InvHostConfig {
+    fn from(pair: (&'a InstanceV2, &'a HostV2)) -> Self {
+        if !pair.0.is_stateboard() {
+            InvHostConfig::Instance {
+                advertise_uri: Uri {
+                    address: pair.1.config.address.clone(),
+                    port: pair.0.config.binary_port.unwrap(),
+                },
+                http_port: pair.0.config.http_port.unwrap(),
+                zone: pair.0.config.zone.clone(),
+                additional_config: pair.0.config.additional_config.clone(),
             }
-            _ => unimplemented!(),
+        } else {
+            InvHostConfig::Stateboard(pair.0.config.additional_config.clone())
+        }
+    }
+}
+
+impl InvHostConfig {
+    pub fn http_port(&self) -> u16 {
+        if let InvHostConfig::Instance { http_port, .. } = self {
+            *http_port
+        } else {
+            unreachable!()
         }
     }
 
-    pub fn insert_host(&mut self, host: String, value: Value) {
-        self.hosts.insert(host, value);
-        self.hosts.sort_keys();
-    }
-
-    pub fn extend_hosts(&mut self, hosts: IndexMap<String, Value>) {
-        self.hosts.extend(hosts);
+    pub fn binary_port(&self) -> u16 {
+        if let InvHostConfig::Instance { advertise_uri, .. } = self {
+            advertise_uri.port
+        } else {
+            unreachable!()
+        }
     }
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum InventoryVars {
-    HostInventoryVars(IndexMap<String, Value>),
-    ReplicasetInventoryVars {
-        replicaset_alias: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        weight: Option<usize>,
-        failover_priority: IndexSet<String>,
-        roles: Vec<Role>,
+pub enum Child {
+    Replicaset {
+        vars: ReplicasetVars,
+        hosts: IndexMap<String, Value>,
     },
+    Host {
+        vars: HostVars,
+        hosts: IndexMap<String, Value>,
+    },
+}
+
+impl Child {
+    pub fn extend_failover_priority(&mut self, name: String) -> Result<(), GeninError> {
+        match self {
+            Child::Replicaset { vars, .. } => {
+                vars.failover_priority.insert(name);
+                vars.failover_priority.sort();
+                Ok(())
+            }
+            Child::Host { .. } => Err(GeninError::new(
+                GeninErrorKind::NotApplicable,
+                "unable to extend failover_priority for child type Child::Host",
+            )),
+        }
+    }
+
+    pub fn extend_hosts(&mut self, new_hosts: IndexMap<String, Value>) {
+        match self {
+            Self::Host { hosts, .. } => {
+                hosts.extend(new_hosts);
+            }
+            Self::Replicaset { hosts, .. } => {
+                hosts.extend(new_hosts);
+            }
+        }
+    }
+
+    pub fn insert_host(&mut self, name: String, value: Value) {
+        match self {
+            Self::Replicaset { hosts, .. } => {
+                hosts.insert(name, value);
+            }
+            Self::Host { hosts, .. } => {
+                hosts.insert(name, value);
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ReplicasetVars {
+    pub replicaset_alias: String,
+    pub failover_priority: IndexSet<String>,
+    pub roles: Vec<Role>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub all_rw: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub weight: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vshard_group: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct HostVars {
+    pub ansible_host: Address,
+    #[serde(flatten, default, skip_serializing_if = "IndexMap::is_empty")]
+    pub additional_config: IndexMap<String, Value>,
 }
 
 #[cfg(test)]

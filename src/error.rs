@@ -8,6 +8,7 @@ pub enum GeninErrorKind {
     DeserializationError,
     Serialization,
     UnknownFailureDomain,
+    NotApplicable,
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -2,6 +2,7 @@ use indexmap::IndexMap;
 
 use crate::{
     task::{
+        cluster::hst::v2::Address,
         flv::{Failover, FailoverVariants, Mode, StateProvider, StateboardParams, Uri},
         vars::Vars,
     },
@@ -60,8 +61,8 @@ fn vars_failover() {
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-            url: Uri {
-                ip: "192.168.16.11".parse().unwrap(),
+            uri: Uri {
+                address: Address::Ip("192.168.16.11".parse().unwrap()),
                 port: DEFAULT_STATEBOARD_PORT,
             },
             password: "some_password".to_string(),
@@ -75,8 +76,8 @@ fn vars_failover() {
             mode: Mode::Stateful,
             state_provider: StateProvider::Stateboard,
             failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-                url: Uri {
-                    ip: "192.168.16.11".parse().unwrap(),
+                uri: Uri {
+                    address: Address::Ip("192.168.16.11".parse().unwrap()),
                     port: DEFAULT_STATEBOARD_PORT,
                 },
                 password: "some_password".to_string(),
