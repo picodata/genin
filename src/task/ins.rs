@@ -7,10 +7,10 @@ use serde::{
 };
 use serde_yaml::Value;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Instances(Vec<Instance>);
 
-#[derive(Serialize, Clone, PartialEq, Debug, Default)]
+#[derive(Serialize, Clone, Debug, Default, PartialEq, Eq)]
 /// Some tarantool cartridge instance
 ///
 /// ```yaml
@@ -225,7 +225,7 @@ impl Instance {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub enum Type {
     Storage,
@@ -252,7 +252,7 @@ impl<'a> From<&'a str> for Type {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Role {
     Custom(String),
     FailoverCoordinator(String),

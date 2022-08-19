@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -38,7 +38,8 @@ enum VarsField {
     CartridgeAppName,
     CartridgeClusterCookie,
     CartridgePackagePath,
-    AnotherFields
+    CartridgeBootstrapVshard,
+    AnotherFields,
 }
 
 impl VarsField {
@@ -49,6 +50,7 @@ impl VarsField {
             VarsField::CartridgeAppName => "cartridge_app_name".to_string(),
             VarsField::CartridgeClusterCookie => "cartridge_cluster_cookie".to_string(),
             VarsField::CartridgePackagePath => "cartridge_package_path".to_string(),
+            VarsField::CartridgeBootstrapVshard => "cartridge_bootstrap_vshard".to_string(),
             VarsField::AnotherFields => "another_fields".to_string(),
         }
     }
@@ -71,22 +73,40 @@ impl Default for Vars {
 impl Vars {
     pub fn get_hashmap(&self) -> IndexMap<String, Value> {
         let mut vars: IndexMap<String, Value> = IndexMap::from([
-            (VarsField::AnsibleUser.as_str(), Value::String(self.ansible_user.clone())),
-            (VarsField::AnsiblePassword.as_str(), Value::String(self.ansible_password.clone())),
-            (VarsField::CartridgeAppName.as_str(), Value::String(self.cartridge_app_name.clone())),
-            (VarsField::CartridgeClusterCookie.as_str(), Value::String(self.cartridge_cluster_cookie.clone()))
+            (
+                VarsField::AnsibleUser.as_str(),
+                Value::String(self.ansible_user.clone()),
+            ),
+            (
+                VarsField::AnsiblePassword.as_str(),
+                Value::String(self.ansible_password.clone()),
+            ),
+            (
+                VarsField::CartridgeAppName.as_str(),
+                Value::String(self.cartridge_app_name.clone()),
+            ),
+            (
+                VarsField::CartridgeClusterCookie.as_str(),
+                Value::String(self.cartridge_cluster_cookie.clone()),
+            ),
+            (
+                VarsField::CartridgePackagePath.as_str(),
+                Value::String(self.cartridge_package_path.clone()),
+            ),
+            (
+                VarsField::CartridgeBootstrapVshard.as_str(),
+                Value::String(self.cartridge_bootstrap_vshard.to_string()),
+            ),
         ]);
-        
-        match self.another_fields.clone().as_mapping() {
-            Some(fields_mapping) => {
-                fields_mapping.into_iter()
-                    .for_each( |var| {
-                        vars.insert(var.0.as_str().unwrap().to_string(), var.1.clone());
-                    });
-            },
-            None => {}
+
+        if let Some(fields_mapping) = self.another_fields.clone().as_mapping() {
+            fields_mapping.into_iter().for_each(|var| {
+                if let Some(s) = var.0.as_str() {
+                    vars.insert(s.to_string(), var.1.clone());
+                }
+            });
         }
-        
+
         vars
     }
 }
