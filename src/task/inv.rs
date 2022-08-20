@@ -7,6 +7,7 @@ use serde_yaml::Value;
 use crate::error::{ConfigError, TaskError};
 use crate::task::ins::{Instance, is_false, Role, Type};
 use super::cluster::scheme::Scheme;
+use super::vrs::Vars;
 
 #[derive(Serialize, Deserialize)]
 pub(in crate::task) struct Inventory {
@@ -124,7 +125,7 @@ impl TryFrom<Scheme> for Inventory {
 
 #[derive(Serialize, Deserialize)]
 pub(in crate::task) struct InventoryParts {
-    vars: IndexMap<String, Value>,
+    vars: Vars,
     hosts: IndexMap<String, InventoryHost>,
     children: IndexMap<String, InventoryReplicaset>,
 }

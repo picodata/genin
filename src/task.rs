@@ -1,23 +1,23 @@
 mod args;
 mod cluster;
-mod inv;
 mod flv;
-pub mod ins;
 pub mod hst;
+pub mod ins;
+mod inv;
 pub mod vrs;
 
+use crate::error::{CommandLineError, ConfigError, TaskError};
 use crate::task::{
     cluster::{
-        Context,
         fs::{CLUSTER_YAML, INVENTORY_YAML},
         scheme::Scheme,
+        Context,
     },
     inv::Inventory,
 };
-use crate::error::{CommandLineError, ConfigError, TaskError};
 use log::info;
 
-use self::cluster::{Cluster, fs::FsInteraction};
+use self::cluster::{fs::FsInteraction, Cluster};
 
 /// А function that launches an application and walks it through the state stages.
 pub fn run() -> Result<(), TaskError> {
@@ -56,7 +56,8 @@ pub fn run() -> Result<(), TaskError> {
                 .check(None, Some(CLUSTER_YAML), args.is_present("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(args)?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
-                .map(|(scheme, data, fs)| {
+                .map(|(scheme, mut data, fs)| {
+                    data.vars.cartridge_failover_params = data.failover.clone();
                     Ok((
                         (Box::new(move || scheme.print())) as Box<dyn FnOnce()>,
                         (Box::new(move || {
@@ -73,7 +74,11 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("build", args)) => FsInteraction::from(args)
-                .check(Some(CLUSTER_YAML), Some(INVENTORY_YAML), args.is_present("force"))
+                .check(
+                    Some(CLUSTER_YAML),
+                    Some(INVENTORY_YAML),
+                    args.is_present("force"),
+                )
                 .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, _data, fs)| {

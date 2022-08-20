@@ -2,7 +2,7 @@ use std::{fmt::Display, net::IpAddr, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 /// Host can be Region, Datacenter, Server
 /// ```yaml
 /// hosts:
@@ -99,7 +99,7 @@ impl Deref for Hosts {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub struct Host {
     pub name: String,
     #[serde(rename = "type", skip_serializing_if = "HostType::is_server", default)]
@@ -121,7 +121,7 @@ impl Host {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HostType {
     #[serde(rename = "region")]
     Region,
@@ -153,7 +153,7 @@ impl HostType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum PortsVariants {
     Ports(Ports),
@@ -208,7 +208,7 @@ impl PortsVariants {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ports {
     pub http: u16,
     pub binary: u16,
@@ -231,7 +231,7 @@ impl Ports {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum IP {
     Server(IpAddr),
@@ -267,7 +267,7 @@ impl IP {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum HostsVariants {
     Hosts(Hosts),

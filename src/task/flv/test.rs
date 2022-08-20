@@ -1,5 +1,7 @@
 use clap::{Arg, Command};
 
+use crate::task::cluster::Cluster;
+
 use super::*;
 
 #[test]
@@ -274,4 +276,43 @@ fn test_failover_etcd() {
         failover.failover_variants,
         FailoverVariants::ETCD2Variant(ETCD2Params::default())
     );
+}
+
+#[test]
+fn test_failover_from_noncomplete_yaml() {
+    // test deserialization failover params
+    let cluster = Cluster::try_from(
+        std::fs::read("test/resources/test-cluster.genin.yaml")
+            .unwrap()
+            .as_slice(),
+    )
+    .unwrap();
+    let expected_flv = Failover {
+        mode: Mode::Stateful,
+        state_provider: StateProvider::Stateboard,
+        failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
+            url: Url {
+                ip: "192.168.16.1".parse().unwrap(),
+                port: Some(4401),
+            },
+            password: "some_password".to_string(),
+        }),
+    };
+
+    assert_eq!(cluster.failover, expected_flv);
+
+    // test failover deserialization with uncomplete genin config
+    let cluster = Cluster::try_from(
+        std::fs::read("test/resources/test-cluster-uncomplete.genin.yaml")
+            .unwrap()
+            .as_slice(),
+    );
+
+    let expected_err = Err(TaskError::ConfigError(ConfigError::FileFormatError(
+        "Error then deserializing cluster file data did not match any variant \
+                    of untagged enum FailoverHelper at line 2 column 10"
+            .to_string(),
+    )));
+
+    assert_eq!(cluster, expected_err);
 }

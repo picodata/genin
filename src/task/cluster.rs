@@ -13,7 +13,7 @@ use crate::task::ins::Instances;
 
 use super::{Functor, MapSelf};
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
 /// Cluster is a `genin` specific configuration file
 /// ```rust
 /// Cluster {

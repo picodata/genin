@@ -1,8 +1,9 @@
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
-#[derive(Serialize, Deserialize, Clone)]
+use super::flv::{Failover, FailoverVariants, Mode, StateProvider};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 /// Inventory vars with hardcoded important fields
 /// ```yaml
 /// vars:
@@ -11,49 +12,28 @@ use serde_yaml::Value;
 ///     cartridge_bootstrap_vshard: true
 ///     cartridge_app_name: "tarantool-cluster"
 ///     cartridge_cluster_cookie: "tarantool-cluster-cookie"
+///     cartridge_package_path: "/tmp/tarantool-cluster.rpm"
+///     cartridge_bootstrap_vshard: true
 ///     wait_cluster_has_no_issues_retries: 20
 ///     instance_start_retries: 20
 /// ```
-pub struct Vars {
+pub(in crate::task) struct Vars {
     #[serde(default = "change_me")]
-    ansible_user: String,
+    pub(in crate::task) ansible_user: String,
     #[serde(default = "change_me")]
-    ansible_password: String,
+    pub(in crate::task) ansible_password: String,
     #[serde(default = "change_me")]
-    cartridge_app_name: String,
+    pub(in crate::task) cartridge_app_name: String,
     #[serde(default = "change_me")]
-    cartridge_cluster_cookie: String,
+    pub(in crate::task) cartridge_cluster_cookie: String,
     #[serde(default = "change_me")]
-    cartridge_package_path: String,
+    pub(in crate::task) cartridge_package_path: String,
     #[serde(default = "default_true")]
-    cartridge_bootstrap_vshard: bool,
+    pub(in crate::task) cartridge_bootstrap_vshard: bool,
+    #[serde(default)]
+    pub(in crate::task) cartridge_failover_params: Failover,
     #[serde(flatten, skip_serializing_if = "Value::is_null", default)]
-    another_fields: Value,
-}
-
-#[allow(unused)]
-enum VarsField {
-    AnsibleUser,
-    AnsiblePassword,
-    CartridgeAppName,
-    CartridgeClusterCookie,
-    CartridgePackagePath,
-    CartridgeBootstrapVshard,
-    AnotherFields,
-}
-
-impl VarsField {
-    fn as_str(&self) -> String {
-        match self {
-            VarsField::AnsibleUser => "ansible_user".to_string(),
-            VarsField::AnsiblePassword => "ansible_password".to_string(),
-            VarsField::CartridgeAppName => "cartridge_app_name".to_string(),
-            VarsField::CartridgeClusterCookie => "cartridge_cluster_cookie".to_string(),
-            VarsField::CartridgePackagePath => "cartridge_package_path".to_string(),
-            VarsField::CartridgeBootstrapVshard => "cartridge_bootstrap_vshard".to_string(),
-            VarsField::AnotherFields => "another_fields".to_string(),
-        }
-    }
+    pub(in crate::task) another_fields: Value,
 }
 
 impl Default for Vars {
@@ -65,49 +45,13 @@ impl Default for Vars {
             cartridge_cluster_cookie: "myapp-cookie".into(),
             cartridge_package_path: "/tmp/myapp.rpm".into(),
             cartridge_bootstrap_vshard: true,
+            cartridge_failover_params: Failover {
+                mode: Mode::Disabled,
+                state_provider: StateProvider::Disabled,
+                failover_variants: FailoverVariants::Disabled,
+            },
             another_fields: Value::Null,
         }
-    }
-}
-
-impl Vars {
-    pub fn get_hashmap(&self) -> IndexMap<String, Value> {
-        let mut vars: IndexMap<String, Value> = IndexMap::from([
-            (
-                VarsField::AnsibleUser.as_str(),
-                Value::String(self.ansible_user.clone()),
-            ),
-            (
-                VarsField::AnsiblePassword.as_str(),
-                Value::String(self.ansible_password.clone()),
-            ),
-            (
-                VarsField::CartridgeAppName.as_str(),
-                Value::String(self.cartridge_app_name.clone()),
-            ),
-            (
-                VarsField::CartridgeClusterCookie.as_str(),
-                Value::String(self.cartridge_cluster_cookie.clone()),
-            ),
-            (
-                VarsField::CartridgePackagePath.as_str(),
-                Value::String(self.cartridge_package_path.clone()),
-            ),
-            (
-                VarsField::CartridgeBootstrapVshard.as_str(),
-                Value::String(self.cartridge_bootstrap_vshard.to_string()),
-            ),
-        ]);
-
-        if let Some(fields_mapping) = self.another_fields.clone().as_mapping() {
-            fields_mapping.into_iter().for_each(|var| {
-                if let Some(s) = var.0.as_str() {
-                    vars.insert(s.to_string(), var.1.clone());
-                }
-            });
-        }
-
-        vars
     }
 }
 
@@ -118,3 +62,6 @@ pub fn change_me() -> String {
 pub fn default_true() -> bool {
     true
 }
+
+#[cfg(test)]
+mod test;
