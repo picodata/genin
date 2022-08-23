@@ -44,8 +44,8 @@ Genin уже заранее скомпилирован под разные ар�
 
 Универсальный исполняемый файл:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.3.6-x86_64-musl.tar.gz
-tar -xvf genin-0.3.6-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.3.7-x86_64-musl.tar.gz
+tar -xvf genin-0.3.7-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
 ```
 
 #### RHEL, CentOS, Rockylinux, Fedora
@@ -73,9 +73,9 @@ sudo yum install -y genin
 2. Так же вы можете установить пакет `rpm` напрямую без добавления нашего репозитория:
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.6-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.7-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.6-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.7-1.el7.x86_64.rpm
 ```
 > **Note:** будьте внимательны, так как при выборе не правильной версии ос могут быть ошибки 
 > при установке `rpm` 
@@ -92,14 +92,14 @@ sudo apt update ; sudo apt install genin
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.6.amd64.deb && sudo dpkg -i genin-0.3.6.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.7.amd64.deb && sudo dpkg -i genin-0.3.7.amd64.deb
 ```
 
 #### MacOSX
 Используйте следующие команды для загрузки и установки Genin на macOS (10.10+):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.3.6-x86_64-macosx.tar.gz
-unzip genin-0.3.6-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.3.7-x86_64-macosx.tar.gz
+unzip genin-0.3.7-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** Genin будет распакован в директорию `~/bin`. Перед использованием приложения 
 > пожалуйста удостоверьтесь что `~/bin` добавлена в переменную окружения `$PATH`
@@ -108,8 +108,8 @@ unzip genin-0.3.6-darwin-amd64.zip -d ~/bin/
 Используйте следующие команды для скачивания и установки Genin на операционных системах
 Windows 7 64 и новее.
 ```shell
-curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.3.6-win64.zip
-unzip.exe genin-0.3.6-win64.zip -d %HOME%/.cargo/bin/
+curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.3.7-win64.zip
+unzip.exe genin-0.3.7-win64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** Genin будет распакован в директорию `.cargo/bin` которая находится в домашнем
 > каталоге важего пользователя. Перед использованием приложения пожалуйста удостоверьтесь 
@@ -119,7 +119,7 @@ unzip.exe genin-0.3.6-win64.zip -d %HOME%/.cargo/bin/
 ```
 genin --version
 ```
-Если вы видите сообщение `genin 0.3.6` значит установка прошла успешно.
+Если вы видите сообщение `genin 0.3.7` значит установка прошла успешно.
 
 ---
 ## Руководство по использованию

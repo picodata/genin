@@ -1,11 +1,12 @@
 use std::{error::Error, fmt::Display};
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum TaskError {
     InternalError(InternalError),
     ConfigError(ConfigError),
     CommandLineError(CommandLineError),
-    UndefinedError,
+    UndefinedError(String),
 }
 
 impl Display for TaskError {
@@ -14,7 +15,7 @@ impl Display for TaskError {
             Self::InternalError(err) => write!(f, "{}", err),
             Self::ConfigError(err) => write!(f, "{}", err),
             Self::CommandLineError(err) => write!(f, "{}", err),
-            Self::UndefinedError => write!(f, "UndefinedError"),
+            Self::UndefinedError(s) => write!(f, "UndefinedError: {}", s),
         }
     }
 }
@@ -25,7 +26,7 @@ impl Error for TaskError {
             Self::InternalError(err) => Some(err),
             Self::ConfigError(err) => Some(err),
             Self::CommandLineError(err) => Some(err),
-            Self::UndefinedError => None,
+            Self::UndefinedError(_) => None,
         }
     }
 }
@@ -48,6 +49,7 @@ impl From<CommandLineError> for TaskError {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum InternalError {
     InstancesSpreadingError,
@@ -69,6 +71,7 @@ impl Display for InternalError {
 
 impl Error for InternalError {}
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum ConfigError {
     FileNotFoundError(String),
@@ -92,6 +95,7 @@ impl Display for ConfigError {
 
 impl Error for ConfigError {}
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum CommandLineError {
     SubcommandError(String),

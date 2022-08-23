@@ -2,7 +2,7 @@ use std::{fmt::Display, net::IpAddr, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 /// Host can be Region, Datacenter, Server
 /// ```yaml
 /// hosts:
@@ -67,7 +67,11 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.11".parse().unwrap()),
+                    ip: IP::Server(
+                        "192.168.16.11"
+                            .parse()
+                            .expect("Error then parsing default ip address"),
+                    ),
                     hosts: HostsVariants::None,
                 },
                 Host {
@@ -75,7 +79,11 @@ impl Default for Hosts {
                     htype: HostType::Server,
                     distance: 0,
                     ports: PortsVariants::None,
-                    ip: IP::Server("192.168.16.12".parse().unwrap()),
+                    ip: IP::Server(
+                        "192.168.16.12"
+                            .parse()
+                            .expect("Error then parsing default ip address"),
+                    ),
                     hosts: HostsVariants::None,
                 },
             ])),
@@ -91,7 +99,7 @@ impl Deref for Hosts {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
 pub struct Host {
     pub name: String,
     #[serde(rename = "type", skip_serializing_if = "HostType::is_server", default)]
@@ -113,7 +121,7 @@ impl Host {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HostType {
     #[serde(rename = "region")]
     Region,
@@ -145,7 +153,7 @@ impl HostType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum PortsVariants {
     Ports(Ports),
@@ -177,7 +185,7 @@ impl PortsVariants {
             p.binary += 1;
         }
     }
-    
+
     /// if port varinants `None` init them as default
     pub fn or_else(&mut self, ports: Ports) {
         if let PortsVariants::None = self {
@@ -200,7 +208,7 @@ impl PortsVariants {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Ports {
     pub http: u16,
     pub binary: u16,
@@ -210,11 +218,12 @@ impl Default for Ports {
     fn default() -> Self {
         Self {
             http: 8081,
-            binary: 3031,
+            binary: 3301,
         }
     }
 }
 
+#[allow(unused)]
 impl Ports {
     pub fn up(&mut self) {
         self.binary += 1;
@@ -222,7 +231,7 @@ impl Ports {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum IP {
     Server(IpAddr),
@@ -258,7 +267,7 @@ impl IP {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum HostsVariants {
     Hosts(Hosts),
@@ -280,3 +289,6 @@ impl HostsVariants {
 pub fn is_null(u: &usize) -> bool {
     matches!(u, 0)
 }
+
+#[cfg(test)]
+mod test;

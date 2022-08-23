@@ -1,11 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-use genin::libs::{
-    error::{ConfigError, TaskError},
-    hst::{Host, HostType, Hosts, HostsVariants, Ports, IP},
-    ins::Instance,
-};
 use log::trace;
+use crate::error::{ConfigError, TaskError};
+use crate::task::hst::{Host, Hosts, HostsVariants, HostType, IP, Ports};
+use crate::task::ins::Instance;
 
 #[derive(Debug)]
 pub(in crate::task) struct FlatHosts(Vec<FlatHost>);

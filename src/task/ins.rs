@@ -1,14 +1,17 @@
 use std::{cmp::Ordering, ops::Deref};
 
 use indexmap::IndexMap;
-use serde::{de::Visitor, Deserialize, Serialize};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Serialize,
+};
 use serde_yaml::Value;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Instances(Vec<Instance>);
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-/// Some tarantool cartridge instace
+#[derive(Serialize, Clone, Debug, Default, PartialEq, Eq)]
+/// Some tarantool cartridge instance
 ///
 /// ```yaml
 /// - name: "catalogue"
@@ -21,11 +24,11 @@ pub struct Instance {
     pub name: String,
     #[serde(skip)]
     pub parent: String,
-    #[serde(rename = "type", default)]
+    #[serde(rename = "type")]
     pub itype: Type,
     #[serde(default)]
     pub count: usize,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "is_zero")]
     pub replicas: usize,
     #[serde(default = "default_weight", skip_serializing_if = "is_zero")]
     pub weight: usize,
@@ -46,9 +49,9 @@ impl Default for Instances {
                 itype: Type::Router,
                 count: 1,
                 replicas: 0,
-                weight: 10,
+                weight: 0,
                 stateboard: false,
-                roles: vec![Role::router(), Role::api(), Role::failover_coordinator()],
+                roles: vec![Role::router(), Role::failover_coordinator()],
                 config: IndexMap::new(),
             },
             Instance {
@@ -56,7 +59,7 @@ impl Default for Instances {
                 parent: "storage".into(),
                 itype: Type::Storage,
                 count: 2,
-                replicas: 2,
+                replicas: 1,
                 weight: 10,
                 stateboard: false,
                 roles: vec![Role::storage()],
@@ -90,6 +93,74 @@ impl Instances {
     }
 }
 
+impl<'de> Deserialize<'de> for Instance {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize, Default)]
+        #[serde(default)]
+        struct InstanceHelper {
+            pub name: String,
+            #[serde(rename = "type")]
+            pub itype: Type,
+            pub count: usize,
+            #[serde(default = "count_one")]
+            pub replicas: usize,
+            #[serde(default = "default_weight")]
+            pub weight: usize,
+            pub roles: Vec<Role>,
+            pub config: IndexMap<String, Value>,
+        }
+
+        if let Ok(InstanceHelper {
+            mut roles,
+            mut itype,
+            name,
+            count,
+            replicas,
+            weight,
+            config,
+            ..
+        }) = InstanceHelper::deserialize(deserializer)
+        {
+            // If type not defined in yaml let's try to infer based on name
+            if itype == Type::Unknown {
+                itype = Type::from(name.as_str());
+            }
+
+            if roles.is_empty() {
+                roles = vec![Role::from(name.as_str())]
+            }
+            if itype == Type::Storage {
+                return Ok(Instance {
+                    name,
+                    itype,
+                    count,
+                    replicas,
+                    weight,
+                    roles,
+                    config,
+                    ..Default::default()
+                });
+            } else {
+                return Ok(Instance {
+                    itype: Type::from(name.as_str()),
+                    name,
+                    count,
+                    replicas: 0,
+                    weight: 0,
+                    roles,
+                    config,
+                    ..Default::default()
+                });
+            }
+        }
+        Err(Error::custom("Error then deserializing Instance"))
+    }
+}
+
+#[allow(unused)]
 impl Instance {
     /// Check that instance spreading should be forsed through hosts
     pub fn can_be_same(&self) -> bool {
@@ -129,20 +200,17 @@ impl Instance {
                             config: self.config.clone(),
                         })
                         .rev()
-                        .chain(
-                            (1..=master_num)
-                                .map(|num| Instance {
-                                    name: format!("dummy-{}", num),
-                                    parent: format!("dummy-{}", num),
-                                    count: 1,
-                                    replicas: 0,
-                                    itype: Type::Dummy,
-                                    weight: self.weight,
-                                    stateboard: false,
-                                    roles: self.roles.clone(),
-                                    config: self.config.clone(),
-                                })
-                        )
+                        .chain((1..=master_num).map(|num| Instance {
+                            name: format!("dummy-{}", num),
+                            parent: format!("dummy-{}", num),
+                            count: 1,
+                            replicas: 0,
+                            itype: Type::Dummy,
+                            weight: self.weight,
+                            stateboard: false,
+                            roles: self.roles.clone(),
+                            config: self.config.clone(),
+                        }))
                         .collect::<Vec<Instance>>()
                 })
                 .collect(),
@@ -157,7 +225,7 @@ impl Instance {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub enum Type {
     Storage,
@@ -165,15 +233,26 @@ pub enum Type {
     Router,
     Custom,
     Dummy,
+    Unknown,
 }
 
 impl Default for Type {
     fn default() -> Self {
-        Self::Custom
+        Self::Unknown
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+impl<'a> From<&'a str> for Type {
+    fn from(s: &'a str) -> Self {
+        match s.to_lowercase().as_str() {
+            "storage" => Type::Storage,
+            "router" => Type::Router,
+            _ => Type::Custom,
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Role {
     Custom(String),
     FailoverCoordinator(String),
@@ -229,6 +308,17 @@ impl Serialize for Role {
     }
 }
 
+impl<'a> From<&'a str> for Role {
+    fn from(s: &'a str) -> Self {
+        match s.to_lowercase().as_str() {
+            s if s.contains("storage") => Self::Storage(s.to_string()),
+            s if s.contains("router") => Self::Router(s.to_string()),
+            s => Self::Custom(s.to_string()),
+        }
+    }
+}
+
+#[allow(unused)]
 impl Role {
     #[inline]
     pub fn failover_coordinator() -> Self {
@@ -259,3 +349,11 @@ pub fn is_false(v: &bool) -> bool {
 pub fn default_weight() -> usize {
     10
 }
+
+#[allow(unused)]
+fn count_one() -> usize {
+    1
+}
+
+#[cfg(test)]
+mod test;

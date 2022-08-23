@@ -1,0 +1,13 @@
+---
+ansible_user: root
+ansible_password: change_me
+cartridge_app_name: myapp
+cartridge_cluster_cookie: myapp-cookie
+cartridge_package_path: /tmp/myapp.rpm
+cartridge_bootstrap_vshard: true
+cartridge_failover_params:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.1:4401"
+    password: some_password

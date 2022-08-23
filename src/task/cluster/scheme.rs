@@ -1,22 +1,21 @@
 use std::ops::{Deref, DerefMut};
 
-use genin::libs::{
-    error::TaskError,
-    hst::{Ports, PortsVariants},
-    ins::{Instance, Role, Type},
-};
-use indexmap::IndexMap;
+use crate::error::TaskError;
+use crate::task::flv::DEFAULT_STB_PORT;
+use crate::task::vrs::Vars;
 use log::{debug, info, trace};
 use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
 
 use crate::task::cluster::hosts::FlatHosts;
+use crate::task::hst::{Ports, PortsVariants};
+use crate::task::ins::{Instance, Role, Type};
 
 use super::{hosts::FlatHost, Cluster};
 
 pub(in crate::task) struct Scheme {
     pub(in crate::task) hosts: FlatHosts,
-    pub(in crate::task) vars: IndexMap<String, Value>,
+    pub(in crate::task) vars: Vars,
     pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
 
@@ -34,7 +33,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         //      roles: Vec<Role>,
         //      config: Value,
         // }
-        // - convert vector of instances into vec of sreading patterns
+        // - convert vector of instances into vec of reading patterns
         // - multiply all instances to full count
         // - spread routers
         // - spread storages
@@ -148,7 +147,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
             .failover
             .failover_variants
             .with_mut_stateboard(|stb| {
-                info!("Failover type: \"Stateboard\" uri: {}", stb.uri);
+                info!("Failover type: \"Stateboard\" uri: {}", stb.url);
                 hosts
                     .first_mut()
                     .map(|host| {
@@ -164,7 +163,10 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                             config: vec![
                                 (
                                     "listen".into(),
-                                    Value::String(format!("0.0.0.0:{}", stb.uri.port)),
+                                    Value::String(format!(
+                                        "0.0.0.0:{}",
+                                        stb.url.port.unwrap_or(DEFAULT_STB_PORT)
+                                    )),
                                 ),
                                 ("password".into(), Value::String(stb.password.to_string())),
                             ]
@@ -177,13 +179,6 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                     });
             });
 
-        let mut vars: IndexMap<String, Value> = cluster.vars.get_hashmap();
-
-        vars.insert(
-            "cartridge_failover_params".to_string(), 
-            cluster.failover.clone().to_mapping()
-        );
-        
         hosts.iter().for_each(|host| {
             trace!("Host: {}", host.name());
             host.instances.iter().for_each(|instance| {
@@ -193,7 +188,10 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
 
         Ok(Scheme {
             hosts,
-            vars,
+            vars: Vars {
+                cartridge_failover_params: cluster.failover.clone(),
+                ..cluster.vars.clone()
+            },
             ports_vec,
         })
     }
