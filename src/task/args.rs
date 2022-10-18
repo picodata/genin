@@ -5,7 +5,7 @@ pub(super) fn read() -> ArgMatches {
     Command::new(APP_NAME)
         .version(APP_VERSION)
         .author(APP_AUTHOR)
-        .about("Quick inventory for TDG")
+        .about("Quick inventory generation for tarantool apps")
         .subcommand_required(true)
         .dont_collapse_args_in_usage(true)
         .args(&[Arg::new("verbosity")
@@ -31,7 +31,7 @@ pub(super) fn read() -> ArgMatches {
                         .takes_value(true)
                         .help(
                             "The absolute or relative path where the \
-                            ready-made cluster inventory will be saved."
+                            ready-made cluster inventory will be saved.",
                         ),
                     Arg::new("force")
                         .long("force")
@@ -39,7 +39,7 @@ pub(super) fn read() -> ArgMatches {
                         .takes_value(false)
                         .help(
                             "Used to overwrite the output file, whether \
-                            or not it exists." 
+                            or not it exists.",
                         ),
                     Arg::new("ansible-user")
                         .long("ansible-user")
@@ -85,7 +85,7 @@ pub(super) fn read() -> ArgMatches {
                         .takes_value(false)
                         .help(
                             "Used to overwrite the output file, whether \
-                            or not it exists." 
+                            or not it exists.",
                         ),
                     Arg::new("failover-mode")
                         .long("failover-mode")
@@ -137,7 +137,7 @@ pub(super) fn read() -> ArgMatches {
                         .takes_value(false)
                         .help(
                             "Used to overwrite the output file, whether \
-                            or not it exists." 
+                            or not it exists.",
                         ),
                     Arg::new("export-csv")
                         .long("export-csv")
@@ -176,7 +176,7 @@ pub(super) fn read() -> ArgMatches {
                         .takes_value(false)
                         .help(
                             "Used to overwrite the output file, whether \
-                            or not it exists." 
+                            or not it exists.",
                         ),
                 ]),
         ])
