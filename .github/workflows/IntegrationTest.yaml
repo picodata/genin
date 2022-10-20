@@ -1,9 +1,10 @@
 name: IntegrationTest
 on:
-  push:
-    branches:
-      - master
-      - pull_request
+  workflow_call:
+    inputs:
+      VERSION:
+        required: true
+        type: string
 jobs:
   test:
     name: Run integrations tests
@@ -11,3 +12,4 @@ jobs:
     steps:
       - name: dummy
         run: echo "hello"
+

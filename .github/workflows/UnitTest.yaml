@@ -1,18 +1,50 @@
 name: UnitTest
-on:
-  push:
-    branches-ignore:
-      - master
-      - pull_request
+on: [push]
 jobs:
-  test:
-    name: Cargo run tests
+  version:
+    name: define version
     runs-on: [self-hosted, genin]
-    container:
-      image: docker.binary.picodata.io/rust-builder-nightly:latest
+    outputs:
+      VERSION: ${{ steps.get_last_tag.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Get version from tag
+        id: get_last_tag
+        run: |
+          if [[ github.ref_name == 'master' ]]; then
+            echo "VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))~rc" >> $GITHUB_OUTPUT
+          fi
+  test:
+    name: Cargo run tests
+    needs: [version]
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/rust-builder-nightly:latest
+    steps:
       - name: Run tests
         run: cargo +nightly test
+      - name: Clean workspace
+        run: rm -rf ..?* .[!.]* *
+        if: always()
+  call_build:
+    name: Build
+    needs: [version, test]
+    uses: ./.github/workflows/Build.yaml
+    secrets:
+      RAW_AUTH_RW: ${{ secrets.RAW_AUTH_RW }}
+      YUM_AUTH_RW: ${{ secrets.YUM_AUTH_RW }}
+      GPG_KEY_KDY: ${{ secrets.GPG_KEY_KDY }}
+      DEPLOY_PROD_SSH_KEY: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
+    with:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+  call_integrations_tests:
+    name: IntegrationTest
+    needs: [version]
+    uses: ./.github/workflows/IntegrationTest.yaml
+    with:
+      VERSION: ${{ needs.version.outputs.VERSION }}
