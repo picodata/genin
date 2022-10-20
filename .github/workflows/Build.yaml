@@ -192,19 +192,9 @@ jobs:
           name: genin-${{ env.VERSION }}.amd64.deb
           path: genin-${{ env.VERSION }}.amd64.deb
 
-  clean_workspace:
-    name: Clean workspace after build
-    needs: [build, musl-bin, apple, centos7, centos8, debian]
-    runs-on: [self-hosted, genin]
-    if: always()
-    container:
-      image: docker.binary.picodata.io/debian:11
-    steps:
-      - name: Clean workspace
-        run: rm -rf ..?* .[!.]* *
   workflow_call:
     name: Release
-    needs: [clean_workspace]
+    needs: [build, musl-bin, apple, centos7, centos8, debian]
     uses: ./.github/workflows/Release.yaml
     if: ${{ github.ref_name == 'master' }}
     with:
