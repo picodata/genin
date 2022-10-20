@@ -15,8 +15,7 @@ rm -rf $RPM_BUILD_ROOT
 %install
 mkdir -p $RPM_BUILD_ROOT/bin ~/bin
 mv $GITHUB_WORKSPACE/x86_64-unknown-linux-musl/genin $RPM_BUILD_ROOT/bin/genin
-install $RPM_BUILD_ROOT/bin/%{name} /usr/local/bin/%{name}
-chmod +x /usr/local/bin/%{name}
+install $RPM_BUILD_ROOT/bin/%{name} /usr/bin/%{name}
 
 %files
-/bin/%{name}
+%attr(4755, root, root) /bin/%{name}

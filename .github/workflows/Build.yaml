@@ -26,7 +26,9 @@ jobs:
           export VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
           echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
-        run: make build
+        run: |
+          make build
+          make permissions
       - name: Archive apple x64_86 binary
         uses: actions/upload-artifact@v3
         with:
