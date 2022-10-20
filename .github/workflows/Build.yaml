@@ -1,30 +1,39 @@
 name: Build
-on:
-  push:
-    branches:
-      - master
-    tags:
-      - '0.**'
+on: 
+  workflow_call:
+    secrets:
+      RAW_AUTH_RW:
+        description: 'A RAW_AUTH_RW passed from UnitTest'
+        required: true
+      YUM_AUTH_RW:
+        description: 'A YUM_AUTH_RW passed from UnitTest'
+        required: true
+      GPG_KEY_KDY:
+        description: 'A GPG_KEY_KDY passed from UnitTest'
+        required: true
+      DEPLOY_PROD_SSH_KEY:
+        description: 'A DEPLOY_PROD_SSH_KEY passed from UnitTest'
+        required: true
+      KNOWN_HOSTS:
+        description: 'A KNOWN_HOSTS passed from UnitTest'
+        required: true
+    inputs:
+      VERSION:
+        required: true
+        type: string
 env:
-  VERSION: 0.3.0
   YUM_REGISTRY: https://binary.picodata.io/repository/yum
   DEB_REGISTRY: https://binary.picodata.io/repository/ubuntu
   RAW_REGISTRY: https://binary.picodata.io/repository/raw
+  VERSION: ${{ inputs.VERSION }}
 jobs:
   build:
     name: Build genin binary
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rust-builder-nightly:latest
-    outputs:
-      app_version: ${{ steps.get_last_tag.outputs.app_version }}
     steps:
       - uses: actions/checkout@v3
-      - name: Get version from tag
-        id: get_last_tag
-        run: |
-          export VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
-          echo "::set-output name=app_version::${VERSION}"
       - name: Run make build
         run: |
           make build
@@ -52,12 +61,10 @@ jobs:
 
   musl-bin:
     name: Upload musl binary
-    needs: build
+    needs: [build]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rockylinux:8
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Download builded binary
         uses: actions/download-artifact@v3
@@ -72,12 +79,10 @@ jobs:
 
   apple:
     name: Upload MacOSX binary
-    needs: build
+    needs: [build]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rockylinux:8
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -93,12 +98,10 @@ jobs:
 
   centos7:
     name: Build centos 7 rpm
-    needs: build
+    needs: [build]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/centos:centos7
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -129,12 +132,10 @@ jobs:
 
   centos8:
     name: Build centos 8 prm
-    needs: build
+    needs: [build]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rockylinux:8
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -165,12 +166,10 @@ jobs:
 
   debian:
     name: Build deb package
-    needs: build
+    needs: [build]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/debian:11
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -193,80 +192,13 @@ jobs:
           name: genin-${{ env.VERSION }}.amd64.deb
           path: genin-${{ env.VERSION }}.amd64.deb
 
-  publish:
-    name: Publish to download.picodata.io
-    needs: [ build, centos7, centos8, debian ]
-    runs-on: [ self-hosted, genin ]
-    env:
-      VERSION: ${{ needs.build.outputs.app_version }}
-    steps:
-      - name: Download centos7 rpm
-        uses: actions/download-artifact@v3
-        with:
-          name: genin-${{ env.VERSION }}-1.el7.x86_64.rpm
-          path: ./centos7/
-      - name: Download centos8 rpm
-        uses: actions/download-artifact@v3
-        with:
-          name: genin-${{ env.VERSION }}-1.el8.x86_64.rpm
-          path: ./centos8/
-      - name: Download deb package
-        uses: actions/download-artifact@v3
-        with:
-          name: genin-${{ env.VERSION }}.amd64.deb
-          path: ./debian/
-      - name: Install SSH Key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
-          name: id_rsa
-          known_hosts: ${{ secrets.KNOWN_HOSTS }}
-          if_key_exists: replace
-      - name: Upload centos7 rpm to picodata
-        run: |
-          scp -o stricthostkeychecking=no centos7/genin-${{ env.VERSION }}-1.el7.x86_64.rpm  ansible@94.26.239.246:/data/nginx/www/packrepo/tarantool-picodata/el/7/x86_64/
-          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "cd /data/nginx/www/packrepo/tarantool-picodata/el/7/ && createrepo --update x86_64 && gpg --no-tty --yes -u kdy@picodata.io --detach-sign --armor x86_64/repodata/repomd.xml"
-      - name: Upload centos8 rpm to picodata
-        run: |
-          scp -o stricthostkeychecking=no centos8/genin-${{ env.VERSION }}-1.el8.x86_64.rpm  ansible@94.26.239.246:/data/nginx/www/packrepo/tarantool-picodata/el/8/x86_64/
-          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "cd /data/nginx/www/packrepo/tarantool-picodata/el/8/ && createrepo --update x86_64 && gpg --no-tty --yes -u kdy@picodata.io --detach-sign --armor x86_64/repodata/repomd.xml"
-      - name: Upload deb to picodata
-        run: |
-          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "mkdir -p ~/.deb"
-          scp -o stricthostkeychecking=no debian/genin-${{ env.VERSION }}.amd64.deb ansible@94.26.239.246:.deb/
-          ssh -o stricthostkeychecking=no ansible@94.26.239.246 "reprepro -b /data/nginx/www/packrepo/tarantool-picodata/ubuntu/ -C main includedeb focal ~/.deb/genin-${{ env.VERSION }}.amd64.deb; rm ~/.deb/genin-${{ env.VERSION }}.amd64.deb"
-
-  release:
-    name: Create new release
-    needs: [build, centos7, centos8, apple, musl-bin, debian, publish]
-    runs-on: [ self-hosted, genin ]
-    steps:
-      - name: Create genin Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.build.outputs.app_version }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: genin v${{ env.VERSION }}
-          body: |
-            ---
-            - [genin v${{ env.VERSION }}](#genin-v${{ env.VERSION }})
-              * [executable](#executable)
-              * [MacOSX](#macosx)
-              * [Centos x86_64](#centos-x86_64)
-              * [Debian x86_64](#debian-x86_64)
-            
-            ### Executable
-            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz](${{ env.RAW_REGISTRY }}/genin/bin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz)
-            
-            ### MacOSX
-            [genin-${{ env.VERSION }}-x86_64-macos.tar.gz](${{ env.RAW_REGISTRY }}/genin/osx/genin-${{ env.VERSION }}-x86_64-macosx.tar.gz)
-            
-            ### Centos x86_64:
-            [genin-${{ env.VERSION }}-1.el7.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/7/x86_64/os/genin-${{ env.VERSION }}-1.el7.x86_64.rpm)
-            [genin-${{ env.VERSION }}-1.el8.x86_64.rpm](${{ env.YUM_REGISTRY }}/el/8/x86_64/os/genin-${{ env.VERSION }}-1.el8.x86_64.rpm)
-
-            ### Debian x86_64
-            [genin-${{ env.VERSION }}.amd64.deb](${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb)
-
+  workflow_call:
+    name: Release
+    needs: [build, musl-bin, apple, centos7, centos8, debian]
+    uses: ./.github/workflows/Release.yaml
+    if: ${{ github.ref_name == 'master' }}
+    with:
+      VERSION: ${{ inputs.VERSION }}
+    secrets:
+      DEPLOY_PROD_SSH_KEY: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
+      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
