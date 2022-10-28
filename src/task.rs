@@ -1,9 +1,7 @@
 mod args;
-mod cluster;
+pub mod cluster;
 mod flv;
-pub mod hst;
-pub mod ins;
-mod inv;
+pub mod inv;
 pub mod vrs;
 
 use crate::error::{CommandLineError, ConfigError, TaskError};
@@ -17,7 +15,8 @@ use crate::task::{
 };
 use log::info;
 
-use self::cluster::{fs::FsInteraction, Cluster};
+use crate::task::cluster::{fs::FsInteraction, Cluster};
+use crate::traits::{Functor, MapSelf};
 
 /// А function that launches an application and walks it through the state stages.
 pub fn run() -> Result<(), TaskError> {
@@ -57,7 +56,7 @@ pub fn run() -> Result<(), TaskError> {
                 .map_self(|fs| Ok(Context((Cluster::try_from(args)?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, mut data, fs)| {
-                    data.vars.cartridge_failover_params = data.failover.clone();
+                    data.vars_mut().cartridge_failover_params = data.failover().clone();
                     Ok((
                         (Box::new(move || scheme.print())) as Box<dyn FnOnce()>,
                         (Box::new(move || {
@@ -138,30 +137,6 @@ pub fn run() -> Result<(), TaskError> {
             fs_fn(data_fn()?.as_slice())?;
             Ok(())
         })
-}
-
-// Pass self to function and return new type
-pub trait MapSelf<S>
-where
-    Self: Sized,
-{
-    type Target;
-    type Error;
-
-    fn map_self<F>(self, func: F) -> Result<Self::Target, Self::Error>
-    where
-        F: FnOnce(Self) -> Result<Self::Target, Self::Error>;
-}
-
-// Map Task to new type
-pub trait Functor {
-    type Unwrapped;
-    type Wrapped<U>: Functor;
-    type Error;
-
-    fn map<F, U>(self, func: F) -> Result<Self::Wrapped<U>, Self::Error>
-    where
-        F: FnOnce(Self::Unwrapped) -> Result<U, Self::Error>;
 }
 
 /// Task is a main structure whar produce all generation magic,

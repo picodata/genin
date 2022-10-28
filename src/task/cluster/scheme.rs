@@ -7,14 +7,14 @@ use log::{debug, info, trace};
 use prettytable::{color, Attr, Cell, Row, Table};
 use serde_yaml::Value;
 
-use crate::task::cluster::hosts::FlatHosts;
-use crate::task::hst::{Ports, PortsVariants};
-use crate::task::ins::{Instance, Role, Type};
-
-use super::{hosts::FlatHost, Cluster};
+use crate::task::cluster::hst::{FlatHost, MaxLen, Ports, PortsVariants, TryIntoFlatHosts};
+use crate::task::cluster::{
+    ins::{v2::InstanceV2, IntoV2, Role, Type},
+    Cluster,
+};
 
 pub(in crate::task) struct Scheme {
-    pub(in crate::task) hosts: FlatHosts,
+    pub(in crate::task) hosts: Vec<FlatHost>,
     pub(in crate::task) vars: Vars,
     pub(in crate::task) ports_vec: Vec<(u16, u16)>,
 }
@@ -23,12 +23,12 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
     type Error = TaskError;
 
     fn try_from(cluster: &'a Cluster) -> Result<Self, Self::Error> {
-        // pub struct Instance {
+        // pub struct InstanceV2 {
         //      name: String,
         //      parent: String,
         //      itype: Type,
-        //      count: usize,
-        //      replicas: usize,
+        //      replicasets_count: usize,
+        //      replication_factor: usize,
         //      weight: usize,
         //      roles: Vec<Role>,
         //      config: Value,
@@ -40,7 +40,27 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         // - spread replicas
         // - spread custom
 
-        let mut hosts = FlatHosts::try_from(&cluster.hosts)?;
+        let mut hosts: Vec<FlatHost> = match cluster {
+            Cluster::V1 { hosts, .. } => TryIntoFlatHosts::try_into(hosts)?,
+            Cluster::V2 { hosts, .. } => TryIntoFlatHosts::try_into(hosts)?,
+        };
+
+        let (instances, failover, vars) = match cluster {
+            Cluster::V1 {
+                instances,
+                failover,
+                vars,
+                ..
+            } => (instances.into_v2(), failover, vars),
+            Cluster::V2 {
+                topology,
+                failover,
+                vars,
+                ..
+            } => (topology.clone(), failover, vars),
+        };
+
+        //let mut hosts = FlatHosts::try_from(&cluster.hosts)?;
         let mut ports = PortsVariants::None;
         ports.or_else(hosts[0].ports);
 
@@ -49,14 +69,13 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         // 2. spread across hosts
         // 3. represent them as table with empty (dummy) cells
         //replicaset
-        cluster
-            .instances
+        instances
             .iter()
             .flat_map(|instance| instance.multiply())
             .rev()
             .fold(
                 vec![Vec::new(), Vec::new()],
-                |mut acc: Vec<Vec<Instance>>, instances| {
+                |mut acc: Vec<Vec<InstanceV2>>, instances| {
                     trace!(
                         "{:?}",
                         instances
@@ -65,7 +84,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
                             .collect::<Vec<&str>>()
                     );
                     match instances.last() {
-                        Some(Instance {
+                        Some(InstanceV2 {
                             itype: Type::Router | Type::Storage | Type::Dummy | Type::Replica,
                             ..
                         }) => acc.push(instances),
@@ -143,41 +162,36 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         //      stateboard_params:
         //          uri: 192.168.16.1:3030
         //          password: myapp-password
-        cluster
-            .failover
-            .failover_variants
-            .with_mut_stateboard(|stb| {
-                info!("Failover type: \"Stateboard\" uri: {}", stb.url);
-                hosts
-                    .first_mut()
-                    .map(|host| {
-                        host.instances.push(Instance {
-                            name: "stateboard".into(),
-                            parent: "stateboard".into(),
-                            itype: Type::Dummy,
-                            count: 1,
-                            replicas: 0,
-                            weight: 100,
-                            stateboard: true,
-                            roles: vec![Role::Custom("stateboard".into())],
-                            config: vec![
-                                (
-                                    "listen".into(),
-                                    Value::String(format!(
-                                        "0.0.0.0:{}",
-                                        stb.url.port.unwrap_or(DEFAULT_STB_PORT)
-                                    )),
-                                ),
-                                ("password".into(), Value::String(stb.password.to_string())),
-                            ]
-                            .into_iter()
-                            .collect(),
-                        })
+        failover.failover_variants.with_mut_stateboard(|stb| {
+            info!("Failover type: \"Stateboard\" uri: {}", stb.url);
+            hosts
+                .first_mut()
+                .map(|host| {
+                    host.instances.push(InstanceV2 {
+                        name: "stateboard".into(),
+                        parent: "stateboard".into(),
+                        itype: Type::Dummy,
+                        replicasets_count: 1,
+                        replication_factor: 0,
+                        weight: 100,
+                        stateboard: true,
+                        roles: vec![Role::Custom("stateboard".into())],
+                        config: vec![
+                            (
+                                "listen".into(),
+                                Value::String(format!(
+                                    "0.0.0.0:{}",
+                                    stb.url.port.unwrap_or(DEFAULT_STB_PORT)
+                                )),
+                            ),
+                            ("password".into(), Value::String(stb.password.to_string())),
+                        ]
+                        .into_iter()
+                        .collect(),
                     })
-                    .unwrap_or_else(|| {
-                        info!("failover type {}", cluster.failover.failover_variants)
-                    });
-            });
+                })
+                .unwrap_or_else(|| info!("failover type {}", failover.failover_variants));
+        });
 
         hosts.iter().for_each(|host| {
             trace!("Host: {}", host.name());
@@ -189,8 +203,8 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
         Ok(Scheme {
             hosts,
             vars: Vars {
-                cartridge_failover_params: cluster.failover.clone(),
-                ..cluster.vars.clone()
+                cartridge_failover_params: failover.clone(),
+                ..vars.clone()
             },
             ports_vec,
         })
@@ -198,7 +212,7 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
 }
 
 impl Deref for Scheme {
-    type Target = FlatHosts;
+    type Target = Vec<FlatHost>;
 
     fn deref(&self) -> &Self::Target {
         &self.hosts
@@ -254,11 +268,6 @@ impl Scheme {
                 ));
             });
         table.printstd();
-    }
-
-    pub(in crate::task) fn downcast(self) -> Vec<FlatHost> {
-        let Scheme { hosts, .. } = self;
-        hosts.downcast()
     }
 
     fn instance_table(s: &str, p: &Ports) -> String {

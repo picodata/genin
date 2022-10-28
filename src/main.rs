@@ -1,7 +1,6 @@
-#![feature(generic_associated_types)]
-
 mod task;
 mod error;
+mod traits;
 
 // Startup application params
 const APP_NAME: &str = env!("CARGO_PKG_NAME");

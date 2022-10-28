@@ -1,48 +1,62 @@
-use std::ops::{Deref, DerefMut};
-
 use log::trace;
+use serde::{Deserialize, Serialize};
+
 use crate::error::{ConfigError, TaskError};
-use crate::task::hst::{Host, Hosts, HostsVariants, HostType, IP, Ports};
-use crate::task::ins::Instance;
+use crate::task::cluster::hst::{
+    is_null, FlatHost, Flatten, HostType, PortsVariants, TryIntoFlatHosts, IP,
+};
 
-#[derive(Debug)]
-pub(in crate::task) struct FlatHosts(Vec<FlatHost>);
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq, Eq)]
+pub struct Host {
+    pub name: String,
+    #[serde(rename = "type", skip_serializing_if = "HostType::is_server", default)]
+    pub htype: HostType,
+    #[serde(skip_serializing_if = "is_null", default)]
+    pub distance: usize,
+    #[serde(skip_serializing_if = "PortsVariants::is_none", default)]
+    pub ports: PortsVariants,
+    #[serde(skip_serializing_if = "IP::is_none", default)]
+    pub ip: IP,
+    #[serde(skip_serializing_if = "HostsVariants::is_none", default)]
+    pub hosts: HostsVariants,
+}
 
-impl Deref for FlatHosts {
-    type Target = Vec<FlatHost>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl Host {
+    #[inline]
+    pub fn name(&self) -> &str {
+        &self.name
     }
 }
 
-impl DerefMut for FlatHosts {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum HostsVariants {
+    Hosts(Vec<Host>),
+    None,
+}
+
+impl Default for HostsVariants {
+    fn default() -> Self {
+        Self::None
     }
 }
 
-impl<'a> TryFrom<&'a Hosts> for FlatHosts {
+impl HostsVariants {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
+impl TryIntoFlatHosts for Vec<Host> {
     type Error = TaskError;
 
-    fn try_from(hosts: &'a Hosts) -> Result<Self, Self::Error> {
-        Ok(Self(FlatHosts::recursive_from(hosts, &Host::default())?))
+    fn try_into(&self) -> Result<Vec<FlatHost>, Self::Error> {
+        Ok(Vec::<FlatHost>::flatten(self, &Host::default())?)
     }
 }
 
 #[allow(unused)]
-#[derive(Debug)]
-pub(in crate::task) struct FlatHost {
-    pub(in crate::task) name: String,
-    pub(in crate::task) htype: HostType,
-    pub(in crate::task) ports: Ports,
-    pub(in crate::task) ip: IP,
-    pub(in crate::task) deepness: Vec<String>,
-    pub(in crate::task) instances: Vec<Instance>,
-}
-
-#[allow(unused)]
-impl FlatHosts {
+impl Flatten<Host> for Vec<FlatHost> {
     /// Recursively iterate over datacentres and inners.
     /// Create list of hosts and return it.
     ///
@@ -87,9 +101,8 @@ impl FlatHosts {
     ///     Host{...}
     /// ]
     /// ```
-    fn recursive_from(hosts: &Hosts, parent: &Host) -> Result<Vec<FlatHost>, TaskError> {
+    fn flatten(hosts: &Vec<Host>, parent: &Host) -> Result<Vec<FlatHost>, TaskError> {
         hosts
-            .deref()
             .iter()
             .try_fold(Vec::new(), |mut result: Vec<FlatHost>, host| {
                 match host.htype {
@@ -107,7 +120,7 @@ impl FlatHosts {
                     }
                     _ => match &host.hosts {
                         HostsVariants::Hosts(hosts) => {
-                            result.extend(FlatHosts::recursive_from(hosts, host)?);
+                            result.extend(Vec::flatten(hosts, host)?);
                             Ok(result)
                         }
                         HostsVariants::None => Err(TaskError::ConfigError(
@@ -120,24 +133,5 @@ impl FlatHosts {
                     },
                 }
             })
-    }
-
-    pub(in crate::task) fn max_len(&self) -> usize {
-        self.0
-            .iter()
-            .max_by(|a, b| a.instances.len().cmp(&b.instances.len()))
-            .map(|host| host.instances.len())
-            .unwrap_or_else(|| self.0.first().map(|host| host.instances.len()).unwrap_or(0))
-    }
-
-    pub(in crate::task) fn downcast(self) -> Vec<FlatHost> {
-        let FlatHosts(hosts) = self;
-        hosts
-    }
-}
-
-impl FlatHost {
-    pub(in crate::task) fn name(&self) -> &str {
-        &self.name
     }
 }

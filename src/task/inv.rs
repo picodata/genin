@@ -5,7 +5,7 @@ use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 use crate::error::{ConfigError, TaskError};
-use crate::task::ins::{Instance, is_false, Role, Type};
+use crate::task::cluster::ins::{v2::InstanceV2, is_false, Role, Type};
 use super::cluster::scheme::Scheme;
 use super::vrs::Vars;
 
@@ -60,7 +60,7 @@ impl TryFrom<Scheme> for Inventory {
                         trace!("filtering instance {}", instance.name);
                         !matches!(instance.itype, Type::Replica | Type::Dummy)
                     })
-                    .collect::<Vec<&Instance>>()
+                    .collect::<Vec<&InstanceV2>>()
                     .iter()
                     .map(|instance| {
                         debug!("replicaset keys {:?}", &replicasets.keys());

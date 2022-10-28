@@ -27,7 +27,7 @@
 ## About
 Genin is an inventory generator for Ansible Cartridge. It provides a command-line 
 tool that allows quick inventory creation for clusters of any size.
-For example, an inventory file for a cluster of 50 instances can easily be of thousand 
+For example, an inventory file for a cluster of 50 replicasets can easily be of thousand 
 lines or more. Any slight change of the configuration, eg. adding a new configuration 
 option for all storages, means a lot of manual routine and increases the risk of 
 improper or incomplete configuration. Genin  allows you to stay confident while 
@@ -137,26 +137,26 @@ Now you can open the file and examine the syntax.
 
 ```yaml
 ---
-# list of instances as an array
-instances:
-  # instance looks like item in array
-  - name: router              # (mandatory) instance name
-    type: router              # (mandatory) instance type (storage, router, custom, dummy, replica)
-    count: 1                  # (optional) how many masters we want, by default equal 1
-    replicas: 0               # (optional) number of replicas per master, default for router 0
-    weight: 10                # (optional) instance weight
+# list of replicasets as an array
+topology:
+  # replicaset looks like item in array
+  - name: router              # (mandatory) replicaset name
+    type: router              # (mandatory) replicaset type (storage, router, custom, dummy, replica)
+    replicasets_count: 1                  # (optional) how many masters we want, by default equal 1
+    replication_factor: 0               # (optional) number of replicas per master, default for router 0
+    weight: 10                # (optional) replicaset weight
     roles:                    # (optional) list of roles    
       - router
       - api
       - failover-coordinator
     config:                   # (optional) config with arbitrary key-values pairs
-      instance_name: router   # any other configuration parameters in free order
+      replicaset_name: router   # any other configuration parameters in free order
 
-  # all another instances generated using the init subcommand will have the same set of parameters
+  # all another replicasets generated using the init subcommand will have the same set of parameters
   - name: storage
     type: storage
-    count: 2
-    replicas: 2
+    replicasets_count: 2
+    replication_factor: 2
     weight: 10
     roles:
       - storage
@@ -197,7 +197,7 @@ vars:
 Replace the stubs with the actual values of your hosts and their parameters and save the file.
 
 
-So far you are already half way through getting things done! Use the resulted `Genin` configuration file to generate the final inventory file.
+So far you are already halfway through getting things done! Use the resulted `Genin` configuration file to generate the final inventory file.
 Here is the required command for that:
 
 ```shell
@@ -217,13 +217,13 @@ The initial cluster configuration file can be slimmed down to the following mini
 
 ```yaml
 ---
-instances:
+topology:
   - name: router
     type: router
   - name: storage
     type: storage
-    count: 3
-    replicas: 2
+    replicasets_count: 3
+    replication_factor: 2
 
 hosts:
   - name: selectel
@@ -238,17 +238,17 @@ hosts:
 This is a perfectly valid and working configuration file. The rest of the parameters wil use their default values.
  
 Let's now extend the configuration file with a more real-world example featuring 10 hosts, 10 routers, 10 storages, and a default number of storage 
-replicas (1). We will also define a different instance type - `cache`.
+replicas (1). We will also define a different replicaset type - `cache`.
 
 ```yaml
 ---
-instances:
+topology:
   - name: router
     type: router
-    count: 10
+    replicasets_count: 10
   - name: storage
     type: storage
-    count: 10
+    replicasets_count: 10
 
 hosts:
   - name: selectel
@@ -275,7 +275,7 @@ hosts:
       - name: host-10
         ip: 192.168.16.20
 ```
-The actual difference between the 2 instances configuration and a large cluster configuration
+The actual difference between the 2 replicasets configuration and a large cluster configuration
 is not that great, whereas the resulting inventory file for the large cluster will be 5 times bigger.
 
 Let's take a look at few more helpful configuration flags, this time regarding the failover capability:
@@ -313,7 +313,7 @@ genin build -vvv
 > directory (namely cluster.genin.yaml, inventory.yaml)
 
 The `--print-opts` (short `-p`) flag allows you to select the print output options. By default, 
-only the distribution of instances over the hosts is shown.
+only the distribution of replicasets over the hosts is shown.
 
 
 Sometimes it can be useful to quickly change the `failover-mode` using the flag without changing
