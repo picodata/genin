@@ -192,6 +192,17 @@ jobs:
           name: genin-${{ env.VERSION }}.amd64.deb
           path: genin-${{ env.VERSION }}.amd64.deb
 
+  clean_workspace:
+    name: Clean Workspace
+    needs: [build, musl-bin, apple, centos7, centos8, debian]
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/rockylinux:8
+    steps:
+      - name: Clean workspace
+        run: rm -rf ..?* .[!.]* *
+        if: always()
+
   workflow_call:
     name: Release
     needs: [build, musl-bin, apple, centos7, centos8, debian]
