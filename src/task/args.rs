@@ -1,5 +1,5 @@
 use crate::{APP_AUTHOR, APP_NAME, APP_VERSION};
-use clap::{Arg, ArgMatches, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 
 pub(super) fn read() -> ArgMatches {
     Command::new(APP_NAME)
@@ -10,7 +10,7 @@ pub(super) fn read() -> ArgMatches {
         .dont_collapse_args_in_usage(true)
         .args(&[Arg::new("verbosity")
             .short('v')
-            .multiple_occurrences(true)
+            .num_args(1..=2)
             .global(true)
             .help("Set logging level based on -v (debug) or -vv (trace)")])
         .subcommands(vec![
@@ -20,7 +20,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("source")
                         .long("source")
                         .short('s')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "Absolute or relative path of the file with \
                             the description of the cluster to be generated",
@@ -28,7 +28,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("output")
                         .long("output")
                         .short('o')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "The absolute or relative path where the \
                             ready-made cluster inventory will be saved.",
@@ -36,36 +36,36 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("force")
                         .long("force")
                         .short('f')
-                        .takes_value(false)
+                        .action(ArgAction::SetTrue)
                         .help(
                             "Used to overwrite the output file, whether \
                             or not it exists.",
                         ),
                     Arg::new("ansible-user")
                         .long("ansible-user")
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string, optional): login to perform ansible playbook"),
                     Arg::new("ansible-password")
                         .long("ansible-password")
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string, optional) :password from ansible user"),
                     Arg::new("cartridge-package-path")
                         .long("catrige-package-path")
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string, optional): path to application package"),
                     Arg::new("cartridge-cluster-cookie")
                         .long("cartridge-cluster-cookie")
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string): cluster cookie for all cluster instances"),
                     Arg::new("failover-mode")
                         .long("failover-mode")
                         .short('m')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string): failover mode (statefull, eventual, disabled)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help("(string): failover state provider"),
                 ]),
             Command::new("init")
@@ -74,7 +74,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("output")
                         .long("output")
                         .short('o')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "The absolute or relative path where the \
                             ready-made cluster inventory will be saved.",
@@ -82,7 +82,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("force")
                         .long("force")
                         .short('f')
-                        .takes_value(false)
+                        .action(ArgAction::SetTrue)
                         .help(
                             "Used to overwrite the output file, whether \
                             or not it exists.",
@@ -90,21 +90,21 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("failover-mode")
                         .long("failover-mode")
                         .short('m')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .default_value("stateful")
                         .help("(string): failover mode (stateful, eventual, disabled)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .default_value("stateboard")
                         .help("(string): failover state provider (etcd2, stateboard, disabled)"),
                     Arg::new("print")
                         .long("print")
                         .short('p')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .default_values(&["colorized", "ports"])
-                        .multiple_values(true)
+                        .num_args(1..=3)
                         .help("(list, optional): cluster print output option"),
                 ]),
             Command::new("inspect")
@@ -118,7 +118,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("output")
                         .long("output")
                         .short('o')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "The absolute or relative path where the \
                             ready-made cluster inventory will be saved.",
@@ -126,7 +126,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("source")
                         .long("source")
                         .short('s')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "Absolute or relative path of the file with \
                             the description of the cluster to be should displayed",
@@ -134,7 +134,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("force")
                         .long("force")
                         .short('f')
-                        .takes_value(false)
+                        .action(ArgAction::Set)
                         .help(
                             "Used to overwrite the output file, whether \
                             or not it exists.",
@@ -142,7 +142,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("export-csv")
                         .long("export-csv")
                         .short('e')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .default_value("cluster.csv")
                         .help("Export resulting schema as csv."),
                 ]),
@@ -157,7 +157,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("source")
                         .long("source")
                         .short('s')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "Absolute or relative path of the file with \
                             the ready cluster inventory.",
@@ -165,7 +165,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("output")
                         .long("output")
                         .short('o')
-                        .takes_value(true)
+                        .action(ArgAction::Set)
                         .help(
                             "The absolute or relative path where the \
                             cluster.genin.yaml will be saved.",
@@ -173,7 +173,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("force")
                         .long("force")
                         .short('f')
-                        .takes_value(false)
+                        .action(ArgAction::SetTrue)
                         .help(
                             "Used to overwrite the output file, whether \
                             or not it exists.",

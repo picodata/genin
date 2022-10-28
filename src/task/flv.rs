@@ -40,8 +40,8 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
     type Error = TaskError;
     fn try_from(args: &ArgMatches) -> Result<Self, Self::Error> {
         match (
-            args.value_of("failover-mode"),
-            args.value_of("failover-state-provider"),
+            args.get_one::<String>("failover-mode").map(|s|s.as_str()),
+            args.get_one::<String>("failover-state-provider").map(|s|s.as_str()),
         ) {
             (Some("disabled"), _) => Ok(Self {
                 mode: Mode::Disabled,
