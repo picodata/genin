@@ -1,13 +1,12 @@
 use std::{
     fs::File,
     io::{Read, Write},
-    panic::{catch_unwind, set_hook, take_hook},
     path::PathBuf,
 };
 
-use clap::ArgMatches;
 use crate::error::{ConfigError, InternalError, TaskError};
-use log::{debug, warn, trace};
+use clap::ArgMatches;
+use log::{debug, trace, warn};
 
 use crate::task::MapSelf;
 
@@ -23,8 +22,16 @@ pub(in crate::task) struct FsInteraction {
 impl<'a> From<&'a ArgMatches> for FsInteraction {
     fn from(args: &'a ArgMatches) -> Self {
         FsInteraction {
-            source: get_path(args, "source"),
-            output: get_path(args, "output"),
+            source: args
+                .try_get_one::<String>("source")
+                .transpose()
+                .map(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str()))))
+                .flatten(),
+            output: args
+                .try_get_one::<String>("output")
+                .transpose()
+                .map(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str()))))
+                .flatten(),
         }
     }
 }
@@ -126,22 +133,6 @@ impl<T> MapSelf<T> for FsInteraction {
     {
         func(self)
     }
-}
-
-/// After release clap 3.0 `ArgMatches` always panics if arg with `id` does not exists.
-/// I think this is strange behaviour. This function should solve it.
-fn get_path<'a>(args: &'a ArgMatches, id: &'a str) -> Option<PathBuf> {
-    let hook = take_hook();
-    set_hook(Box::new(|_| {}));
-
-    let present = catch_unwind(move || {
-        args.is_present(id)
-            .then(|| args.value_of(id).map(PathBuf::from))
-            .flatten()
-    })
-    .unwrap_or_default();
-    set_hook(hook);
-    present
 }
 
 #[inline]

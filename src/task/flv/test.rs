@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 
 use crate::task::cluster::Cluster;
 
@@ -11,13 +11,13 @@ fn test_failover_disabled() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![
@@ -39,13 +39,13 @@ fn test_failover_disabled() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![
@@ -67,13 +67,13 @@ fn test_failover_disabled() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec!["genin", "--failover-state-provider", "disabled"])
@@ -93,13 +93,13 @@ fn test_failover_stateboard() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec!["genin"])
@@ -119,13 +119,13 @@ fn test_failover_stateboard() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![
@@ -148,17 +148,17 @@ fn test_failover_stateboard() {
     // override defined in file (eventual)
     let failover = Failover::try_from(
         &Command::new("genin")
-            .arg(Arg::new("source").long("source").takes_value(true))
+            .arg(Arg::new("source").long("source").action(ArgAction::Set))
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![
@@ -183,17 +183,17 @@ fn test_failover_stateboard() {
     // override defined in file (etcd2)
     let failover = Failover::try_from(
         &Command::new("genin")
-            .arg(Arg::new("source").long("source").takes_value(true))
+            .arg(Arg::new("source").long("source").action(ArgAction::Set))
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![
@@ -224,13 +224,13 @@ fn test_failover_etcd() {
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec!["genin", "--failover-state-provider", "etcd2"])
@@ -247,17 +247,17 @@ fn test_failover_etcd() {
     // override failover mode from configuration file
     let failover = Failover::try_from(
         &Command::new("genin")
-            .arg(Arg::new("source").long("source").takes_value(true))
+            .arg(Arg::new("source").long("source").action(ArgAction::Set))
             .arg(
                 Arg::new("failover-mode")
                     .long("failover-mode")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateful"),
             )
             .arg(
                 Arg::new("failover-state-provider")
                     .long("failover-state-provider")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("stateboard"),
             )
             .try_get_matches_from(vec![

@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{Arg, Command, ArgAction};
 
 use super::*;
 
@@ -9,13 +9,13 @@ fn test_fs_interaction_from_args() {
             .arg(
                 Arg::new("source")
                     .long("source")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("default.source.yaml"),
             )
             .arg(
                 Arg::new("output")
                     .long("output")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("default.output.yaml"),
             )
             .try_get_matches_from(vec!["genin", "--source", "test.yaml"])
@@ -58,7 +58,7 @@ fn test_fs_interaction_wrong_ext() {
             .arg(
                 Arg::new("source")
                     .long("source")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("default.source.yaml"),
             )
             .try_get_matches_from(vec![
@@ -80,7 +80,7 @@ fn test_fs_interaction_errors() {
             .arg(
                 Arg::new("output")
                     .long("output")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("default.output.yaml"),
             )
             .try_get_matches_from(vec!["genin"])
@@ -112,7 +112,7 @@ fn test_fs_interaction_file_exists() {
             .arg(
                 Arg::new("output")
                     .long("output")
-                    .takes_value(true)
+                    .action(ArgAction::Set)
                     .default_value("test/resources/test-sort-inventory.yaml"),
             )
             .try_get_matches_from(vec!["genin"])

@@ -27,7 +27,7 @@ pub fn run() -> Result<(), TaskError> {
     let args = args::read();
     std::env::set_var(
         "RUST_LOG",
-        match args.occurrences_of("verbosity") {
+        match args.get_count("verbosity") {
             0 => "warn",
             1 => "info",
             2 => "debug",
@@ -52,7 +52,7 @@ pub fn run() -> Result<(), TaskError> {
     Task(args)
         .map(|args| match args.subcommand() {
             Some(("init", args)) => FsInteraction::from(args)
-                .check(None, Some(CLUSTER_YAML), args.is_present("force"))
+                .check(None, Some(CLUSTER_YAML), args.get_flag("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(args)?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, mut data, fs)| {
@@ -76,7 +76,7 @@ pub fn run() -> Result<(), TaskError> {
                 .check(
                     Some(CLUSTER_YAML),
                     Some(INVENTORY_YAML),
-                    args.is_present("force"),
+                    args.get_flag("force"),
                 )
                 .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
@@ -98,7 +98,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("inspect", args)) => FsInteraction::from(args)
-                .check(Some(CLUSTER_YAML), None, args.is_present("force"))
+                .check(Some(CLUSTER_YAML), None, args.get_flag("force"))
                 .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
                 .map(|(scheme, _, _)| {
@@ -111,7 +111,7 @@ pub fn run() -> Result<(), TaskError> {
                     ))
                 }),
             Some(("reverse", args)) => FsInteraction::from(args)
-                .check(Some(INVENTORY_YAML), None, args.is_present("force"))
+                .check(Some(INVENTORY_YAML), None, args.get_flag("force"))
                 .map_self(|fs| Ok(Context((Inventory::try_from(fs.read()?.as_slice())?, fs))))?
                 .map(|(data, fs)| Ok((Scheme::try_from(&Cluster::default())?, data, fs)))?
                 .map(|(scheme, _data, fs)| {
