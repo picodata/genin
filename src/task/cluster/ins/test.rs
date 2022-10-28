@@ -1,8 +1,9 @@
 use indexmap::IndexMap;
 
-use crate::task::ins::Type;
-
-use super::{Instance, Instances, Role};
+use crate::task::cluster::{
+    ins::{v1::Instance, v2::InstanceV2, Role, Type},
+    Cluster,
+};
 
 #[test]
 fn test_router_deserialization() {
@@ -150,29 +151,29 @@ count: 1
 
 #[test]
 fn test_default_instances() {
-    let instances = Instances(vec![
-        Instance {
+    let instances = vec![
+        InstanceV2 {
             name: "router".into(),
             parent: "router".into(),
             itype: Type::Router,
-            count: 1,
-            replicas: 0,
+            replicasets_count: 1,
+            replication_factor: 0,
             weight: 0,
             stateboard: false,
             roles: vec![Role::router(), Role::failover_coordinator()],
             config: IndexMap::new(),
         },
-        Instance {
+        InstanceV2 {
             name: "storage".into(),
             parent: "storage".into(),
             itype: Type::Storage,
-            count: 2,
-            replicas: 1,
+            replicasets_count: 2,
+            replication_factor: 1,
             weight: 10,
             stateboard: false,
             roles: vec![Role::storage()],
             config: IndexMap::new(),
         },
-    ]);
-    assert_eq!(Instances::default(), instances);
+    ];
+    assert_eq!(Cluster::default().topology(), instances);
 }

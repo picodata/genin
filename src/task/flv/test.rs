@@ -299,7 +299,7 @@ fn test_failover_from_noncomplete_yaml() {
         }),
     };
 
-    assert_eq!(cluster.failover, expected_flv);
+    assert_eq!(cluster.failover(), &expected_flv);
 
     // test failover deserialization with uncomplete genin config
     let cluster = Cluster::try_from(
@@ -309,8 +309,7 @@ fn test_failover_from_noncomplete_yaml() {
     );
 
     let expected_err = Err(TaskError::ConfigError(ConfigError::FileFormatError(
-        "Error then deserializing cluster file data did not match any variant \
-                    of untagged enum FailoverHelper at line 2 column 10"
+        "Error then deserializing cluster file data did not match any variant of untagged enum Cluster"
             .to_string(),
     )));
 
