@@ -28,14 +28,13 @@ use self::ins::IntoV2;
 /// Cluster is a `genin` specific configuration file
 /// ```rust
 /// Cluster {
-///     // Array of instances in free order
-///     // instances:
+///     // Array of replicasets in free order
+///     // topology:
 ///     // - name: "catalogue"
 ///     //   type: "storage"
-///     //   count: 1
-///     //   replicas: 2
+///     //   replicasets_count: 1
+///     //   replication_factor: 2
 ///     //   weight: 10
-///     instance: Instaces
 ///     // Array or arrays with hosts parameters
 ///     // hosts:
 ///     //     - name: kavkaz

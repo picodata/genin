@@ -23,12 +23,12 @@ impl<'a> TryFrom<&'a Cluster> for Scheme {
     type Error = TaskError;
 
     fn try_from(cluster: &'a Cluster) -> Result<Self, Self::Error> {
-        // pub struct Instance {
+        // pub struct InstanceV2 {
         //      name: String,
         //      parent: String,
         //      itype: Type,
-        //      count: usize,
-        //      replicas: usize,
+        //      replicasets_count: usize,
+        //      replication_factor: usize,
         //      weight: usize,
         //      roles: Vec<Role>,
         //      config: Value,
