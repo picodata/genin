@@ -1,13 +1,16 @@
-use std::ops::{Deref, DerefMut};
+use std::fmt::Display;
 
 use indexmap::IndexMap;
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use crate::error::{ConfigError, TaskError};
-use crate::task::cluster::ins::{v2::InstanceV2, is_false, Role, Type};
-use super::cluster::scheme::Scheme;
-use super::vrs::Vars;
+
+use crate::task::vrs::Vars;
+use crate::task::Cluster;
+use crate::{
+    error::{GeninError, GeninErrorKind},
+    task::cluster::ins::{is_false, Role},
+};
 
 #[derive(Serialize, Deserialize)]
 pub(in crate::task) struct Inventory {
@@ -15,111 +18,144 @@ pub(in crate::task) struct Inventory {
 }
 
 impl<'a> TryFrom<&'a [u8]> for Inventory {
-    type Error = TaskError;
+    type Error = GeninError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        serde_yaml::from_slice(value).map_err(|err| {
-            TaskError::ConfigError(ConfigError::FileFormatError(format!(
-                "Deserizalization error {}",
-                err
-            )))
+        serde_yaml::from_slice(value).map_err(|error| {
+            GeninError::new(
+                GeninErrorKind::DeserializationError,
+                format!("Deserizalization error {}", error).as_str(),
+            )
         })
     }
 }
 
-impl TryFrom<Scheme> for Inventory {
-    type Error = TaskError;
+impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
+    type Error = GeninError;
 
-    fn try_from(mut scheme: Scheme) -> Result<Self, Self::Error> {
+    fn try_from(cluster: &'a Option<Cluster>) -> Result<Self, Self::Error> {
+        let (cl_hosts, cl_vars) = if let Some(cluster) = cluster {
+            (cluster.hosts(), cluster.vars())
+        } else {
+            return Err(GeninError::new(
+                GeninErrorKind::EmptyField,
+                "Failed to create inventory from cluster. Cluster is empty.",
+            ));
+        };
+
         let mut hosts = IndexMap::new();
         let mut children = IndexMap::new();
         let mut replicasets: IndexMap<String, Vec<String>> = IndexMap::new();
-        scheme.deref_mut().iter_mut().for_each(|host| {
-            debug!("inserting values from {} to final inventory", host.name());
-            host.instances.iter_mut().for_each(|instance| {
-                hosts.insert(
-                    instance.name.clone(),
-                    InventoryHost {
-                        stateboard: instance.stateboard,
-                        config: instance.config.clone(),
-                    },
+        cl_hosts
+            .first()
+            .unwrap()
+            .bottom_level()
+            .into_iter()
+            .for_each(|host| {
+                debug!(
+                    "inserting values from {} to final inventory",
+                    host.name.as_str()
                 );
-                replicasets
-                    .entry(instance.parent.to_string())
-                    .or_default()
-                    .push(instance.name.to_string());
+                host.instances.iter().for_each(|instance| {
+                    hosts.insert(
+                        instance.name.to_string(),
+                        InventoryHost {
+                            // zone: TODO: zone
+                            stateboard: instance.stateboard.unwrap_or(false),
+                            config: instance.config.config(), //TODO
+                        },
+                    );
+                    replicasets
+                        .entry(instance.name.get_parent().to_string())
+                        .or_default()
+                        .push(instance.name.to_string());
+                });
             });
-        });
         replicasets.iter_mut().for_each(|(_, v)| v.sort());
 
-        scheme.deref().iter().for_each(|host| {
-            children.extend(
-                host.instances
-                    .iter()
-                    .filter(|instance| {
-                        trace!("filtering instance {}", instance.name);
-                        !matches!(instance.itype, Type::Replica | Type::Dummy)
-                    })
-                    .collect::<Vec<&InstanceV2>>()
-                    .iter()
-                    .map(|instance| {
-                        debug!("replicaset keys {:?}", &replicasets.keys());
-                        trace!(
-                            "replicaset members by key {:?} is: {:?}",
-                            &instance.name,
-                            replicasets.get(&instance.name)
-                        );
-                        (
-                            format!("{}-replicaset", instance.parent),
-                            InventoryReplicaset {
-                                hosts: replicasets
-                                    .get(&instance.name)
-                                    .cloned().unwrap_or_default()
-                                    .into_iter()
-                                    .map(|member| (member, Value::Null))
-                                    .collect(),
-                                vars: InventoryVars::ReplicasetInventoryVars {
-                                    replicaset_alias: instance.parent.to_string(),
-                                    weight: instance.weight,
-                                    failover_priority: replicasets
-                                        .remove(&instance.name)
-                                        .unwrap_or_default(),
-                                    roles: instance.roles.clone(),
-                                },
-                            },
-                        )
-                    }),
-            );
-        });
-
-        scheme.deref().iter().for_each(|host| {
-            children.insert(
-                host.name().into(),
-                InventoryReplicaset {
-                    vars: InventoryVars::HostInventoryVars(
-                        vec![(
-                            "ansible_host".to_string(),
-                            Value::String(host.ip.to_string()),
-                        )]
-                        .into_iter()
-                        .collect(),
-                    ),
-                    hosts: host
-                        .instances
+        cl_hosts
+            .first()
+            .unwrap()
+            .bottom_level()
+            .into_iter()
+            .for_each(|host| {
+                children.extend(
+                    host.instances
                         .iter()
-                        .map(|instance| (instance.name.to_string(), Value::Null))
-                        .collect(),
-                },
-            );
-        });
+                        //.filter(|instance| {
+                        //    trace!("filtering instance {}", instance.name);
+                        //    !matches!(instance.itype, Type::Replica | Type::Dummy)
+                        //})
+                        .map(|instance| {
+                            debug!("replicaset keys {:?}", &replicasets.keys());
+                            trace!(
+                                "replicaset members by key {:?} is: {:?}",
+                                &instance.name,
+                                replicasets.get(&instance.name.to_string())
+                            );
+                            (
+                                format!("{}-replicaset", instance.name.get_parent(),),
+                                InventoryReplicaset {
+                                    hosts: replicasets
+                                        .get(&instance.name.to_string())
+                                        .cloned()
+                                        .unwrap_or_default()
+                                        .into_iter()
+                                        .map(|member| (member, Value::Null))
+                                        .collect(),
+                                    vars: InventoryVars::ReplicasetInventoryVars {
+                                        replicaset_alias: instance.name.get_parent().to_string(),
+                                        weight: 0, //TODO
+                                        failover_priority: replicasets
+                                            .remove(&instance.name.to_string())
+                                            .unwrap_or_default(),
+                                        roles: instance.roles.clone(),
+                                    },
+                                },
+                            )
+                        }),
+                );
+            });
+
+        cl_hosts
+            .first()
+            .unwrap()
+            .bottom_level()
+            .into_iter()
+            .for_each(|host| {
+                children.insert(
+                    host.name.clone(),
+                    InventoryReplicaset {
+                        vars: InventoryVars::HostInventoryVars(
+                            vec![(
+                                "ansible_host".to_string(),
+                                Value::String(host.config.address()),
+                            )]
+                            .into_iter()
+                            .collect(),
+                        ),
+                        hosts: host
+                            .instances
+                            .iter()
+                            .map(|instance| (instance.name.to_string(), Value::Null))
+                            .collect(),
+                    },
+                );
+            });
 
         Ok(Self {
             all: InventoryParts {
-                vars: scheme.vars.clone(),
+                vars: cl_vars.clone(),
                 hosts,
                 children,
             },
         })
+    }
+}
+
+impl Display for Inventory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
     }
 }
 

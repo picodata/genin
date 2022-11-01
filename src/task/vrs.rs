@@ -39,8 +39,8 @@ pub(in crate::task) struct Vars {
 impl Default for Vars {
     fn default() -> Self {
         Self {
-            ansible_user: "root".into(),
-            ansible_password: "change_me".into(),
+            ansible_user: "ansible".into(),
+            ansible_password: "ansible".into(),
             cartridge_app_name: "myapp".into(),
             cartridge_cluster_cookie: "myapp-cookie".into(),
             cartridge_package_path: "/tmp/myapp.rpm".into(),

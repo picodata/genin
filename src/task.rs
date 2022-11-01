@@ -4,22 +4,19 @@ mod flv;
 pub mod inv;
 pub mod vrs;
 
-use crate::error::{CommandLineError, ConfigError, TaskError};
+use log::info;
+use std::error::Error;
+
+use crate::error::{GeninError, GeninErrorKind};
+use crate::task::cluster::fs::{TryMap, IO};
 use crate::task::{
-    cluster::{
-        fs::{CLUSTER_YAML, INVENTORY_YAML},
-        scheme::Scheme,
-        Context,
-    },
+    cluster::fs::{CLUSTER_YAML, INVENTORY_YAML},
+    cluster::Cluster,
     inv::Inventory,
 };
-use log::info;
-
-use crate::task::cluster::{fs::FsInteraction, Cluster};
-use crate::traits::{Functor, MapSelf};
 
 /// А function that launches an application and walks it through the state stages.
-pub fn run() -> Result<(), TaskError> {
+pub fn run_v2() -> Result<(), Box<dyn Error>> {
     // At first set logging level
     // -v       info
     // -vv      debug
@@ -40,6 +37,7 @@ pub fn run() -> Result<(), TaskError> {
         "Log level {}",
         std::env::var("RUST_LOG").unwrap_or_else(|_| "warn".into())
     );
+
     // The idea of the first step of creating a task:
     //      - create FsInteration
     //      - map FsInteration as:
@@ -49,126 +47,61 @@ pub fn run() -> Result<(), TaskError> {
     //          - [map] map data to scheme created from data
     //          - [map] move scheme and data into two closures and return them with fs
     //      - return tupple
-    Task(args)
-        .map(|args| match args.subcommand() {
-            Some(("init", args)) => FsInteraction::from(args)
-                .check(None, Some(CLUSTER_YAML), args.get_flag("force"))
-                .map_self(|fs| Ok(Context((Cluster::try_from(args)?, fs))))?
-                .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
-                .map(|(scheme, mut data, fs)| {
-                    data.vars_mut().cartridge_failover_params = data.failover().clone();
-                    Ok((
-                        (Box::new(move || scheme.print())) as Box<dyn FnOnce()>,
-                        (Box::new(move || {
-                            serde_yaml::to_vec(&data).map_err(|error| {
-                                TaskError::ConfigError(ConfigError::FileContentError(format!(
-                                    "Error during deserialization {}",
-                                    error
-                                )))
-                            })
-                        }))
-                            as Box<dyn FnOnce() -> Result<Vec<u8>, TaskError>>,
-                        (Box::new(move |bytes: &[u8]| fs.write(bytes)))
-                            as Box<dyn FnOnce(&[u8]) -> Result<(), TaskError>>,
-                    ))
-                }),
-            Some(("build", args)) => FsInteraction::from(args)
-                .check(
+    match args.subcommand() {
+        Some(("init", args)) => {
+            IO::from(args)
+                // TODO: make better PathBuf
+                .try_into_files(None, Some(CLUSTER_YAML), args.get_flag("force"))?
+                .try_map(|IO { output, .. }| {
+                    Cluster::try_from(args).map(|cluster| IO {
+                        input: Some(cluster),
+                        output,
+                    })
+                })?
+                .print_input()
+                .serialize_input()?;
+        }
+        Some(("build", args)) => {
+            IO::from(args)
+                .try_into_files(
                     Some(CLUSTER_YAML),
                     Some(INVENTORY_YAML),
                     args.get_flag("force"),
-                )
-                .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
-                .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
-                .map(|(scheme, _data, fs)| {
-                    Ok((
-                        (Box::new(move || {})) as Box<dyn FnOnce()>,
-                        (Box::new(move || {
-                            scheme.print();
-                            serde_yaml::to_vec(&Inventory::try_from(scheme)?).map_err(|err| {
-                                TaskError::ConfigError(ConfigError::FileContentError(format!(
-                                    "serialization error {}",
-                                    err
-                                )))
-                            })
-                        }))
-                            as Box<dyn FnOnce() -> Result<Vec<u8>, TaskError>>,
-                        (Box::new(move |bytes: &[u8]| fs.write(bytes)))
-                            as Box<dyn FnOnce(&[u8]) -> Result<(), TaskError>>,
-                    ))
-                }),
-            Some(("inspect", args)) => FsInteraction::from(args)
-                .check(Some(CLUSTER_YAML), None, args.get_flag("force"))
-                .map_self(|fs| Ok(Context((Cluster::try_from(fs.read()?.as_slice())?, fs))))?
-                .map(|(data, fs)| Ok((Scheme::try_from(&data)?, data, fs)))?
-                .map(|(scheme, _, _)| {
-                    Ok((
-                        (Box::new(move || scheme.print())) as Box<dyn FnOnce()>,
-                        (Box::new(move || Ok(Vec::new())))
-                            as Box<dyn FnOnce() -> Result<Vec<u8>, TaskError>>,
-                        (Box::new(move |_bytes: &[u8]| Ok(())))
-                            as Box<dyn FnOnce(&[u8]) -> Result<(), TaskError>>,
-                    ))
-                }),
-            Some(("reverse", args)) => FsInteraction::from(args)
-                .check(Some(INVENTORY_YAML), None, args.get_flag("force"))
-                .map_self(|fs| Ok(Context((Inventory::try_from(fs.read()?.as_slice())?, fs))))?
-                .map(|(data, fs)| Ok((Scheme::try_from(&Cluster::default())?, data, fs)))?
-                .map(|(scheme, _data, fs)| {
-                    Ok((
-                        (Box::new(move || scheme.print())) as Box<dyn FnOnce()>,
-                        (Box::new(move || Ok(Vec::new())))
-                            as Box<dyn FnOnce() -> Result<Vec<u8>, TaskError>>,
-                        (Box::new(move |bytes: &[u8]| fs.write(bytes)))
-                            as Box<dyn FnOnce(&[u8]) -> Result<(), TaskError>>,
-                    ))
-                }),
-            _ => Err(TaskError::CommandLineError(
-                CommandLineError::SubcommandError("subcommand missing".into()),
-            )),
-        })?
-        .map_self(|Task(Context((scheme_fn, data_fn, fs_fn)))| {
-            // Here should happend some magic:
-            //      - print scheme
-            //      - call closure with serialize into_vec
-            //      - write serialized value
-            info!("mapping context into final result");
-            scheme_fn();
-            fs_fn(data_fn()?.as_slice())?;
-            Ok(())
-        })
-}
-
-/// Task is a main structure whar produce all generation magic,
-/// and source configuration yaml serialized in this struct.
-/// After all manipulation was done, `Task` will be map_selfed into Inventory.
-pub struct Task<T>(
-    /// In process of building inventory, or in another scenarios
-    /// all data stored inside this Type
-    T,
-);
-
-impl<T, S> MapSelf<S> for Task<T> {
-    type Target = S;
-    type Error = TaskError;
-
-    fn map_self<F>(self, func: F) -> Result<Self::Target, Self::Error>
-    where
-        F: FnOnce(Self) -> Result<Self::Target, Self::Error>,
-    {
-        func(self)
+                )?
+                .deserialize_input::<Cluster>()?
+                .print_input()
+                .try_map(|IO { input, output }| {
+                    Inventory::try_from(&input).map(|inventory| IO {
+                        input: Some(inventory),
+                        output,
+                    })
+                })?
+                .serialize_input()?;
+        }
+        Some(("inspect", args)) => {
+            let io = IO::from(args)
+                .try_into_files(Some(CLUSTER_YAML), None, args.get_flag("force"))?
+                .deserialize_input::<Cluster>()?
+                .consume_output();
+            println!("{}", io);
+        }
+        Some(("reverse", args)) => {
+            IO::from(args)
+                .try_into_files(Some(INVENTORY_YAML), None, args.get_flag("force"))?
+                .deserialize_input::<Inventory>()?
+                .try_map(|IO { input, output }| {
+                    Cluster::try_from(&input).map(|cluster| IO {
+                        input: Some(cluster),
+                        output,
+                    })
+                })?
+                .print_input()
+                .serialize_input()?;
+        }
+        _ => {
+            return Err(GeninError::new(GeninErrorKind::ArgsError, "subcommand missing").into());
+        }
     }
-}
 
-impl<T> Functor for Task<T> {
-    type Unwrapped = T;
-    type Wrapped<U> = Task<U>;
-    type Error = TaskError;
-
-    fn map<F, U>(self, func: F) -> Result<Self::Wrapped<U>, Self::Error>
-    where
-        F: FnOnce(Self::Unwrapped) -> Result<U, Self::Error>,
-    {
-        Ok(Task(func(self.0)?))
-    }
+    Ok(())
 }

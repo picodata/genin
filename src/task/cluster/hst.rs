@@ -4,9 +4,6 @@ pub (in crate::task) mod v2;
 use std::{fmt::Display, net::IpAddr};
 use serde::{Deserialize, Serialize};
 
-use crate::error::TaskError;
-use crate::task::cluster::ins::v2::InstanceV2;
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HostType {
     #[serde(rename = "region")]
@@ -86,10 +83,24 @@ impl PortsVariants {
         }
     }
 
+    pub fn http_as_option(&self) -> Option<usize> {
+        match self {
+            PortsVariants::Ports(p) => Some(usize::from(p.http)),
+            PortsVariants::None => None,
+        }
+    }
+
     pub fn binary_or_default(&self) -> u16 {
         match self {
             PortsVariants::Ports(p) => p.binary,
             PortsVariants::None => Ports::default().binary,
+        }
+    }
+
+    pub fn binary_as_option(&self) -> Option<usize> {
+        match self {
+            PortsVariants::Ports(p) => Some(usize::from(p.binary)),
+            PortsVariants::None => None,
         }
     }
 }
@@ -157,45 +168,3 @@ pub fn is_null(u: &usize) -> bool {
     matches!(u, 0)
 }
 
-#[allow(unused)]
-#[derive(Debug)]
-pub(in crate::task) struct FlatHost {
-    pub(in crate::task) name: String,
-    pub(in crate::task) htype: HostType,
-    pub(in crate::task) ports: Ports,
-    pub(in crate::task) ip: IP,
-    pub(in crate::task) deepness: Vec<String>,
-    pub(in crate::task) instances: Vec<InstanceV2>,
-}
-
-pub(in crate::task) trait TryIntoFlatHosts {
-    type Error;
-
-    fn try_into(&self) -> Result<Vec<FlatHost>, Self::Error>;
-}
-
-pub(in crate::task) trait Flatten<T> {
-    fn flatten(hosts: &Vec<T>, parent: &T) -> Result<Vec<FlatHost>, TaskError>;
-}
-
-pub(in crate::task) trait MaxLen {
-    fn max_len(&self) -> usize;
-}
-
-impl MaxLen for Vec<FlatHost> {
-    fn max_len(&self) -> usize {
-        self.iter()
-            .max_by(|a, b| a.instances.len().cmp(&b.instances.len()))
-            .map(|host| host.instances.len())
-            .unwrap_or_else(|| self.first().map(|host| host.instances.len()).unwrap_or(0))
-    }
-}
-
-impl FlatHost {
-    pub(in crate::task) fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-#[cfg(test)]
-mod test;
