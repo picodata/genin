@@ -3,28 +3,22 @@ pub(in crate::task) mod fs;
 pub(in crate::task) mod hst;
 pub(in crate::task) mod ins;
 
-use std::fmt::Display;
-use std::net::IpAddr;
-
-use crate::error::GeninError;
-use crate::task::vrs::Vars;
 use clap::ArgMatches;
 use indexmap::IndexMap;
 use log::trace;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+use std::fmt::Display;
+use std::net::IpAddr;
 
+use crate::error::GeninError;
 use crate::task::cluster::hst::v1::Host;
-use crate::task::flv::Failover;
-
 use crate::task::cluster::hst::v2::{HostV2, HostV2Config};
-use crate::task::cluster::ins::{Role, Type};
-
-use self::ins::v2::Replicaset;
-use self::ins::{Config, Name};
-
-use super::inv::Inventory;
+use crate::task::cluster::ins::{v2::Replicaset, Name, Role, Type};
+use crate::task::flv::Failover;
+use crate::task::inventory::Inventory;
+use crate::task::vars::Vars;
 
 #[derive(Debug, PartialEq, Eq)]
 /// Cluster is a `genin` specific configuration file
@@ -129,49 +123,59 @@ impl Default for Cluster {
     ///             ip: 10.99.3.100
     /// ```
     fn default() -> Self {
+        let replicasets = vec![
+            Replicaset {
+                name: Name::from("router").with_index(1),
+                replicasets_count: Some(1),
+                replication_factor: None,
+                weight: None,
+                zone: None,
+                roles: vec![Role::router(), Role::failover_coordinator()],
+                config: HostV2Config::default(),
+            },
+            Replicaset {
+                name: Name::from("storage").with_index(1),
+                replicasets_count: Some(2),
+                replication_factor: Some(2),
+                weight: None,
+                zone: None,
+                roles: vec![Role::storage()],
+                config: HostV2Config::default(),
+            },
+            Replicaset {
+                name: Name::from("storage").with_index(2),
+                replicasets_count: Some(2),
+                replication_factor: Some(2),
+                weight: None,
+                zone: None,
+                roles: vec![Role::storage()],
+                config: HostV2Config::default(),
+            },
+        ];
+        let mut host = HostV2::from("cluster")
+            .with_hosts(vec![HostV2::from("datacenter-1")
+                .with_hosts(vec![
+                    HostV2::from("server-1").with_config(
+                        HostV2Config::from(IpAddr::from([192, 168, 16, 11]))
+                            .with_ports((8081, 3031)),
+                    ),
+                    HostV2::from("server-2").with_config(
+                        HostV2Config::from(IpAddr::from([192, 168, 16, 12]))
+                            .with_ports((8081, 3031)),
+                    ),
+                ])
+                .with_config(HostV2Config::from((8081, 3031)))])
+            .with_config(HostV2Config::from((8081, 3031)))
+            .with_instances(
+                replicasets
+                    .iter()
+                    .flat_map(|replicaset| replicaset.instances())
+                    .collect(),
+            );
+        host.spread();
         Self {
-            replicasets: vec![
-                Replicaset {
-                    name: Name::from("router").with_index(1),
-                    replicasets_count: Some(1),
-                    replication_factor: None,
-                    weight: None,
-                    zone: None,
-                    roles: vec![Role::router(), Role::failover_coordinator()],
-                    config: Config::default(),
-                    instances: Vec::new(),
-                },
-                Replicaset {
-                    name: Name::from("storage").with_index(1),
-                    replicasets_count: Some(2),
-                    replication_factor: Some(1),
-                    weight: None,
-                    zone: None,
-                    roles: vec![Role::storage()],
-                    config: Config::default(),
-                    instances: Vec::new(),
-                },
-                Replicaset {
-                    name: Name::from("storage").with_index(2),
-                    replicasets_count: Some(2),
-                    replication_factor: Some(1),
-                    weight: None,
-                    zone: None,
-                    roles: vec![Role::storage()],
-                    config: Config::default(),
-                    instances: Vec::new(),
-                },
-            ],
-            hosts: vec![
-                HostV2::from("cluster").with_hosts(vec![HostV2::from("datacenter-1")
-                    .with_config(HostV2Config::from((8081, 3301)))
-                    .with_hosts(vec![
-                        HostV2::from("server-1")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
-                        HostV2::from("server-2")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
-                    ])]),
-            ],
+            replicasets,
+            hosts: vec![host],
             failover: Default::default(),
             vars: Default::default(),
         }
@@ -180,7 +184,8 @@ impl Default for Cluster {
 
 impl Display for Cluster {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.hosts.first().unwrap())
+        trace!("{:?}", self.hosts);
+        write!(f, "{}", &self.hosts.first().unwrap().to_string())
     }
 }
 
@@ -189,8 +194,10 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
 
     fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
         trace!("Сluster file will be constructed based on default values and Genin call arguments");
+        let failover = Failover::try_from(args)?;
         Ok(Cluster {
-            failover: Failover::try_from(args)?,
+            vars: Vars::from(&failover),
+            failover,
             ..Cluster::default()
         })
     }
@@ -199,7 +206,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
 impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
     type Error = GeninError;
 
-    fn try_from(value: &'a Option<Inventory>) -> Result<Self, Self::Error> {
+    fn try_from(_value: &'a Option<Inventory>) -> Result<Self, Self::Error> {
         todo!()
     }
 }
@@ -239,7 +246,7 @@ impl<'de> Deserialize<'de> for Cluster {
                     .into_iter()
                     .flat_map(|member| member.to_replicasets())
                     .collect();
-                let mut host = HostV2::from(hosts);
+                let mut host = HostV2::from(hosts).with_config(HostV2Config::from((8081, 3031)));
                 host.instances = replicasets
                     .iter_mut()
                     .flat_map(|replicaset| replicaset.instances())
@@ -263,7 +270,8 @@ impl<'de> Deserialize<'de> for Cluster {
                     .flat_map(|member| member.to_replicasets())
                     .collect();
                 let mut host = HostV2::from("cluster")
-                    .with_hosts(hosts.into_iter().map(|host| host.into_v2()).collect());
+                    .with_hosts(hosts.into_iter().map(|host| host.into_v2()).collect())
+                    .with_config(HostV2Config::from((8081, 3031)));
                 host.instances = replicasets
                     .iter_mut()
                     .flat_map(|replicaset| replicaset.instances())
@@ -293,30 +301,10 @@ impl Serialize for Cluster {
         state.serialize_field("hosts", &self.hosts.first().unwrap().hosts)?;
         state.serialize_field("failover", &self.failover)?;
 
-        #[derive(Serialize)]
-        struct ClusterVars<'a> {
-            ansible_user: &'a String,
-            ansible_password: &'a String,
-            cartridge_app_name: &'a String,
-            cartridge_cluster_cookie: &'a String,
-            cartridge_package_path: &'a String,
-            cartridge_bootstrap_vshard: &'a bool,
-            #[serde(flatten)]
-            another_fields: &'a Value,
-        }
+        let mut vars = self.vars.clone();
+        vars.cartridge_failover_params = None;
 
-        state.serialize_field(
-            "vars",
-            &ClusterVars {
-                ansible_user: &self.vars.ansible_user,
-                ansible_password: &self.vars.ansible_password,
-                cartridge_app_name: &self.vars.cartridge_app_name,
-                cartridge_cluster_cookie: &self.vars.cartridge_cluster_cookie,
-                cartridge_package_path: &self.vars.cartridge_package_path,
-                cartridge_bootstrap_vshard: &self.vars.cartridge_bootstrap_vshard,
-                another_fields: &self.vars.another_fields,
-            },
-        )?;
+        state.serialize_field("vars", &vars)?;
         state.end()
     }
 }
@@ -333,6 +321,10 @@ impl Cluster {
 
     pub fn vars(&self) -> &Vars {
         &self.vars
+    }
+
+    pub fn failover(&self) -> &Failover {
+        &self.failover
     }
 }
 
@@ -385,7 +377,7 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
         #[derive(Deserialize)]
         struct Helper {
             name: String,
-            #[serde(rename = "type")]
+            #[serde(default, rename = "type")]
             itype: Type,
             #[serde(default)]
             count: usize,
@@ -434,7 +426,7 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
                         name: Name::from(name),
                         count,
                         replicas: 0,
-                        weight: 0,
+                        weight,
                         roles,
                         config,
                         stateboard: false,
@@ -451,21 +443,27 @@ impl TopologyMemberV1 {
             .map(|index| Replicaset {
                 name: self.name.clone_with_index(index),
                 replicasets_count: Some(self.count),
-                replication_factor: TopologyMemberV1::as_option(self.replicas),
-                weight: TopologyMemberV1::as_option(self.weight),
+                replication_factor: TopologyMemberV1::as_replication_factor(self.replicas),
+                weight: TopologyMemberV1::as_weight(self.weight),
                 zone: None,
                 roles: self.roles.clone(),
-                config: Config::from(self.config.clone()),
-                instances: Vec::new(),
+                config: HostV2Config::default().with_additional_config(self.config.clone()),
             })
             .collect()
     }
 
-    fn as_option(u: usize) -> Option<usize> {
-        if u == 0 {
+    fn as_replication_factor(count: usize) -> Option<usize> {
+        if count == 0 {
             return None;
         }
-        Some(u)
+        Some(count + 1)
+    }
+
+    fn as_weight(weight: usize) -> Option<usize> {
+        if weight == 0 {
+            return None;
+        }
+        Some(weight)
     }
 }
 
@@ -482,8 +480,8 @@ struct TopologyMemberV2 {
     zone: Option<String>,
     #[serde(default)]
     roles: Vec<Role>,
-    #[serde(skip_serializing_if = "Config::is_empty")]
-    config: Config,
+    #[serde(skip_serializing_if = "HostV2Config::is_none")]
+    config: HostV2Config,
 }
 
 impl<'de> Deserialize<'de> for TopologyMemberV2 {
@@ -505,7 +503,7 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
             #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
-            config: Config,
+            config: HostV2Config,
         }
 
         Helper::deserialize(deserializer).map(
@@ -572,7 +570,6 @@ impl TopologyMemberV2 {
                 zone: self.zone.clone(),
                 roles: self.roles.clone(),
                 config: self.config.clone(),
-                instances: Vec::new(),
             })
             .collect()
     }

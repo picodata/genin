@@ -7,6 +7,8 @@ use indexmap::IndexMap;
 use serde::{de::Visitor, Deserialize, Serialize};
 use serde_yaml::Value;
 
+use super::hst::v2::Address;
+
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub enum Type {
@@ -132,21 +134,21 @@ pub fn default_weight() -> usize {
     10
 }
 
-#[allow(unused)]
 fn count_one() -> usize {
     1
 }
 
 pub trait IntoV2 {
-    fn into_v2(&self) -> Vec<v2::Replicaset>;
+    fn as_v2_replicaset(&self) -> Vec<v2::Replicaset>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
 pub struct Config {
-    http_port: Option<usize>,
-    binary_port: Option<usize>,
+    pub http_port: Option<usize>,
+    pub binary_port: Option<usize>,
+    pub address: Address,
     #[serde(flatten)]
-    config: IndexMap<String, Value>,
+    pub config: IndexMap<String, Value>,
 }
 
 impl From<IndexMap<String, Value>> for Config {
@@ -155,16 +157,6 @@ impl From<IndexMap<String, Value>> for Config {
             config,
             ..Config::default()
         }
-    }
-}
-
-impl Config {
-    pub fn is_empty(&self) -> bool {
-        self.http_port.is_none() && self.binary_port.is_none() && self.config.is_empty()
-    }
-
-    pub fn config(&self) -> IndexMap<String, Value> {
-        self.config.clone()
     }
 }
 

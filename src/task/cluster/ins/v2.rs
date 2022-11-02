@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
 
+use crate::task::cluster::hst::v2::HostV2Config;
 use crate::task::cluster::ins::Name;
-use crate::task::cluster::ins::{v1::Instance, Config, IntoV2, Role};
+use crate::task::cluster::ins::{v1::Instance, IntoV2, Role};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Replicaset TODO: docs, remove public
@@ -20,17 +21,18 @@ pub struct Replicaset {
     pub weight: Option<usize>,
     pub zone: Option<String>,
     pub roles: Vec<Role>,
-    pub config: Config,
-    pub instances: Vec<InstanceV2>,
+    pub config: HostV2Config,
 }
 
 #[allow(unused)]
 impl Replicaset {
-    pub fn instances(&mut self) -> Vec<InstanceV2> {
+    pub fn instances(&self) -> Vec<InstanceV2> {
         (1..=self.replication_factor.unwrap_or(1))
             .map(|index| InstanceV2 {
                 name: self.name.clone_with_index(index),
-                stateboard: Some(false),
+                stateboard: None,
+                weight: self.weight,
+                zone: self.zone.clone(),
                 roles: self.roles.clone(),
                 config: self.config.clone(),
             })
@@ -58,7 +60,7 @@ impl Ord for Replicaset {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-/// TODO: docs
+/// TODO: docs, remove pub
 ///
 /// ```yaml
 /// - name: "catalogue"
@@ -70,8 +72,10 @@ impl Ord for Replicaset {
 pub struct InstanceV2 {
     pub name: Name,
     pub stateboard: Option<bool>,
+    pub weight: Option<usize>,
+    pub zone: Option<String>,
     pub roles: Vec<Role>,
-    pub config: Config,
+    pub config: HostV2Config,
 }
 
 impl PartialOrd for InstanceV2 {
@@ -90,7 +94,7 @@ impl Ord for InstanceV2 {
 }
 
 impl IntoV2 for Vec<Instance> {
-    fn into_v2(&self) -> Vec<Replicaset> {
+    fn as_v2_replicaset(&self) -> Vec<Replicaset> {
         self.iter()
             .map(
                 |Instance {
@@ -109,11 +113,7 @@ impl IntoV2 for Vec<Instance> {
                         weight: Some(*weight),
                         zone: None,
                         roles: roles.clone(),
-                        config: Config {
-                            config: config.clone(),
-                            ..Config::default()
-                        },
-                        instances: Vec::new(), //TODO
+                        config: HostV2Config::from(config.clone()),
                     }
                 },
             )

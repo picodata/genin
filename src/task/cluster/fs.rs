@@ -274,32 +274,6 @@ impl<I: Read, O> IO<I, O> {
     }
 }
 
-impl<I, O: Read> IO<I, O> {
-    pub fn deserialize_output<T: DeserializeOwned>(self) -> Result<IO<I, T>, Box<dyn Error>> {
-        Ok(IO {
-            input: self.input,
-            output: Some(serde_yaml::from_reader(self.output.ok_or_else(|| {
-                GeninError::new(
-                    GeninErrorKind::EmptyField,
-                    "IO struct has empty output field",
-                )
-            })?)?),
-        })
-    }
-}
-
-impl<I, O> IO<I, O> {
-    pub fn input_into_output<F: FnOnce(&Option<I>) -> Result<N, GeninError>, N>(
-        self,
-        function: F,
-    ) -> Result<IO<I, N>, Box<dyn Error>> {
-        Ok(IO {
-            output: Some(function(&self.input)?),
-            input: self.input,
-        })
-    }
-}
-
 pub trait TryMap<A, B> {
     type Error;
     type Output;
@@ -351,24 +325,6 @@ impl<I: Serialize, O: Write> IO<I, O> {
             )
             .into())
         }
-    }
-}
-
-impl<I, O: Serialize> IO<I, O> {
-    pub fn serialize_output<T: Write>(self, mut writer: T) -> Result<IO<I, T>, Box<dyn Error>> {
-        serde_yaml::to_writer(
-            &mut writer,
-            &self.output.ok_or_else(|| {
-                GeninError::new(
-                    GeninErrorKind::EmptyField,
-                    "IO struct has empty output field",
-                )
-            })?,
-        )?;
-        Ok(IO {
-            input: self.input,
-            output: Some(writer),
-        })
     }
 }
 

@@ -1,12 +1,15 @@
-use std::{fmt::Display, net::IpAddr};
-
+use std::{
+    fmt::Display,
+    net::{IpAddr, SocketAddr},
+};
 use clap::ArgMatches;
 use log::{error, trace, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 
-use crate::error::{GeninError, GeninErrorKind};
-
-pub(in crate::task) const DEFAULT_STB_PORT: u16 = 4401;
+use crate::{
+    error::{GeninError, GeninErrorKind},
+    DEFAULT_STATEBOARD_PORT,
+};
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 /// Failover enum
@@ -18,12 +21,12 @@ pub(in crate::task) const DEFAULT_STB_PORT: u16 = 4401;
 ///         uri: "10.99.3.100:4001"
 ///         password: "vG?-GG!4sxV8q5:f"
 /// ```
-pub(in crate::task) struct Failover {
-    pub(in crate::task) mode: Mode,
+pub struct Failover {
+    pub mode: Mode,
     #[serde(skip_serializing_if = "StateProvider::is_disabled")]
-    pub(in crate::task) state_provider: StateProvider,
+    pub state_provider: StateProvider,
     #[serde(skip_serializing_if = "FailoverVariants::is_disabled", flatten)]
-    pub(in crate::task) failover_variants: FailoverVariants,
+    pub failover_variants: FailoverVariants,
 }
 
 impl Default for Failover {
@@ -123,7 +126,7 @@ impl<'de> Deserialize<'de> for Failover {
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) enum Mode {
+pub enum Mode {
     #[serde(rename = "stateful")]
     Stateful,
     #[serde(rename = "eventual")]
@@ -190,7 +193,7 @@ impl<'s> TryFrom<&'s str> for Mode {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) enum StateProvider {
+pub enum StateProvider {
     #[serde(rename = "stateboard")]
     Stateboard,
     #[serde(rename = "etcd2")]
@@ -227,7 +230,7 @@ impl StateProvider {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) enum FailoverVariants {
+pub enum FailoverVariants {
     #[serde(rename = "stateboard_params")]
     StateboardVariant(StateboardParams),
     #[serde(rename = "etcd2_params")]
@@ -270,19 +273,19 @@ impl Display for FailoverVariants {
 
 #[allow(unused)]
 impl FailoverVariants {
-    pub(in crate::task) fn is_disabled(&self) -> bool {
+    pub fn is_disabled(&self) -> bool {
         matches!(self, Self::Disabled)
     }
 
-    pub(in crate::task) fn is_stateboard(&self) -> bool {
+    pub fn is_stateboard(&self) -> bool {
         matches!(self, Self::StateboardVariant(_))
     }
 
-    pub(in crate::task) fn is_etcd2(&self) -> bool {
+    pub fn is_etcd2(&self) -> bool {
         matches!(self, Self::ETCD2Variant(_))
     }
 
-    pub(in crate::task) fn with_mut_stateboard<F: FnMut(&StateboardParams)>(&self, mut func: F) {
+    pub fn with_mut_stateboard<F: FnMut(&StateboardParams)>(&self, mut func: F) {
         if let FailoverVariants::StateboardVariant(stb) = self {
             func(stb);
         }
@@ -290,18 +293,18 @@ impl FailoverVariants {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) struct StateboardParams {
+pub struct StateboardParams {
     #[serde(rename = "uri")]
-    pub(in crate::task) url: Url,
-    pub(in crate::task) password: String,
+    pub url: Uri,
+    pub password: String,
 }
 
 impl Default for StateboardParams {
     fn default() -> Self {
         StateboardParams {
-            url: Url {
-                ip: "192.168.16.1".parse().unwrap(),
-                port: Some(DEFAULT_STB_PORT),
+            url: Uri {
+                ip: "192.168.16.11".parse().unwrap(),
+                port: DEFAULT_STATEBOARD_PORT,
             },
             password: "password".into(),
         }
@@ -309,89 +312,50 @@ impl Default for StateboardParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) struct Url {
-    pub(in crate::task) ip: IpAddr,
-    pub(in crate::task) port: Option<u16>,
+pub struct Uri {
+    pub ip: IpAddr,
+    pub port: u16,
 }
 
-impl Display for Url {
+impl Display for Uri {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(port) = self.port {
-            write!(f, "{}:{}", self.ip, port)
-        } else {
-            write!(f, "{}", self.ip)
-        }
+        write!(f, "{}:{}", self.ip, self.port)
     }
 }
 
-impl<'de> Deserialize<'de> for Url {
+impl<'de> Deserialize<'de> for Uri {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        struct UrlHelper(String);
-
-        impl serde::de::Expected for UrlHelper {
-            fn fmt(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "expected ip like:\n  uri:    \nip: 0.0.0.0:4401")
-            }
+        #[serde(untagged)]
+        enum UriHelper {
+            Uri(String),
+            IpPort { ip: IpAddr, port: u16 },
         }
 
-        if let Ok(UrlHelper(raw_ip)) = UrlHelper::deserialize(deserializer) {
-            let ip_port_urn = raw_ip.split(':').collect::<Vec<&str>>();
-
-            if let (Some(ip), Some(port)) = (ip_port_urn.first(), ip_port_urn.last()) {
-                return Ok(Url {
-                    ip: ip.parse().map_err(|_| {
-                        serde::de::Error::invalid_value(
-                            serde::de::Unexpected::Other(ip),
-                            &UrlHelper("0.0.0.0:4401".to_string()),
-                        )
-                    })?,
-                    port: Some(port.parse::<u16>().map_err(|_| {
-                        serde::de::Error::invalid_value(
-                            serde::de::Unexpected::Other(port),
-                            &UrlHelper("0.0.0.0:4401".to_string()),
-                        )
-                    })?),
-                });
-            }
-        }
-        Err(serde::de::Error::custom(
-            "Error then deserializing uri field in stateboard_params".to_string(),
-        ))
+        UriHelper::deserialize(deserializer).map(|uri_helper| match uri_helper {
+            UriHelper::Uri(uri_str) => uri_str
+                .parse::<SocketAddr>()
+                .map(|socket_addr| Uri {
+                    ip: socket_addr.ip(),
+                    port: socket_addr.port(),
+                })
+                .map_err(|error| {
+                    serde::de::Error::custom(format!("failed to parse uri {}: {}", uri_str, error))
+                }),
+            UriHelper::IpPort { ip, port } => Ok(Uri { ip, port }),
+        })?
     }
 }
 
-impl Serialize for Url {
+impl Serialize for Uri {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        if let Some(port) = self.port {
-            serializer.serialize_str(format!("{}:{}", self.ip, port).as_str())
-        } else {
-            serializer.serialize_str(format!("{}:{}", self.ip, DEFAULT_STB_PORT).as_str())
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Debug, Clone)]
-pub(in crate::task) struct Uri {
-    pub(in crate::task) ip: IpAddr,
-    #[serde(default = "default_stb_port", skip_serializing_if = "Option::is_none")]
-    pub(in crate::task) port: Option<u16>,
-    pub(in crate::task) urn: String,
-}
-
-impl Display for Uri {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(port) = self.port {
-            write!(f, "{}:{}/{}", self.ip, port, self.urn)
-        } else {
-            write!(f, "{}/{}", self.ip, self.urn)
-        }
+        serializer.serialize_str(format!("{}:{}", self.ip, self.port).as_str())
     }
 }
 
@@ -403,15 +367,15 @@ impl Display for Uri {
 ///     endpoints: [ "http://192.168.16.11:5699", "http://192.168.16.1::5699" ]
 ///     username: ansible
 ///     password: ansible
-pub(in crate::task) struct ETCD2Params {
-    pub(in crate::task) prefix: String,
+pub struct ETCD2Params {
+    pub prefix: String,
     #[serde(default)]
-    pub(in crate::task) lock_delay: usize,
-    pub(in crate::task) endpoints: Vec<UrlWithProtocol>,
+    pub lock_delay: usize,
+    pub endpoints: Vec<UriWithProtocol>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub(in crate::task) username: String,
+    pub username: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
-    pub(in crate::task) password: String,
+    pub password: String,
 }
 
 impl Default for ETCD2Params {
@@ -420,8 +384,8 @@ impl Default for ETCD2Params {
             prefix: "cartridge/myapp".into(),
             lock_delay: 30,
             endpoints: vec![
-                UrlWithProtocol::try_from("http://192.168.16.11:5699").unwrap(),
-                UrlWithProtocol::try_from("http://192.168.16.12:5699").unwrap(),
+                UriWithProtocol::try_from("http://192.168.16.11:5699").unwrap(),
+                UriWithProtocol::try_from("http://192.168.16.12:5699").unwrap(),
             ],
             username: "username".into(),
             password: "password".into(),
@@ -430,12 +394,12 @@ impl Default for ETCD2Params {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) struct UrlWithProtocol {
+pub struct UriWithProtocol {
     protocol: Protocol,
-    url: Url,
+    url: Uri,
 }
 
-impl<'a> TryFrom<&'a str> for UrlWithProtocol {
+impl<'a> TryFrom<&'a str> for UriWithProtocol {
     type Error = GeninError;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
@@ -463,10 +427,10 @@ impl<'a> TryFrom<&'a str> for UrlWithProtocol {
     }
 }
 
-struct UrlWithProtocolVisior;
+struct UriWithProtocolVisior;
 
-impl<'de> Visitor<'de> for UrlWithProtocolVisior {
-    type Value = UrlWithProtocol;
+impl<'de> Visitor<'de> for UriWithProtocolVisior {
+    type Value = UriWithProtocol;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(
@@ -479,22 +443,22 @@ impl<'de> Visitor<'de> for UrlWithProtocolVisior {
     where
         E: serde::de::Error,
     {
-        UrlWithProtocol::try_from(s).map_err(|err| {
+        UriWithProtocol::try_from(s).map_err(|err| {
             serde::de::Error::unknown_field(err.to_string().as_str(), &["endpoints"])
         })
     }
 }
 
-impl<'de> Deserialize<'de> for UrlWithProtocol {
+impl<'de> Deserialize<'de> for UriWithProtocol {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_any(UrlWithProtocolVisior)
+        deserializer.deserialize_any(UriWithProtocolVisior)
     }
 }
 
-impl Serialize for UrlWithProtocol {
+impl Serialize for UriWithProtocol {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -504,7 +468,7 @@ impl Serialize for UrlWithProtocol {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(in crate::task) enum Protocol {
+pub enum Protocol {
     Http,
     Https,
 }
@@ -518,10 +482,5 @@ impl Display for Protocol {
     }
 }
 
-pub(in crate::task) fn default_stb_port() -> Option<u16> {
-    Some(DEFAULT_STB_PORT)
-}
-
-//TODO: fix tests
-//#[cfg(test)]
-//mod test;
+#[cfg(test)]
+mod test;

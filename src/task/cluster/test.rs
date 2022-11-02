@@ -14,28 +14,25 @@ fn topology_from_replicasets() {
             weight: None,
             zone: None,
             roles: vec![Role::router(), Role::failover_coordinator()],
-            config: Config::default(),
-            instances: Vec::new(),
+            config: HostV2Config::default(),
         },
         Replicaset {
             name: Name::from("storage").with_index(1),
             replicasets_count: Some(2),
-            replication_factor: Some(1),
+            replication_factor: Some(2),
             weight: None,
             zone: None,
             roles: vec![Role::storage()],
-            config: Config::default(),
-            instances: Vec::new(),
+            config: HostV2Config::default(),
         },
         Replicaset {
             name: Name::from("storage").with_index(2),
             replicasets_count: Some(2),
-            replication_factor: Some(1),
+            replication_factor: Some(2),
             weight: None,
             zone: None,
             roles: vec![Role::storage()],
-            config: Config::default(),
-            instances: Vec::new(),
+            config: HostV2Config::default(),
         },
     ];
     let topology_members_reference = vec![
@@ -46,16 +43,16 @@ fn topology_from_replicasets() {
             weight: None,
             zone: None,
             roles: vec![Role::router(), Role::failover_coordinator()],
-            config: Config::default(),
+            config: HostV2Config::default(),
         },
         TopologyMemberV2 {
             name: "storage".into(),
             replicasets_count: Some(2),
-            replication_factor: Some(1),
+            replication_factor: Some(2),
             weight: None,
             zone: None,
             roles: vec![Role::storage()],
-            config: Config::default(),
+            config: HostV2Config::default(),
         },
     ];
 
@@ -90,7 +87,7 @@ roles:
         weight: None,
         zone: None,
         roles: vec![Role::router(), Role::failover_coordinator()],
-        config: Config::default(),
+        config: HostV2Config::default(),
     };
 
     let topology_member: TopologyMemberV2 = serde_yaml::from_str(&topology_member_str).unwrap();
@@ -106,7 +103,7 @@ roles:
 
 #[test]
 /// ClusterV2.hosts string -> HostV2 -> ClusterV2.hosts string
-fn hosts_v2() {
+fn cluster_hosts_v2_serde() {
     let hosts_v2_str: String = r#"---
 name: cluster
 config:
@@ -181,18 +178,18 @@ vars:
 "#
     .into();
 
-    let hosts_v2_model = vec![
-        HostV2::from("cluster").with_hosts(vec![HostV2::from("selectel")
-            .with_hosts(vec![
-                HostV2::from("server-1").with_config(
-                    HostV2Config::from(IpAddr::from([192, 168, 16, 11])).with_ports((8081, 3031)),
-                ),
-                HostV2::from("server-2").with_config(
-                    HostV2Config::from(IpAddr::from([192, 168, 16, 12])).with_ports((8081, 3031)),
-                ),
-            ])
-            .with_config(HostV2Config::from((8081, 3031)))]),
-    ];
+    let mut host_v2_model = HostV2::from("cluster")
+        .with_hosts(vec![HostV2::from("selectel").with_hosts(vec![
+            HostV2::from("server-1")
+                .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
+            HostV2::from("server-2")
+                .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
+        ])])
+        .with_config(HostV2Config::from((8081, 3031)));
+
+    host_v2_model.spread();
+
+    let hosts_v2_model = vec![host_v2_model];
 
     let cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
 
@@ -247,26 +244,30 @@ topology:
       - failover-coordinator
   - name: storage
     replicasets_count: 2
-    replication_factor: 1
+    replication_factor: 2
     roles:
       - storage
 hosts:
   - name: datacenter-1
     config:
       http_port: 8081
-      binary_port: 3301
+      binary_port: 3031
     hosts:
       - name: server-1
         config:
+          http_port: 8081
+          binary_port: 3031
           address: 192.168.16.11
       - name: server-2
         config:
+          http_port: 8081
+          binary_port: 3031
           address: 192.168.16.12
 failover:
   mode: stateful
   state_provider: stateboard
   stateboard_params:
-    uri: "192.168.16.1:4401"
+    uri: "192.168.16.11:4401"
     password: password
 vars:
   ansible_user: ansible
@@ -357,7 +358,7 @@ topology:
       - failover-coordinator
   - name: storage
     replicasets_count: 2
-    replication_factor: 2
+    replication_factor: 3
     weight: 10
     roles:
       - storage
@@ -398,4 +399,148 @@ vars:
     let cluster_v2_str: String = serde_yaml::to_string(&cluster_v2).unwrap();
 
     assert_eq!(cluster_v2_str, cluster_v2_model_str);
+}
+
+#[test]
+fn cluster_v1_tdg_to_cluster_v2() {
+    let cluster_v1_tdg_str: String = r#"---
+instances:
+  - name: l-n
+    type: custom
+    count: 2
+    replicas: 0
+    weight: 10
+    roles:
+      - logger
+      - notifier
+  - name: op-t
+    type: custom
+    count: 5
+    replicas: 0
+    weight: 10
+    roles:
+      - output_processor
+      - task_runner
+  - name: c-ip
+    type: custom
+    count: 5
+    replicas: 0
+    weight: 10
+    roles:
+      - connector
+      - input_processor
+      - failover-coordinator
+  - name: sch
+    type: custom
+    count: 2
+    replicas: 0
+    weight: 10
+    roles:
+      - scheduler
+  - name: storage
+    type: storage
+    count: 3
+    replicas: 2
+    weight: 10
+    roles:
+      - storage
+hosts:
+  - name: vagr_tdg
+    type: datacenter
+    ports:
+      http: 8081
+      binary: 3031
+    hosts:
+      - name: tdg-1
+        ip: 192.168.123.2
+      - name: tdg-2
+        ip: 192.168.123.3
+      - name: tdg-3
+        ip: 192.168.123.4
+failover:
+  mode: stateful
+  state_provider: etcd2
+  etcd2_params:
+    prefix: cartridge/tdg
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.123.2:2379"
+vars:
+  ansible_user: vagrant
+  ansible_password: vagrant
+  cartridge_app_name: tdg
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: ./tdg-1.7.17-0-g2a5b4bd18.rpm
+"#
+    .into();
+
+    let cluster_v2_model_str: String = r#"---
+topology:
+  - name: l-n
+    replicasets_count: 2
+    weight: 10
+    roles:
+      - logger
+      - notifier
+  - name: op-t
+    replicasets_count: 5
+    weight: 10
+    roles:
+      - output_processor
+      - task_runner
+  - name: c-ip
+    replicasets_count: 5
+    weight: 10
+    roles:
+      - connector
+      - input_processor
+      - failover-coordinator
+  - name: sch
+    replicasets_count: 2
+    weight: 10
+    roles:
+      - scheduler
+  - name: storage
+    replicasets_count: 3
+    replication_factor: 3
+    weight: 10
+    roles:
+      - storage
+hosts:
+  - name: vagr_tdg
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: tdg-1
+        config:
+          address: 192.168.123.2
+      - name: tdg-2
+        config:
+          address: 192.168.123.3
+      - name: tdg-3
+        config:
+          address: 192.168.123.4
+failover:
+  mode: stateful
+  state_provider: etcd2
+  etcd2_params:
+    prefix: cartridge/tdg
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.123.2:2379"
+vars:
+  ansible_user: vagrant
+  ansible_password: vagrant
+  cartridge_app_name: tdg
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: ./tdg-1.7.17-0-g2a5b4bd18.rpm
+"#
+    .into();
+
+    let cluster_v2: Cluster = serde_yaml::from_str(&cluster_v1_tdg_str).unwrap();
+
+    let cluster_v2_model: Cluster = serde_yaml::from_str(&cluster_v2_model_str).unwrap();
+
+    assert_eq!(cluster_v2, cluster_v2_model);
 }

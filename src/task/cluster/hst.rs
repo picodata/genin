@@ -24,8 +24,8 @@ impl Display for HostType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             HostType::Region => write!(f, "HostType::Region"),
-            HostType::Datacenter => write!(f, "HostType::Region"),
-            HostType::Server => write!(f, "HostType::Region"),
+            HostType::Datacenter => write!(f, "HostType::Datacenter"),
+            HostType::Server => write!(f, "HostType::Server"),
         }
     }
 }
@@ -54,46 +54,10 @@ impl PortsVariants {
         matches!(self, Self::None)
     }
 
-    pub fn applicate(&self, rhs: &PortsVariants) -> Option<Ports> {
-        match (self, rhs) {
-            (PortsVariants::Ports(lhs), _) => Some(*lhs),
-            (PortsVariants::None, PortsVariants::Ports(rhs)) => Some(*rhs),
-            _ => None,
-        }
-    }
-
-    pub fn up(&mut self) {
-        if let PortsVariants::Ports(p) = self {
-            p.http += 1;
-            p.binary += 1;
-        }
-    }
-
-    /// if port varinants `None` init them as default
-    pub fn or_else(&mut self, ports: Ports) {
-        if let PortsVariants::None = self {
-            *self = PortsVariants::Ports(ports);
-        }
-    }
-
-    pub fn http_or_default(&self) -> u16 {
-        match self {
-            PortsVariants::Ports(p) => p.http,
-            PortsVariants::None => Ports::default().http,
-        }
-    }
-
     pub fn http_as_option(&self) -> Option<usize> {
         match self {
             PortsVariants::Ports(p) => Some(usize::from(p.http)),
             PortsVariants::None => None,
-        }
-    }
-
-    pub fn binary_or_default(&self) -> u16 {
-        match self {
-            PortsVariants::Ports(p) => p.binary,
-            PortsVariants::None => Ports::default().binary,
         }
     }
 
@@ -154,17 +118,11 @@ impl IP {
     pub fn is_none(&self) -> bool {
         matches!(self, Self::None)
     }
-
-    pub fn applicate(&self, rhs: &IP) -> IP {
-        match (self, rhs) {
-            (IP::Server(lhs), _) => IP::Server(*lhs),
-            (IP::None, IP::Server(rhs)) => IP::Server(*rhs),
-            _ => IP::None,
-        }
-    }
 }
 
 pub fn is_null(u: &usize) -> bool {
     matches!(u, 0)
 }
 
+#[cfg(test)]
+mod test;

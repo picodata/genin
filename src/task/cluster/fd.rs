@@ -3,44 +3,6 @@ use std::{borrow::Cow, cell::RefCell, cmp::Ordering};
 use log::trace;
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
-#[allow(unused)]
-#[derive(Default)]
-pub struct Replicaset<'a> {
-    name: String,
-    rsize: usize,
-    children: Vec<&'a Instance>,
-}
-
-impl<'a> From<&'a str> for Replicaset<'a> {
-    fn from(s: &'a str) -> Self {
-        Replicaset {
-            name: s.into(),
-            ..Default::default()
-        }
-    }
-}
-
-#[allow(unused)]
-impl<'a> Replicaset<'a> {
-    pub fn to_instances(&self) -> Vec<Instance> {
-        (1..=self.rsize)
-            .map(|id| match &self.name {
-                n if n.starts_with("storage") => Instance::Storage {
-                    name: format!("{}-{}", n, id),
-                },
-                n if n.starts_with("router") => Instance::Router {
-                    name: format!("{}-{}", n, id),
-                },
-                n => Instance::Custom { name: n.into() },
-            })
-            .collect()
-    }
-
-    pub fn with_size(mut self, rsize: usize) -> Self {
-        self.rsize = rsize;
-        self
-    }
-}
 
 #[allow(unused)]
 #[derive(Debug, PartialEq, Eq)]

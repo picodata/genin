@@ -1,0 +1,425 @@
+use std::net::IpAddr;
+
+use serde::Deserialize;
+
+use crate::task::cluster::{
+    hst::v2::{Address, HostV2, HostV2Config},
+    ins::{
+        v2::{InstanceV2, Replicaset},
+        Name, Role,
+    },
+    HostV2Helper, TopologyMemberV2,
+};
+
+#[test]
+fn hosts_v2_deepth() {
+    let hosts_v2_str: String = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: server-1
+    config:
+      address: 192.168.16.11
+  - name: server-2
+    config:
+      address: 192.168.16.12
+"#
+    .into();
+
+    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+        .unwrap()
+        .into_v2();
+
+    assert_eq!(hosts_v2.depth(), 2);
+
+    let hosts_v2_str: String = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: room-5
+        hosts:
+          - name: rack-1
+            hosts:
+              - name: server-1
+                config:
+                  address: 192.168.16.12
+"#
+    .into();
+
+    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+        .unwrap()
+        .into_v2();
+
+    assert_eq!(hosts_v2.depth(), 5);
+}
+
+#[test]
+fn hosts_v2_width() {
+    let hosts_v2_str: String = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+  - name: dc-2
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.13
+      - name: server-2
+        config:
+          address: 192.168.16.14
+  - name: dc-3
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.15
+      - name: server-2
+        config:
+          address: 192.168.16.16
+  - name: dc-4
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.17
+      - name: server-2
+        config:
+          address: 192.168.16.18
+  - name: dc-5
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.19
+      - name: server-2
+        config:
+          address: 192.168.16.20
+"#
+    .into();
+
+    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+        .unwrap()
+        .into_v2();
+
+    assert_eq!(hosts_v2.width(), 10);
+}
+
+#[test]
+fn hosts_v2_size() {
+    let hosts_v2_str: String = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+      - name: server-3
+        config:
+          address: 192.168.16.13
+  - name: dc-2
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.14
+      - name: server-2
+        config:
+          address: 192.168.16.15
+"#
+    .into();
+
+    let mut hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+        .unwrap()
+        .into_v2()
+        .with_instances(
+            Replicaset {
+                name: Name::from("storage"),
+                replicasets_count: Some(1),
+                replication_factor: Some(10),
+                weight: None,
+                zone: None,
+                roles: Vec::new(),
+                config: HostV2Config::default(),
+            }
+            .instances(),
+        );
+
+    assert_eq!(hosts_v2.size(), 0);
+
+    hosts_v2.spread();
+
+    assert_eq!(hosts_v2.size(), 10);
+}
+
+#[test]
+fn hosts_v2_lower_level_hosts() {
+    let hosts_v2_str: String = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+      - name: server-3
+        config:
+          address: 192.168.16.13
+  - name: dc-2
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.14
+      - name: server-2
+        config:
+          address: 192.168.16.15
+"#
+    .into();
+
+    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+        .unwrap()
+        .into_v2();
+
+    hosts_v2
+        .lower_level_hosts()
+        .iter()
+        .for_each(|host| println!("{}", host.name));
+
+    let lower_level_hosts_model = vec![
+        HostV2::from("server-1").with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
+        HostV2::from("server-2").with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
+        HostV2::from("server-3").with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 13]))),
+        HostV2::from("server-1").with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 14]))),
+        HostV2::from("server-2").with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 15]))),
+    ];
+
+    assert_eq!(
+        hosts_v2.lower_level_hosts(),
+        lower_level_hosts_model.iter().collect::<Vec<&HostV2>>()
+    );
+}
+
+#[test]
+fn hosts_v2_spreading() {
+    #[derive(Deserialize)]
+    struct Topology(Vec<TopologyMemberV2>);
+
+    let topology_str: String = r#"---
+- name: router
+  replicasets_count: 1
+  roles:
+    - router
+    - failover-coordinator
+- name: storage
+  replicasets_count: 2
+  replication_factor: 2
+  roles:
+    - storage
+"#
+    .into();
+
+    let topology: Topology = serde_yaml::from_str(&topology_str).unwrap();
+
+    let instances = topology
+        .0
+        .into_iter()
+        .flat_map(|topology_member| {
+            topology_member
+                .to_replicasets()
+                .into_iter()
+                .flat_map(|replicaset| replicaset.instances())
+        })
+        .collect::<Vec<InstanceV2>>();
+
+    let mut hosts_v2 = HostV2::from("Cluster")
+        .with_hosts(vec![
+            HostV2::from("Server-1"),
+            HostV2::from("Server-2")
+                .with_http_port(25000)
+                .with_binary_port(26000),
+        ])
+        .with_instances(instances)
+        .with_config(
+            HostV2Config::from((8081, 3031)).with_address(Address::from([192, 168, 123, 11])),
+        );
+
+    hosts_v2.spread();
+
+    println!("{}", hosts_v2);
+
+    let mut hosts_v2_model = HostV2::from("Cluster")
+        .with_hosts(vec![
+            HostV2::from("Server-1").with_instances(vec![
+                InstanceV2 {
+                    name: Name::from("router").with_index(1).with_index(1),
+                    stateboard: None,
+                    weight: None,
+                    roles: vec![Role::router(), Role::failover_coordinator()],
+                    zone: None,
+                    config: HostV2Config::from((8081, 3031))
+                        .with_address(Address::from([192, 168, 123, 11])),
+                },
+                InstanceV2 {
+                    name: Name::from("storage").with_index(1).with_index(2),
+                    stateboard: None,
+                    weight: None,
+                    roles: vec![Role::storage()],
+                    zone: None,
+                    config: HostV2Config::from((8082, 3032))
+                        .with_address(Address::from([192, 168, 123, 11])),
+                },
+                InstanceV2 {
+                    name: Name::from("storage").with_index(2).with_index(2),
+                    stateboard: None,
+                    weight: None,
+                    roles: vec![Role::storage()],
+                    zone: None,
+                    config: HostV2Config::from((8083, 3033))
+                        .with_address(Address::from([192, 168, 123, 11])),
+                },
+            ]),
+            HostV2::from("Server-2")
+                .with_http_port(25000)
+                .with_binary_port(26000)
+                .with_instances(vec![
+                    InstanceV2 {
+                        name: Name::from("storage").with_index(1).with_index(1),
+                        stateboard: None,
+                        weight: None,
+                        roles: vec![Role::storage()],
+                        zone: None,
+                        config: HostV2Config::default(),
+                    },
+                    InstanceV2 {
+                        name: Name::from("storage").with_index(2).with_index(1),
+                        stateboard: None,
+                        weight: None,
+                        roles: vec![Role::storage()],
+                        zone: None,
+                        config: HostV2Config::default(),
+                    },
+                ]),
+        ])
+        .with_config(
+            HostV2Config::from((8081, 3031)).with_address(Address::from([192, 168, 123, 11])),
+        );
+
+    hosts_v2_model.spread();
+
+    assert_eq!(hosts_v2, hosts_v2_model);
+}
+
+#[test]
+fn hosts_v2_print_table() {
+    #[derive(Deserialize)]
+    struct Topology(Vec<TopologyMemberV2>);
+
+    let topology_str: String = r#"---
+- name: router
+  replicasets_count: 8
+  roles:
+    - router
+    - failover-coordinator
+- name: router
+  replicasets_count: 3
+  replication_factor: 12
+  roles:
+    - storage
+"#
+    .into();
+
+    let topology: Topology = serde_yaml::from_str(&topology_str).unwrap();
+
+    let instances = topology
+        .0
+        .into_iter()
+        .flat_map(|topology_member| {
+            topology_member
+                .to_replicasets()
+                .into_iter()
+                .flat_map(|replicaset| replicaset.instances())
+        })
+        .collect::<Vec<InstanceV2>>();
+
+    let mut hosts_v2 = HostV2::from("Cluster")
+        .with_hosts(vec![
+            HostV2::from("DC1").with_hosts(vec![
+                HostV2::from("Rack1")
+                    .with_hosts(vec![HostV2::from("Server-1"), HostV2::from("Server-2")]),
+                HostV2::from("Rack2")
+                    .with_hosts(vec![HostV2::from("Server-3"), HostV2::from("Server-4")]),
+            ]),
+            HostV2::from("DC2")
+                .with_hosts(vec![
+                    HostV2::from("Rack1")
+                        .with_hosts(vec![HostV2::from("Server-5"), HostV2::from("Server-6")]),
+                    HostV2::from("Rack2")
+                        .with_hosts(vec![HostV2::from("Server-7"), HostV2::from("Server-8")]),
+                ])
+                .with_http_port(25000)
+                .with_binary_port(26000),
+        ])
+        .with_instances(instances)
+        .with_config(
+            HostV2Config::from((8081, 3031)).with_address(Address::from([192, 168, 123, 11])),
+        );
+
+    hosts_v2.spread();
+
+    println!("{}", hosts_v2);
+
+    let table = String::from(
+"+------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+|                                                   Cluster                                                   |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+|                         DC1                         |                          DC2                          |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+|          Rack1          |           Rack2           |           Rack1           |           Rack2           |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+|  Server-1  |  Server-2  |  Server-3   |  Server-4   |  Server-5   |  Server-6   |  Server-7   |  Server-8   |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-1-1 | router-5-1 | router-3-1  | router-7-1  | router-2-1  | router-6-1  | router-4-1  | router-8-1  |
+| 8081 3031  | 8081 3031  | 8081 3031   | 8081 3031   | 25000 26000 | 25000 26000 | 25000 26000 | 25000 26000 |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-1-1 | router-1-5 | router-1-3  | router-1-7  | router-1-2  | router-1-6  | router-1-4  | router-1-8  |
+| 8082 3032  | 8082 3032  | 8082 3032   | 8082 3032   | 25001 26001 | 25001 26001 | 25001 26001 | 25001 26001 |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-1-9 | router-2-1 | router-1-11 | router-2-3  | router-1-10 | router-2-2  | router-1-12 | router-2-4  |
+| 8083 3033  | 8083 3033  | 8083 3033   | 8083 3033   | 25002 26002 | 25002 26002 | 25002 26002 | 25002 26002 |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-2-5 | router-2-9 | router-2-7  | router-2-11 | router-2-6  | router-2-10 | router-2-8  | router-2-12 |
+| 8084 3034  | 8084 3034  | 8084 3034   | 8084 3034   | 25003 26003 | 25003 26003 | 25003 26003 | 25003 26003 |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-3-1 | router-3-5 | router-3-3  | router-3-7  | router-3-2  | router-3-6  | router-3-4  | router-3-8  |
+| 8085 3035  | 8085 3035  | 8085 3035   | 8085 3035   | 25004 26004 | 25004 26004 | 25004 26004 | 25004 26004 |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+
+| router-3-9 |            | router-3-11 |             | router-3-10 |             | router-3-12 |             |
+| 8086 3036  |            | 8086 3036   |             | 25005 26005 |             | 25005 26005 |             |
++------------+------------+-------------+-------------+-------------+-------------+-------------+-------------+");
+
+    assert_eq!(hosts_v2.to_string(), table);
+}

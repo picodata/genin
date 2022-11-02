@@ -1,6 +1,8 @@
-use log::trace;
+use indexmap::IndexMap;
+use log::{debug, trace};
 use serde::{Deserialize, Serialize};
-use std::{borrow::Cow, cell::RefCell, cmp::Ordering, fmt::Display, net::IpAddr};
+use serde_yaml::Value;
+use std::{borrow::Cow, cell::RefCell, cmp::Ordering, fmt::Display, hash::Hash, net::IpAddr};
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
 use crate::{
@@ -75,6 +77,7 @@ impl From<Vec<Host>> for HostV2 {
     }
 }
 
+#[allow(unused)]
 impl HostV2 {
     pub fn with_config(self, config: HostV2Config) -> Self {
         Self { config, ..self }
@@ -99,6 +102,7 @@ impl HostV2 {
                     binary_port: ports.binary_as_option(),
                     address: Address::from(ip),
                     distance: None,
+                    additional_config: IndexMap::new(),
                 },
                 hosts: hosts.into_iter().map(HostV2::into_v2).collect(),
                 instances: Vec::new(),
@@ -116,213 +120,54 @@ impl HostV2 {
                     binary_port: ports.binary_as_option(),
                     address: Address::from(ip),
                     distance: None,
+                    additional_config: IndexMap::new(),
                 },
                 ..HostV2::default()
             },
         }
     }
-}
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
-pub struct HostV2Config {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    http_port: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    binary_port: Option<usize>,
-    #[serde(default, skip_serializing_if = "Address::is_none")]
-    address: Address,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    distance: Option<usize>,
-}
-
-impl From<(usize, usize)> for HostV2Config {
-    fn from(p: (usize, usize)) -> Self {
-        Self {
-            http_port: Some(p.0),
-            binary_port: Some(p.1),
-            ..Self::default()
-        }
-    }
-}
-
-impl From<IpAddr> for HostV2Config {
-    fn from(ip: IpAddr) -> Self {
-        Self {
-            address: Address::Ip(ip),
-            ..Self::default()
-        }
-    }
-}
-
-impl From<usize> for HostV2Config {
-    fn from(distance: usize) -> Self {
-        Self {
-            distance: Some(distance),
-            ..Self::default()
-        }
-    }
-}
-
-//TODO: check unused
-#[allow(unused)]
-impl HostV2Config {
-    pub fn into_default(self) -> Self {
-        Self {
-            http_port: Some(8081),
-            binary_port: Some(3301),
-            address: Address::Ip([127, 0, 0, 1].into()),
-            distance: Some(0),
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        matches!(
-            self,
-            Self {
-                http_port: None,
-                binary_port: None,
-                address: Address::None,
-                distance: None
-            }
-        )
-    }
-
-    pub fn with_distance(self, distance: usize) -> Self {
-        Self {
-            distance: Some(distance),
-            ..self
-        }
-    }
-
-    pub fn with_ports(self, ports: (usize, usize)) -> Self {
-        Self {
-            http_port: Some(ports.0),
-            binary_port: Some(ports.1),
-            ..self
-        }
-    }
-
-    pub fn with_http_port(self, http_port: usize) -> Self {
-        Self {
-            http_port: Some(http_port),
-            ..self
-        }
-    }
-
-    pub fn with_binary_port(self, binary_port: usize) -> Self {
-        Self {
-            binary_port: Some(binary_port),
-            ..self
-        }
-    }
-
-    pub fn merge(&mut self, other: &HostV2Config) {
-        self.address.update(&other.address);
-        self.http_port = self.http_port.or(other.http_port);
-        self.binary_port = self.binary_port.or(other.binary_port);
-        self.distance = self.distance.or(other.distance);
-    }
-
-    pub fn address(&self) -> String {
-        self.address.to_string()
-    }
-}
-
-#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
-#[serde(untagged)]
-pub(in crate::task) enum Address {
-    Ip(IpAddr),
-    IpSubnet(IPSubnet),
-    Uri(String),
-    #[default]
-    None,
-}
-
-impl From<IP> for Address {
-    fn from(ip: IP) -> Self {
-        match ip {
-            IP::Server(ip) => Self::Ip(ip),
-            _ => Self::None,
-        }
-    }
-}
-
-impl Display for Address {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Address::Ip(ip) => write!(f, "{}", ip),
-            Address::IpSubnet(_) => unimplemented!(), //TODO
-            Address::Uri(uri) => write!(f, "{}", uri),
-            Address::None => unimplemented!(), //TODO
-        }
-    }
-}
-
-impl Address {
-    pub(in crate::task) fn is_none(&self) -> bool {
-        matches!(self, Self::None)
-    }
-
-    pub fn update(&mut self, address: &Address) {
-        if let Self::None = self {
-            *self = address.clone()
-        }
-    }
-}
-
-impl PartialOrd for HostV2 {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.instances.len().partial_cmp(&other.instances.len()) {
-            Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
-            ord => ord,
-        }
-    }
-}
-
-impl Ord for HostV2 {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.instances.len().cmp(&other.instances.len()) {
-            Ordering::Equal => self.name.cmp(&other.name),
-            any => any,
-        }
-    }
-}
-
-impl Display for HostV2 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let collector = RefCell::new(vec![Vec::new(); self.depth()]);
-        let depth = 0;
-
-        self.form_structure(depth, &collector);
-
-        let mut table = Builder::from_iter(collector.take().into_iter())
-            .index()
-            .build();
-        table.with(Merge::horizontal());
-        table.with(Alignment::center());
-
-        write!(f, "{}", table)
-    }
-}
-
-#[allow(unused)]
-impl HostV2 {
     pub fn spread(&mut self) {
         if self.hosts.is_empty() {
+            self.instances
+                .iter_mut()
+                .enumerate()
+                .for_each(|(index, instance)| {
+                    *instance = InstanceV2 {
+                        config: instance
+                            .config
+                            .clone()
+                            .merge_and_up_ports(self.config.clone(), index),
+                        ..instance.clone()
+                    };
+                    instance.config.create_advertise_uri_entry();
+                    instance.config.crate_http_port_entry();
+                    trace!(
+                        "host: {} instance: {} config: {:?}",
+                        self.name,
+                        instance.name,
+                        instance.config
+                    );
+                });
             return;
         }
 
         self.instances.reverse();
+        self.hosts.sort();
 
         while let Some(instance) = self.instances.pop() {
-            self.hosts.sort();
             self.push(instance);
+            self.hosts.reverse();
+            if let Some(host) = self.hosts.pop() {
+                self.hosts.insert(0, host);
+                self.hosts.reverse();
+            }
         }
 
         self.hosts.sort_by(|left, right| left.name.cmp(&right.name));
 
         self.hosts.iter_mut().for_each(|host| {
-            host.config.merge(&self.config);
+            host.config = host.config.clone().merge(self.config.clone());
             host.spread();
         });
     }
@@ -349,16 +194,20 @@ impl HostV2 {
         self
     }
 
-    pub fn with_begin_http_port(mut self, port: usize) -> Self {
+    pub fn with_http_port(mut self, port: usize) -> Self {
         self.config.http_port = Some(port);
         self
     }
 
-    pub fn with_begin_binary_port(mut self, port: usize) -> Self {
+    pub fn with_binary_port(mut self, port: usize) -> Self {
         self.config.binary_port = Some(port);
         self
     }
 
+    /// Count number for instances spreaded in HostV2 on all levels
+    ///
+    /// * If top level HostV2 has 10 instances and instances not spreaded `size() = 0`
+    /// * If 20 instances already spreaded accross HostV2 childrens  `size() = 20`
     pub fn size(&self) -> usize {
         if self.hosts.is_empty() {
             self.instances.len()
@@ -395,7 +244,13 @@ impl HostV2 {
         depth + 1
     }
 
-    fn form_structure(&self, mut depth: usize, collector: &RefCell<Vec<Vec<DomainMember>>>) {
+    fn form_structure(&self, depth: usize, collector: &RefCell<Vec<Vec<DomainMember>>>) {
+        collector
+            .borrow_mut()
+            .get_mut(depth)
+            .map(|level| level.extend(vec![DomainMember::from(self.name.as_str()); self.width()]))
+            .unwrap();
+
         if self.instances.is_empty() {
             trace!(
                 "Spreading instances for {} skipped. Width {}. Current level {} vector lenght {}",
@@ -404,6 +259,8 @@ impl HostV2 {
                 depth,
                 collector.borrow().get(depth).unwrap().len()
             );
+
+            debug!("Row depth {} header {}", depth, self.name);
 
             self.hosts
                 .iter()
@@ -431,8 +288,8 @@ impl HostV2 {
                         if let Some(instance) = self.instances.get(index) {
                             level.push(DomainMember::Instance {
                                 name: instance.name.to_string(),
-                                http_port: self.config.http_port.unwrap_or(8080) + index,
-                                binary_port: self.config.binary_port.unwrap_or(3030) + index,
+                                http_port: instance.config.http_port.unwrap(),
+                                binary_port: instance.config.binary_port.unwrap(),
                             });
                         } else {
                             level.push(DomainMember::Dummy);
@@ -443,17 +300,279 @@ impl HostV2 {
         }
     }
 
-    pub fn bottom_level(&self) -> Vec<&HostV2> {
-        self.hosts
-            .iter()
-            .flat_map(|host| {
-                if !host.hosts.is_empty() {
-                    host.bottom_level()
-                } else {
-                    Vec::new()
-                }
-            })
-            .collect()
+    pub fn lower_level_hosts(&self) -> Vec<&HostV2> {
+        if self.hosts.is_empty() {
+            vec![self]
+        } else {
+            self.hosts
+                .iter()
+                .flat_map(|host| host.lower_level_hosts())
+                .collect()
+        }
+    }
+}
+
+impl PartialOrd for HostV2 {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.instances.len().partial_cmp(&other.instances.len()) {
+            Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
+            ord => ord,
+        }
+    }
+}
+
+impl Ord for HostV2 {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.instances.len().cmp(&other.instances.len()) {
+            Ordering::Equal => self.name.cmp(&other.name),
+            any => any,
+        }
+    }
+}
+
+impl Display for HostV2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let collector = RefCell::new(vec![Vec::new(); self.depth()]);
+        let depth = 0;
+
+        self.form_structure(depth, &collector);
+
+        let mut table = Builder::from_iter(collector.take().into_iter()).build();
+        table.with(Merge::horizontal());
+        table.with(Alignment::center());
+
+        write!(f, "{}", table)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
+pub struct HostV2Config {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    http_port: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    binary_port: Option<usize>,
+    #[serde(default, skip_serializing_if = "Address::is_none")]
+    address: Address,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    distance: Option<usize>,
+    #[serde(flatten, default, skip_serializing_if = "IndexMap::is_empty")]
+    additional_config: IndexMap<String, Value>,
+}
+
+impl From<(usize, usize)> for HostV2Config {
+    fn from(p: (usize, usize)) -> Self {
+        Self {
+            http_port: Some(p.0),
+            binary_port: Some(p.1),
+            ..Self::default()
+        }
+    }
+}
+
+impl From<IpAddr> for HostV2Config {
+    fn from(ip: IpAddr) -> Self {
+        Self {
+            address: Address::Ip(ip),
+            ..Self::default()
+        }
+    }
+}
+
+impl From<usize> for HostV2Config {
+    fn from(distance: usize) -> Self {
+        Self {
+            distance: Some(distance),
+            ..Self::default()
+        }
+    }
+}
+
+impl From<IndexMap<String, Value>> for HostV2Config {
+    fn from(additional_config: IndexMap<String, Value>) -> Self {
+        Self {
+            additional_config,
+            ..Self::default()
+        }
+    }
+}
+
+//TODO: check unused
+#[allow(unused)]
+impl HostV2Config {
+    pub fn into_default(self) -> Self {
+        Self {
+            http_port: Some(8081),
+            binary_port: Some(3301),
+            address: Address::Ip([127, 0, 0, 1].into()),
+            distance: Some(0),
+            additional_config: IndexMap::new(),
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.http_port.is_none()
+            && self.binary_port.is_none()
+            && self.address.is_none()
+            && self.additional_config.is_empty()
+    }
+
+    pub fn with_distance(self, distance: usize) -> Self {
+        Self {
+            distance: Some(distance),
+            ..self
+        }
+    }
+
+    pub fn with_ports(self, ports: (usize, usize)) -> Self {
+        Self {
+            http_port: Some(ports.0),
+            binary_port: Some(ports.1),
+            ..self
+        }
+    }
+
+    pub fn with_address(self, address: Address) -> Self {
+        Self { address, ..self }
+    }
+
+    pub fn with_http_port(self, http_port: usize) -> Self {
+        Self {
+            http_port: Some(http_port),
+            ..self
+        }
+    }
+
+    pub fn with_binary_port(self, binary_port: usize) -> Self {
+        Self {
+            binary_port: Some(binary_port),
+            ..self
+        }
+    }
+
+    pub fn with_additional_config(self, additional_config: IndexMap<String, Value>) -> Self {
+        Self {
+            additional_config,
+            ..self
+        }
+    }
+
+    pub fn merge(self, other: HostV2Config) -> Self {
+        Self {
+            http_port: self.http_port.or(other.http_port),
+            binary_port: self.binary_port.or(other.binary_port),
+            address: self.address.or_else(|| other.address),
+            distance: self.distance.or(other.distance),
+            additional_config: merge_index_maps(self.additional_config, other.additional_config),
+        }
+    }
+
+    pub fn merge_and_up_ports(self, other: HostV2Config, index: usize) -> Self {
+        trace!("Config before merge: {:?}", &self);
+        Self {
+            http_port: self
+                .http_port
+                .or_else(|| other.http_port.map(|port| port + index)),
+            binary_port: self
+                .binary_port
+                .or_else(|| other.binary_port.map(|port| port + index)),
+            address: self.address.or_else(|| other.address),
+            distance: self.distance.or(other.distance),
+            additional_config: merge_index_maps(self.additional_config, other.additional_config),
+        }
+    }
+
+    pub fn address_to_string(&self) -> String {
+        self.address.to_string()
+    }
+
+    pub fn address(&self) -> Address {
+        self.address.clone()
+    }
+
+    pub fn binary_port(&self) -> Option<usize> {
+        self.binary_port
+    }
+
+    pub fn http_port(&self) -> Option<usize> {
+        self.http_port
+    }
+
+    pub fn additional_config(&self) -> IndexMap<String, Value> {
+        self.additional_config.clone()
+    }
+
+    /// crate advertise_uri entry inside additional_config for inventory generation
+    /// TODO: refactor in future
+    pub fn create_advertise_uri_entry(&mut self) {
+        self.additional_config.insert(
+            String::from("advertise_uri"),
+            Value::String(format!("{}:{}", self.address, self.http_port.unwrap())),
+        );
+    }
+
+    /// create inside additional_config new index map entry for inventory generation
+    /// TODO: refactor in future
+    pub fn crate_http_port_entry(&mut self) {
+        self.additional_config.insert(
+            String::from("http_port"),
+            Value::String(self.http_port.unwrap().to_string()),
+        );
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
+#[serde(untagged)]
+pub enum Address {
+    Ip(IpAddr),
+    IpSubnet(Vec<IpAddr>),
+    Uri(String),
+    #[default]
+    None,
+}
+
+impl From<IP> for Address {
+    fn from(ip: IP) -> Self {
+        match ip {
+            IP::Server(ip) => Self::Ip(ip),
+            _ => Self::None,
+        }
+    }
+}
+
+impl From<[u8; 4]> for Address {
+    fn from(array: [u8; 4]) -> Self {
+        Self::Ip(array.into())
+    }
+}
+
+impl<'a> From<&'a str> for Address {
+    fn from(s: &'a str) -> Self {
+        Self::Uri(s.to_string())
+    }
+}
+
+impl Display for Address {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Address::Ip(ip) => write!(f, "{}", ip),
+            Address::IpSubnet(_) => unimplemented!(), //TODO
+            Address::Uri(uri) => write!(f, "{}", uri),
+            Address::None => unimplemented!(), //TODO
+        }
+    }
+}
+
+impl Address {
+    pub(in crate::task) fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
+    pub fn or_else<F: FnOnce() -> Self>(self, function: F) -> Self {
+        if let Self::None = self {
+            function()
+        } else {
+            self
+        }
     }
 }
 
@@ -515,3 +634,14 @@ impl<'a> From<DomainMember> for Cow<'a, str> {
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub(in crate::task) struct IPSubnet(Vec<IpAddr>);
+
+fn merge_index_maps<A, B>(left: IndexMap<A, B>, right: IndexMap<A, B>) -> IndexMap<A, B>
+where
+    A: Hash + Eq,
+{
+    let mut left = left;
+    right.into_iter().for_each(|(key, value)| {
+        left.entry(key).or_insert(value);
+    });
+    left
+}

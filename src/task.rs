@@ -1,8 +1,8 @@
 mod args;
 pub mod cluster;
 mod flv;
-pub mod inv;
-pub mod vrs;
+pub mod inventory;
+pub mod vars;
 
 use log::info;
 use std::error::Error;
@@ -12,7 +12,7 @@ use crate::task::cluster::fs::{TryMap, IO};
 use crate::task::{
     cluster::fs::{CLUSTER_YAML, INVENTORY_YAML},
     cluster::Cluster,
-    inv::Inventory,
+    inventory::Inventory,
 };
 
 /// А function that launches an application and walks it through the state stages.
