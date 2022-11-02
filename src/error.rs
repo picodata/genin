@@ -7,6 +7,7 @@ pub enum GeninErrorKind {
     SpreadingError,
     DeserializationError,
     Serialization,
+    UnknownFailureDomain,
 }
 
 #[derive(Debug, PartialEq, Eq)]

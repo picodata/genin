@@ -239,6 +239,27 @@ impl Name {
         }
     }
 
+    pub fn with_raw_index<T: Display>(self, index: T) -> Self {
+        Self {
+            childrens: self
+                .childrens
+                .into_iter()
+                .chain(vec![index.to_string()])
+                .collect(),
+        }
+    }
+
+    pub fn clone_with_raw_index<T: Display>(&self, index: T) -> Self {
+        Self {
+            childrens: self
+                .childrens
+                .clone()
+                .into_iter()
+                .chain(vec![index.to_string()])
+                .collect(),
+        }
+    }
+
     /// Returns the name of the ancestor on the basis of which the
     /// current name is formed.
     ///

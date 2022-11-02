@@ -9,6 +9,7 @@ use log::trace;
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::net::IpAddr;
 
@@ -130,6 +131,7 @@ impl Default for Cluster {
                 replication_factor: None,
                 weight: None,
                 zone: None,
+                failure_domains: Vec::new(),
                 roles: vec![Role::router(), Role::failover_coordinator()],
                 config: HostV2Config::default(),
             },
@@ -139,6 +141,7 @@ impl Default for Cluster {
                 replication_factor: Some(2),
                 weight: None,
                 zone: None,
+                failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
                 config: HostV2Config::default(),
             },
@@ -148,6 +151,7 @@ impl Default for Cluster {
                 replication_factor: Some(2),
                 weight: None,
                 zone: None,
+                failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
                 config: HostV2Config::default(),
             },
@@ -260,17 +264,26 @@ impl<'de> Deserialize<'de> for Cluster {
                 }
             }
             ClusterHelper::V2 {
-                topology,
+                mut topology,
                 hosts,
                 failover,
                 vars,
             } => {
+                topology.sort();
                 let mut replicasets: Vec<Replicaset> = topology
                     .into_iter()
                     .flat_map(|member| member.to_replicasets())
                     .collect();
                 let mut host = HostV2::from("cluster")
-                    .with_hosts(hosts.into_iter().map(|host| host.into_v2()).collect())
+                    .with_hosts(
+                        hosts
+                            .into_iter()
+                            .map(|host| {
+                                let name = Name::from("cluster").with_raw_index(host.name.as_str());
+                                host.into_host_v2(name)
+                            })
+                            .collect(),
+                    )
                     .with_config(HostV2Config::from((8081, 3031)));
                 host.instances = replicasets
                     .iter_mut()
@@ -337,11 +350,18 @@ struct HostV2Helper {
     hosts: Vec<HostV2Helper>,
 }
 
+impl From<HostV2Helper> for HostV2 {
+    fn from(helper: HostV2Helper) -> Self {
+        let name = Name::from(helper.name.as_str());
+        helper.into_host_v2(name)
+    }
+}
+
 impl HostV2Helper {
-    fn into_v2(self) -> HostV2 {
+    fn into_host_v2(self, name: Name) -> HostV2 {
         if self.hosts.is_empty() {
             return HostV2 {
-                name: self.name,
+                name,
                 config: self.config,
                 hosts: Vec::new(),
                 instances: Vec::new(),
@@ -349,10 +369,17 @@ impl HostV2Helper {
         }
 
         HostV2 {
-            name: self.name,
+            hosts: self
+                .hosts
+                .into_iter()
+                .map(|host| {
+                    let children_name = name.clone_with_raw_index(host.name.clone());
+                    host.into_host_v2(children_name)
+                })
+                .collect(),
+            name,
             config: self.config,
             instances: Vec::new(),
-            hosts: self.hosts.into_iter().map(|host| host.into_v2()).collect(),
         }
     }
 }
@@ -446,6 +473,7 @@ impl TopologyMemberV1 {
                 replication_factor: TopologyMemberV1::as_replication_factor(self.replicas),
                 weight: TopologyMemberV1::as_weight(self.weight),
                 zone: None,
+                failure_domains: Vec::new(),
                 roles: self.roles.clone(),
                 config: HostV2Config::default().with_additional_config(self.config.clone()),
             })
@@ -478,6 +506,8 @@ struct TopologyMemberV2 {
     weight: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     zone: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    failure_domains: Vec<String>,
     #[serde(default)]
     roles: Vec<Role>,
     #[serde(skip_serializing_if = "HostV2Config::is_none")]
@@ -501,6 +531,8 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
             #[serde(default)]
             zone: Option<String>,
             #[serde(default)]
+            failure_domains: Vec<String>,
+            #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
             config: HostV2Config,
@@ -513,6 +545,7 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
                  replication_factor,
                  weight,
                  zone,
+                 failure_domains,
                  mut roles,
                  config,
              }| {
@@ -526,11 +559,38 @@ impl<'de> Deserialize<'de> for TopologyMemberV2 {
                     replication_factor,
                     weight,
                     zone,
+                    failure_domains,
                     roles,
                     config,
                 }
             },
         )
+    }
+}
+
+impl PartialOrd for TopologyMemberV2 {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (
+            &self.failure_domains.is_empty(),
+            &other.failure_domains.is_empty(),
+        ) {
+            (true, false) => Some(Ordering::Less),
+            (false, true) => Some(Ordering::Greater),
+            _ => Some(Ordering::Equal),
+        }
+    }
+}
+
+impl Ord for TopologyMemberV2 {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (
+            &self.failure_domains.is_empty(),
+            &other.failure_domains.is_empty(),
+        ) {
+            (true, false) => Ordering::Less,
+            (false, true) => Ordering::Greater,
+            _ => Ordering::Equal,
+        }
     }
 }
 
@@ -549,6 +609,7 @@ impl TopologyMemberV2 {
                             replication_factor: replicaset.replication_factor,
                             weight: replicaset.weight,
                             zone: replicaset.zone.clone(),
+                            failure_domains: replicaset.failure_domains.clone(),
                             roles: replicaset.roles.clone(),
                             config: replicaset.config.clone(),
                         });
@@ -568,6 +629,7 @@ impl TopologyMemberV2 {
                 replication_factor: self.replication_factor,
                 weight: self.weight,
                 zone: self.zone.clone(),
+                failure_domains: self.failure_domains.clone(),
                 roles: self.roles.clone(),
                 config: self.config.clone(),
             })

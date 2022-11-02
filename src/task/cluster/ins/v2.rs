@@ -20,6 +20,7 @@ pub struct Replicaset {
     pub replication_factor: Option<usize>,
     pub weight: Option<usize>,
     pub zone: Option<String>,
+    pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
     pub config: HostV2Config,
 }
@@ -33,6 +34,7 @@ impl Replicaset {
                 stateboard: None,
                 weight: self.weight,
                 zone: self.zone.clone(),
+                failure_domains: self.failure_domains.clone(),
                 roles: self.roles.clone(),
                 config: self.config.clone(),
             })
@@ -74,6 +76,7 @@ pub struct InstanceV2 {
     pub stateboard: Option<bool>,
     pub weight: Option<usize>,
     pub zone: Option<String>,
+    pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
     pub config: HostV2Config,
 }
@@ -112,6 +115,7 @@ impl IntoV2 for Vec<Instance> {
                         replication_factor: Some(*replicas),
                         weight: Some(*weight),
                         zone: None,
+                        failure_domains: Vec::new(),
                         roles: roles.clone(),
                         config: HostV2Config::from(config.clone()),
                     }

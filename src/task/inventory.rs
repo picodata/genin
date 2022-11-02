@@ -57,7 +57,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                     .flat_map(|host| {
                         debug!(
                             "inserting values from {} to final inventory",
-                            host.name.as_str()
+                            host.name.to_string()
                         );
                         host.instances.iter().map(|instance| {
                             (

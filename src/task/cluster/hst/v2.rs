@@ -7,7 +7,7 @@ use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
 use crate::{
     error::{GeninError, GeninErrorKind},
-    task::cluster::ins::v2::InstanceV2,
+    task::cluster::ins::{v2::InstanceV2, Name},
 };
 
 use super::{
@@ -19,10 +19,10 @@ use super::{
 /// ```yaml
 /// hosts:
 ///     - name: kaukaz
-///       distance: 10
 ///       config:
 ///         http_port: 8091
 ///         binary_port: 3031
+///         distance: 10
 ///       hosts:
 ///         - name: dc-1
 ///           hosts:
@@ -35,20 +35,20 @@ use super::{
 ///               config:
 ///                 address: 10.20.4.100
 ///     - name: moscow
-///       distance: 20
 ///       hosts:
 ///         - name: dc-3
 ///           type: datacenter
 ///           ports:
-///             http: 8091
-///             binary: 3031
+///             http_port: 8091
+///             binary_port: 3031
+///             distance: 20
 ///           hosts:
 ///             - name: server-10
 ///               ip: 10.99.3.100
 /// ```
-#[derive(Serialize, Default, Debug, PartialEq, Eq)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
 pub struct HostV2 {
-    pub name: String, //TODO: remove pub
+    pub name: Name, //TODO: remove pub
     #[serde(skip_serializing_if = "HostV2Config::is_none", default)]
     pub config: HostV2Config,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -60,8 +60,21 @@ pub struct HostV2 {
 impl<'a> From<&'a str> for HostV2 {
     fn from(s: &'a str) -> Self {
         Self {
-            name: s.into(),
-            ..Self::default()
+            name: Name::from(s),
+            config: HostV2Config::default(),
+            hosts: Vec::new(),
+            instances: Vec::new(),
+        }
+    }
+}
+
+impl From<Name> for HostV2 {
+    fn from(name: Name) -> Self {
+        Self {
+            name,
+            config: HostV2Config::default(),
+            hosts: Vec::new(),
+            instances: Vec::new(),
         }
     }
 }
@@ -69,9 +82,12 @@ impl<'a> From<&'a str> for HostV2 {
 impl From<Vec<Host>> for HostV2 {
     fn from(hosts: Vec<Host>) -> Self {
         HostV2 {
-            name: "cluster".into(),
+            name: Name::from("cluster"),
             config: HostV2Config::default(),
-            hosts: hosts.into_iter().map(HostV2::into_v2).collect(),
+            hosts: hosts
+                .into_iter()
+                .map(|host| HostV2::into_host_v2(Name::from("cluster"), host))
+                .collect(),
             instances: Vec::new(),
         }
     }
@@ -87,7 +103,7 @@ impl HostV2 {
         Self { hosts, ..self }
     }
 
-    fn into_v2(host: Host) -> HostV2 {
+    fn into_host_v2(parent_name: Name, host: Host) -> HostV2 {
         match host {
             Host {
                 name,
@@ -95,18 +111,24 @@ impl HostV2 {
                 ip,
                 hosts: HostsVariants::Hosts(hosts),
                 ..
-            } => HostV2 {
-                name,
-                config: HostV2Config {
-                    http_port: ports.http_as_option(),
-                    binary_port: ports.binary_as_option(),
-                    address: Address::from(ip),
-                    distance: None,
-                    additional_config: IndexMap::new(),
-                },
-                hosts: hosts.into_iter().map(HostV2::into_v2).collect(),
-                instances: Vec::new(),
-            },
+            } => {
+                let name = parent_name.with_raw_index(name);
+                HostV2 {
+                    name: name.clone(),
+                    config: HostV2Config {
+                        http_port: ports.http_as_option(),
+                        binary_port: ports.binary_as_option(),
+                        address: Address::from(ip),
+                        distance: None,
+                        additional_config: IndexMap::new(),
+                    },
+                    hosts: hosts
+                        .into_iter()
+                        .map(|host| HostV2::into_host_v2(name.clone(), host))
+                        .collect(),
+                    instances: Vec::new(),
+                }
+            }
             Host {
                 name,
                 ports,
@@ -114,7 +136,7 @@ impl HostV2 {
                 hosts: HostsVariants::None,
                 ..
             } => HostV2 {
-                name,
+                name: parent_name.with_raw_index(name),
                 config: HostV2Config {
                     http_port: ports.http_as_option(),
                     binary_port: ports.binary_as_option(),
@@ -122,7 +144,8 @@ impl HostV2 {
                     distance: None,
                     additional_config: IndexMap::new(),
                 },
-                ..HostV2::default()
+                hosts: Vec::new(),
+                instances: Vec::new(),
             },
         }
     }
@@ -153,35 +176,127 @@ impl HostV2 {
         }
 
         self.instances.reverse();
-        self.hosts.sort();
 
+        debug!(
+            "instances spreading queue: {} ",
+            self.instances
+                .iter()
+                .map(|instance| instance.name.to_string())
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
+        //TODO: error propagation
         while let Some(instance) = self.instances.pop() {
-            self.push(instance);
-            self.hosts.reverse();
-            if let Some(host) = self.hosts.pop() {
-                self.hosts.insert(0, host);
-                self.hosts.reverse();
+            if instance.failure_domains.is_empty() {
+                self.hosts.sort();
+                self.push(instance).unwrap();
+            } else {
+                trace!(
+                    "start pushing instance {} with failure domain",
+                    instance.name
+                );
+                self.push_to_failure_domain(instance).unwrap();
             }
         }
 
         self.hosts.sort_by(|left, right| left.name.cmp(&right.name));
-
         self.hosts.iter_mut().for_each(|host| {
             host.config = host.config.clone().merge(self.config.clone());
             host.spread();
         });
     }
 
-    pub fn push(&mut self, instance: InstanceV2) -> Result<(), GeninError> {
+    fn push(&mut self, instance: InstanceV2) -> Result<(), GeninError> {
         if let Some(host) = self.hosts.first_mut() {
             host.instances.push(instance);
             Ok(())
         } else {
             Err(GeninError::new(
                 GeninErrorKind::SpreadingError,
-                "failed to get mutable reference to first failure_domain",
+                format!(
+                    "failed to get mutable reference to first host in hosts: [{}]",
+                    self.hosts
+                        .iter()
+                        .map(|host| host.name.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                ),
             ))
         }
+    }
+
+    fn push_to_failure_domain(&mut self, mut instance: InstanceV2) -> Result<(), GeninError> {
+        trace!(
+            "trying to find reqested failure_domains inside host {} for instance {}",
+            self.name,
+            instance.name,
+        );
+
+        let failure_domain_index = instance
+            .failure_domains
+            .iter()
+            .position(|domain| domain.eq(&self.name.to_string()));
+
+        // if we found some name equality between host name and failure domain
+        // remove it and push instance
+        if let Some(index) = failure_domain_index {
+            trace!(
+                "removing {} failure domain from bindings in {}",
+                instance.failure_domains.remove(index),
+                instance.name
+            );
+            if !self.contains_failure_domains(&instance.failure_domains) {
+                trace!(
+                    "removing all failure domains from bindings in {}",
+                    instance.name
+                );
+                instance.failure_domains = Vec::new();
+            }
+            self.hosts.sort();
+            return self.push(instance);
+        };
+
+        // retain only hosts that contains one of failure domain members
+        // failure_domains: ["dc-1"] -> vec!["dc-1"]
+        let mut failure_domain_hosts: Vec<&mut HostV2> = self
+            .hosts
+            .iter_mut()
+            .filter_map(|host| {
+                (instance.failure_domains.contains(&self.name.to_string())
+                    || host.contains_failure_domains(&instance.failure_domains))
+                .then_some(host)
+            })
+            .collect();
+        if !failure_domain_hosts.is_empty() {
+            trace!(
+                "following hosts [{}] contains one or more of this failure domains [{}]",
+                failure_domain_hosts
+                    .iter()
+                    .map(|host| host.name.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" "),
+                instance.failure_domains.join(" "),
+            );
+            failure_domain_hosts.sort();
+            if let Some(host) = failure_domain_hosts.first_mut() {
+                host.instances.push(instance);
+                return Ok(());
+            };
+        }
+        Err(GeninError::new(
+            GeninErrorKind::UnknownFailureDomain,
+            format!(
+                "none of the hosts [{} {}] are eligible for the failure domain [{}]",
+                self.name,
+                self.hosts
+                    .iter()
+                    .map(|host| host.name.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" "),
+                instance.failure_domains.join(" "),
+            ),
+        ))
     }
 
     pub fn with_inner_hosts(mut self, hosts: Vec<HostV2>) -> Self {
@@ -248,7 +363,12 @@ impl HostV2 {
         collector
             .borrow_mut()
             .get_mut(depth)
-            .map(|level| level.extend(vec![DomainMember::from(self.name.as_str()); self.width()]))
+            .map(|level| {
+                level.extend(vec![
+                    DomainMember::from(self.name.to_string());
+                    self.width()
+                ])
+            })
             .unwrap();
 
         if self.instances.is_empty() {
@@ -277,7 +397,7 @@ impl HostV2 {
             collector
                 .borrow_mut()
                 .get_mut(depth)
-                .map(|level| level.push(DomainMember::from(self.name.as_str())))
+                .map(|level| level.push(DomainMember::from(self.name.to_string())))
                 .unwrap();
             let remainder = collector.borrow().len() - depth - 1;
             (0..remainder).into_iter().for_each(|index| {
@@ -309,6 +429,19 @@ impl HostV2 {
                 .flat_map(|host| host.lower_level_hosts())
                 .collect()
         }
+    }
+
+    fn contains_failure_domains(&self, failure_domais: &Vec<String>) -> bool {
+        if failure_domais.contains(&self.name.to_string()) {
+            return true;
+        } else if !self.hosts.is_empty() {
+            for host in &self.hosts {
+                if host.contains_failure_domains(failure_domais) {
+                    return true;
+                }
+            }
+        }
+        false
     }
 }
 
@@ -615,6 +748,12 @@ pub enum DomainMember {
 impl<'a> From<&'a str> for DomainMember {
     fn from(s: &'a str) -> Self {
         Self::Domain(s.to_string())
+    }
+}
+
+impl From<String> for DomainMember {
+    fn from(s: String) -> Self {
+        Self::Domain(s)
     }
 }
 
