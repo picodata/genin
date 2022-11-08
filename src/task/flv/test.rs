@@ -1,7 +1,5 @@
 use clap::{Arg, ArgAction, Command};
 
-use crate::task::cluster::Cluster;
-
 use super::*;
 
 #[test]
@@ -279,39 +277,87 @@ fn test_failover_etcd() {
 }
 
 #[test]
-fn test_failover_from_noncomplete_yaml() {
-    // test deserialization failover params
-    let cluster = Cluster::try_from(
-        std::fs::read("test/resources/test-cluster.genin.yaml")
-            .unwrap()
-            .as_slice(),
-    )
-    .unwrap();
-    let expected_flv = Failover {
+fn failover_from_uri() {
+    let failover_str: String = r#"---
+mode: stateful
+state_provider: stateboard
+stateboard_params:
+  uri: 192.168.16.11:4401
+  password: some_password
+"#
+    .into();
+
+    let failover: Failover = serde_yaml::from_str(&failover_str).unwrap();
+
+    let failover_model = Failover {
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
-            url: Url {
-                ip: "192.168.16.1".parse().unwrap(),
-                port: Some(4401),
+            url: Uri {
+                ip: "192.168.16.11".parse().unwrap(),
+                port: DEFAULT_STATEBOARD_PORT,
             },
             password: "some_password".to_string(),
         }),
     };
 
-    assert_eq!(cluster.failover(), &expected_flv);
+    assert_eq!(failover, failover_model);
+}
 
-    // test failover deserialization with uncomplete genin config
-    let cluster = Cluster::try_from(
-        std::fs::read("test/resources/test-cluster-uncomplete.genin.yaml")
-            .unwrap()
-            .as_slice(),
-    );
+#[test]
+fn failover_from_ip_and_port() {
+    let failover_str: String = r#"---
+mode: stateful
+state_provider: stateboard
+stateboard_params:
+  uri: 
+    ip: 192.168.16.11 
+    port: 4401
+  password: some_password
+"#
+    .into();
 
-    let expected_err = Err(TaskError::ConfigError(ConfigError::FileFormatError(
-        "Error then deserializing cluster file data did not match any variant of untagged enum Cluster"
-            .to_string(),
-    )));
+    let failover: Failover = serde_yaml::from_str(&failover_str).unwrap();
 
-    assert_eq!(cluster, expected_err);
+    let failover_model = Failover {
+        mode: Mode::Stateful,
+        state_provider: StateProvider::Stateboard,
+        failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
+            url: Uri {
+                ip: "192.168.16.11".parse().unwrap(),
+                port: DEFAULT_STATEBOARD_PORT,
+            },
+            password: "some_password".to_string(),
+        }),
+    };
+
+    assert_eq!(failover, failover_model);
+}
+
+#[test]
+fn failover_to_str() {
+    let failover = Failover {
+        mode: Mode::Stateful,
+        state_provider: StateProvider::Stateboard,
+        failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
+            url: Uri {
+                ip: "192.168.16.11".parse().unwrap(),
+                port: DEFAULT_STATEBOARD_PORT,
+            },
+            password: "some_password".to_string(),
+        }),
+    };
+
+    let failover_model_str: String = r#"---
+mode: stateful
+state_provider: stateboard
+stateboard_params:
+  uri: "192.168.16.11:4401"
+  password: some_password
+"#
+    .into();
+
+    let failover_str = serde_yaml::to_string(&failover).unwrap();
+
+    assert_eq!(failover_str, failover_model_str);
 }

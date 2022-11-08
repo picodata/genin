@@ -1,7 +1,13 @@
 pub(in crate::task) mod v1;
 pub(in crate::task) mod v2;
 
+use std::fmt::Display;
+
+use indexmap::IndexMap;
 use serde::{de::Visitor, Deserialize, Serialize};
+use serde_yaml::Value;
+
+use super::hst::v2::Address;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
@@ -128,14 +134,163 @@ pub fn default_weight() -> usize {
     10
 }
 
-#[allow(unused)]
 fn count_one() -> usize {
     1
 }
 
 pub trait IntoV2 {
-    fn into_v2(&self) -> Vec<v2::InstanceV2>;
+    fn as_v2_replicaset(&self) -> Vec<v2::Replicaset>;
 }
 
-#[cfg(test)]
-mod test;
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
+pub struct Config {
+    pub http_port: Option<usize>,
+    pub binary_port: Option<usize>,
+    pub address: Address,
+    #[serde(flatten)]
+    pub config: IndexMap<String, Value>,
+}
+
+impl From<IndexMap<String, Value>> for Config {
+    fn from(config: IndexMap<String, Value>) -> Self {
+        Config {
+            config,
+            ..Config::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Name {
+    childrens: Vec<String>,
+}
+
+impl Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.childrens.last().unwrap())
+    }
+}
+
+impl<'a> From<&'a str> for Name {
+    fn from(s: &'a str) -> Self {
+        Self {
+            childrens: vec![s.to_string()],
+        }
+    }
+}
+
+impl From<String> for Name {
+    fn from(s: String) -> Self {
+        Self { childrens: vec![s] }
+    }
+}
+
+impl<'a> From<&'a Name> for &'a str {
+    fn from(val: &'a Name) -> Self {
+        val.childrens.last().map(|s| s.as_str()).unwrap()
+    }
+}
+
+impl PartialOrd for Name {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.childrens
+            .last()
+            .unwrap()
+            .partial_cmp(other.childrens.last().unwrap())
+    }
+}
+
+impl Ord for Name {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.childrens
+            .last()
+            .unwrap()
+            .cmp(other.childrens.last().unwrap())
+    }
+}
+
+impl Serialize for Name {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.into())
+    }
+}
+
+impl Name {
+    pub fn with_index<T: Display>(self, index: T) -> Self {
+        Self {
+            childrens: vec![
+                self.childrens.clone(),
+                vec![format!("{}-{}", self.childrens.last().unwrap(), index)],
+            ]
+            .concat(),
+        }
+    }
+
+    pub fn clone_with_index<T: Display>(&self, index: T) -> Self {
+        Self {
+            childrens: vec![
+                self.childrens.clone(),
+                vec![format!("{}-{}", self.childrens.last().unwrap(), index)],
+            ]
+            .concat(),
+        }
+    }
+
+    /// Returns the name of the ancestor on the basis of which the
+    /// current name is formed.
+    ///
+    /// * If the Name has no children, then the original name will be
+    /// returned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let topology_member_name = Name::from("router");
+    /// let replicaset_name = topology_member_name.clone_with_index(1);
+    /// let instance_name = topology_member_name.clone_with_index(3);
+    ///
+    /// assert_eq!(instance_name.name(), "router-1-3");
+    /// assert_eq!(instance_name.get_ancestor(), "router");
+    ///
+    /// // Ancestor name of topology_member_name is "router" because he
+    /// // does not have childrens.
+    /// assert_eq!(topology_member_name.get_ancestor(), "router");
+    /// ```
+    pub fn get_ancestor(&self) -> &str {
+        self.childrens.first().unwrap()
+    }
+
+    /// Returns the name of the parent on the basis of which the
+    /// current name is formed.
+    ///
+    /// * If the parent Name has no children, then the original name
+    /// will be returned.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// let topology_member_name = Name::from("router");
+    /// let replicaset_name = topology_member_name.clone_with_index(1);
+    /// let instance_name = topology_member_name.clone_with_index(3);
+    ///
+    /// assert_eq!(instance_name.name(), "router-1-3");
+    /// assert_eq!(instance_name.get_parent(), "router-1");
+    /// assert_eq!(replicaset_name.get_parent(), "router");
+    ///
+    /// // Parent name of topology_member_name is "router" because he
+    /// // does not have childrens.
+    /// assert_eq!(topology_member_name.get_parent(), "router");
+    /// ```
+    pub fn get_parent(&self) -> &str {
+        self.childrens
+            .get(self.childrens.len() - 2)
+            .unwrap_or_else(|| self.childrens.first().unwrap())
+    }
+}
+
+//TODO: fix test
+//#[cfg(test)]
+//mod test;

@@ -61,16 +61,16 @@ sudo yum install -y genin
 2. If you want to install `rpm` packages directly without adding our repository.
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.3.8-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.0-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.3.8-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.0-1.el7.x86_64.rpm
 ```
 > **Note:** please don't forget to pick the right package for your OS version.
 
 #### Debian, Ubuntu
 We provide the `deb` Genin package for `debian`-based Linux distributions including the Ubuntu family. Use the following command to download and install the package:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.3.8.amd64.deb && sudo dpkg -i genin-0.3.8.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.0.amd64.deb && sudo dpkg -i genin-0.4.0.amd64.deb
 ```
 
 #### MacOSX
@@ -88,8 +88,8 @@ brew install genin
 Use the following command to grab and install Genin in macOS (10.10+) wihtout 
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.3.8-darwin-amd64.zip -o genin-0.3.8-darwin-amd64.zip 
-unzip genin-0.3.8-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.0-darwin-amd64.zip -o genin-0.4.0-darwin-amd64.zip 
+unzip genin-0.4.0-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory. 
 > Make sure the directory is in your `$PATH`.
@@ -98,8 +98,8 @@ unzip genin-0.3.8-darwin-amd64.zip -d ~/bin/
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.3.8-darwin-amd64.zip -o genin-0.3.8-windows-amd64.zip 
-unzip.exe genin-0.3.8-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.0-darwin-amd64.zip -o genin-0.4.0-windows-amd64.zip 
+unzip.exe genin-0.4.0-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** The application can then be found under the `.cargo/bin` folder inside 
 > your user profile folder. Make sure it is in your `%PATH%`.
@@ -141,47 +141,47 @@ Now you can open the file and examine the syntax.
 topology:
   # replicaset looks like item in array
   - name: router              # (mandatory) replicaset name
-    type: router              # (mandatory) replicaset type (storage, router, custom, dummy, replica)
-    replicasets_count: 1                  # (optional) how many masters we want, by default equal 1
-    replication_factor: 0               # (optional) number of replicas per master, default for router 0
+    replicasets_count: 1      # (optional) how many masters we want, by default equal 1
+    replication_factor: 0     # (optional) number of replicas in replicaset, default for router 0
     weight: 10                # (optional) replicaset weight
+    zone:                     # (optional) zone parameter for ansible cartridge playbook
     roles:                    # (optional) list of roles    
       - router
       - api
       - failover-coordinator
-    config:                   # (optional) config with arbitrary key-values pairs
+    config:                     # (optional) config with arbitrary key-values pairs
       replicaset_name: router   # any other configuration parameters in free order
 
   # all another replicasets generated using the init subcommand will have the same set of parameters
   - name: storage
-    type: storage
-    replicasets_count: 2
-    replication_factor: 2
+    replicasets_count: 2        # this means 2 replicasets
+    replication_factor: 3       # with 3 replicas in each replicaset
     weight: 10
     roles:
       - storage
 
 # map of regions, datacenters, and hosts
-hosts:                    # (important) at least one datacenter must be designated
-  - name: selectel        # (important) at least one datacenter must be designated
-    type: datacenter      # (optional) host type
-    ports:                # (optional) begin binary and http port, by default 8080, 3030
-      http: 8081          # ports can be defined on all levels (region, datacenter, server)
-      binary: 3031
+hosts:
+  - name: selectel        # (mandatory) hostname or domain name
+                          # in this example, both hosts are in the same selectel data center
+    config:               # (optional) begin binary and http port, by default 8081, 3031
+                          # ports can be defined on all levels
+      http: 8081          # (optional) http port to start counting from
+      binary: 3031        # (optional) binary port to start counting from
     hosts: 
-      - name: host-1      # deepest level of hosts config
-        ip: 192.168.16.11
+      - name: host-1      # (mandatory) hostname or domain name
+        config:
+          address: 192.168.16.11  # address can be IP, url, subnet (subnet allowed only for higher levels)
       - name: host-2
-        ip: 192.168.16.12
+        config:
+          address: host-1.selectel.com
 
 # failover parameters
 failover:
   mode: stateful                      # (optional) failover mode (stateful, eventual, disabled)
   state_provider: stateboard          # (optional) what is serve failover (stateboard, stateful)
   stateboard_params:                  # (optional) params for chosen in state_provider failover type
-      uri:
-        ip: 192.168.16.1
-        port: 4401
+      uri: 192.168.16.1:4401
       password: "vG?-GG!4sxV8q5:f"
 
 # vars similar to those configured in the TDG inventory
@@ -218,21 +218,19 @@ The initial cluster configuration file can be slimmed down to the following mini
 ```yaml
 ---
 topology:
-  - name: router
-    type: router
+  - name: router            # since the number of replicasets is not set, 
+                            # the default will be 1 replicase with 1 replica
   - name: storage
-    type: storage
     replicasets_count: 3
     replication_factor: 2
 
 hosts:
   - name: selectel
-    type: datacenter
+    config:
+      address: 192.168.16.12/32
     hosts:
-      - name: host-1
-        ip: 192.168.16.11
-      - name: host-2
-        ip: 192.168.16.12
+      - name: host-1        # ip will be set 192.168.16.12
+      - name: host-2        # ip will be set 192.168.16.13
 ```
 
 This is a perfectly valid and working configuration file. The rest of the parameters wil use their default values.
@@ -244,36 +242,48 @@ replicas (1). We will also define a different replicaset type - `cache`.
 ---
 topology:
   - name: router
-    type: router
-    replicasets_count: 10
+    replication_factor: 10     # this replicaset has no roles defined and its name is a router, 
+                              # so the replicasets_count parameter will be ignored 
+                              # and the default number of replicasets will be set to 1
   - name: storage
-    type: storage
-    replicasets_count: 10
+    replicasets_count: 10     # since the number of replicases in replicaset is not set, 
+                              # the default will be 10 replicasets with 1 replica in each
 
 hosts:
   - name: selectel
-    type: datacenter
     hosts:
       - name: host-1
-        ip: 192.168.16.11
+        config:
+          address: 192.168.16.11      # in this example, the address for each host is set separately, 
+                                      # but for convenience, the address could be set by subnet, 
+                                      # specifying it one level higher for selectel
       - name: host-2
-        ip: 192.168.16.12
+        config:
+          address: 192.168.16.12
       - name: host-3
-        ip: 192.168.16.13
+        config:
+          address: 192.168.16.13
       - name: host-4
-        ip: 192.168.16.14
+        config:
+          address: 192.168.16.14
       - name: host-5
-        ip: 192.168.16.15
+        config:
+          address: 192.168.16.15
       - name: host-6
-        ip: 192.168.16.16
+        config:
+          address: 192.168.16.16
       - name: host-7
-        ip: 192.168.16.17
+        config:
+          address: 192.168.16.17
       - name: host-8
-        ip: 192.168.16.18
+        config:
+          address: 192.168.16.18
       - name: host-9
-        ip: 192.168.16.19
+        config:
+          address: 192.168.16.19
       - name: host-10
-        ip: 192.168.16.20
+        config:
+          address: 192.168.16.20
 ```
 The actual difference between the 2 replicasets configuration and a large cluster configuration
 is not that great, whereas the resulting inventory file for the large cluster will be 5 times bigger.
@@ -395,6 +405,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 ## Authors
 
 - **Dmitry Travyan**
+- **Lomakina Anastasia**
 
 © 2020-2022 Picodata.io https://github.com/picodata
 

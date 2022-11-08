@@ -1,18 +1,22 @@
 use std::{
+    error::Error,
+    fmt::Display,
     fs::File,
     io::{Read, Write},
     path::PathBuf,
 };
 
-use crate::error::{ConfigError, InternalError, TaskError};
 use clap::ArgMatches;
 use log::{debug, trace, warn};
+use serde::{de::DeserializeOwned, Serialize};
 
-use crate::task::MapSelf;
+use crate::error::{GeninError, GeninErrorKind};
 
 pub(in crate::task) const CLUSTER_YAML: &str = "cluster.genin.yaml";
 pub(in crate::task) const INVENTORY_YAML: &str = "inventory.yaml";
 
+//TODO: remove it in next commits
+#[allow(unused)]
 #[derive(Default)]
 pub(in crate::task) struct FsInteraction {
     source: Option<PathBuf>,
@@ -25,17 +29,17 @@ impl<'a> From<&'a ArgMatches> for FsInteraction {
             source: args
                 .try_get_one::<String>("source")
                 .transpose()
-                .map(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str()))))
-                .flatten(),
+                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
             output: args
                 .try_get_one::<String>("output")
                 .transpose()
-                .map(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str()))))
-                .flatten(),
+                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
         }
     }
 }
 
+//TODO: remove in future commits
+#[allow(unused)]
 impl FsInteraction {
     /// After string args transofrmed to `PathBuf` this function should check
     /// `soure` and `output` existence, and replace to default value
@@ -74,64 +78,37 @@ impl FsInteraction {
     /// # panic
     /// - source file does not exist
     /// - source file wrong format
-    pub fn read(&self) -> Result<Vec<u8>, TaskError> {
+    pub fn read(&self) -> Result<Vec<u8>, GeninError> {
         let mut file = File::open(self.source.as_ref().ok_or_else(|| {
-            TaskError::InternalError(InternalError::UndefinedError(
-                "Error while trying to read source file. Source file: None".into(),
-            ))
+            GeninError::new(
+                GeninErrorKind::ArgsError,
+                "Error while trying to read source file. Source file: None",
+            )
         })?)
-        .map_err(|err| {
-            TaskError::ConfigError(ConfigError::FileContentError(format!(
-                "Error then opening file {}! Err: {}",
-                self.source.as_ref().unwrap().to_str().unwrap(),
-                err
-            )))
+        .map_err(|error| {
+            GeninError::new(
+                GeninErrorKind::ArgsError,
+                format!(
+                    "Error then opening file {}! Err: {}",
+                    self.source.as_ref().unwrap().to_str().unwrap(),
+                    error
+                )
+                .as_str(),
+            )
         })?;
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).map_err(|err| {
-            TaskError::ConfigError(ConfigError::FileContentError(format!(
-                "Error then opening file {}! Err: {}",
-                self.source.as_ref().unwrap().to_str().unwrap(),
-                err
-            )))
+        file.read_to_end(&mut buffer).map_err(|error| {
+            GeninError::new(
+                GeninErrorKind::ArgsError,
+                format!(
+                    "Error then opening file {}! Err: {}",
+                    self.source.as_ref().unwrap().to_str().unwrap(),
+                    error
+                )
+                .as_str(),
+            )
         })?;
         Ok(buffer)
-    }
-
-    /// Write file on the disk
-    pub fn write(&self, data: &[u8]) -> Result<(), TaskError> {
-        File::create(self.output.as_ref().ok_or_else(|| {
-            TaskError::ConfigError(ConfigError::FileCreationError(format!(
-                "Can not create file {}! FsInteraction.taget is none!",
-                self.source.as_ref().unwrap().to_str().unwrap(),
-            )))
-        })?)
-        .map_err(|e| {
-            TaskError::ConfigError(ConfigError::FileCreationError(format!(
-                "Error then creating file {}",
-                e
-            )))
-        })
-        .and_then(|mut f| {
-            f.write_all(data).map_err(|err| {
-                TaskError::ConfigError(ConfigError::FileContentError(format!(
-                    "Error then writing file {}",
-                    err
-                )))
-            })
-        })
-    }
-}
-
-impl<T> MapSelf<T> for FsInteraction {
-    type Target = T;
-    type Error = TaskError;
-
-    fn map_self<F>(self, func: F) -> Result<Self::Target, Self::Error>
-    where
-        F: FnOnce(Self) -> Result<Self::Target, Self::Error>,
-    {
-        func(self)
     }
 }
 
@@ -185,5 +162,204 @@ fn as_copy(path: PathBuf, path_str: String) -> PathBuf {
     }
 }
 
-#[cfg(test)]
-mod test;
+pub trait TryIntoFile {
+    type Error;
+
+    fn try_into_file(self) -> Result<Option<File>, Self::Error>;
+}
+
+impl TryIntoFile for Option<PathBuf> {
+    type Error = std::io::Error;
+
+    fn try_into_file(self) -> Result<Option<File>, Self::Error> {
+        if let Some(path) = self {
+            return File::open(path).map(Some);
+        }
+
+        Ok(None)
+    }
+}
+
+pub struct IO<I, O> {
+    pub input: Option<I>,
+    pub output: Option<O>,
+}
+
+#[allow(unused)]
+impl IO<(), ()> {
+    pub fn new() -> Self {
+        Self {
+            input: None,
+            output: None,
+        }
+    }
+}
+
+impl Default for IO<(), ()> {
+    fn default() -> Self {
+        Self {
+            input: Default::default(),
+            output: Default::default(),
+        }
+    }
+}
+
+impl<'a> From<&'a ArgMatches> for IO<PathBuf, PathBuf> {
+    fn from(args: &'a ArgMatches) -> Self {
+        Self {
+            input: args
+                .try_get_one::<String>("source")
+                .transpose()
+                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+            output: args
+                .try_get_one::<String>("output")
+                .transpose()
+                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+        }
+    }
+}
+
+impl IO<PathBuf, PathBuf> {
+    pub fn try_into_files(
+        self,
+        source: Option<&str>,
+        output: Option<&str>,
+        force: bool,
+    ) -> Result<IO<File, File>, Box<dyn Error>> {
+        Ok(IO {
+            input: self
+                .input
+                .or_else(|| source.map(PathBuf::from))
+                .and_then(|path| {
+                    path.clone()
+                        .to_str()
+                        .map(|path_str| (path, path_str.to_string()))
+                })
+                .and_then(|(path, path_str)| right_ext(path, path_str, false))
+                .map(File::open)
+                .transpose()?,
+            output: self
+                .output
+                .or_else(|| output.map(PathBuf::from))
+                .and_then(|path| {
+                    path.clone()
+                        .to_str()
+                        .map(|path_str| (path, path_str.to_string()))
+                })
+                .map(|(path, path_str)| {
+                    force
+                        .then(|| {
+                            debug!("output file will be overrided because flag force defined");
+                            path.clone()
+                        })
+                        .unwrap_or_else(|| as_copy(path, path_str))
+                })
+                .map(File::create)
+                .transpose()?,
+        })
+    }
+}
+
+impl<I: Read, O> IO<I, O> {
+    pub fn deserialize_input<T: DeserializeOwned>(self) -> Result<IO<T, O>, Box<dyn Error>> {
+        Ok(IO {
+            input: Some(serde_yaml::from_reader(self.input.ok_or_else(|| {
+                GeninError::new(
+                    GeninErrorKind::EmptyField,
+                    "IO struct has empty input field",
+                )
+            })?)?),
+            output: self.output,
+        })
+    }
+}
+
+pub trait TryMap<A, B> {
+    type Error;
+    type Output;
+
+    fn try_map<F>(self, f: F) -> Result<Self::Output, Self::Error>
+    where
+        Self: Sized,
+        F: FnOnce(Self) -> Result<Self::Output, Self::Error>;
+}
+
+impl<I, O, A, B> TryMap<A, B> for IO<I, O> {
+    type Error = GeninError;
+    type Output = IO<A, B>;
+
+    fn try_map<F>(self, function: F) -> Result<Self::Output, Self::Error>
+    where
+        Self: Sized,
+        F: FnOnce(Self) -> Result<Self::Output, Self::Error>,
+    {
+        function(self)
+    }
+}
+
+impl<I: Display, O> IO<I, O> {
+    pub fn print_input(self) -> Self {
+        if let Some(input) = self.input.as_ref() {
+            println!("{}", input)
+        }
+        self
+    }
+}
+
+impl<I: Serialize, O: Write> IO<I, O> {
+    pub fn serialize_input(self) -> Result<IO<I, ()>, Box<dyn Error>> {
+        if let IO {
+            input,
+            output: Some(mut writer),
+        } = self
+        {
+            serde_yaml::to_writer(&mut writer, &input)?;
+            Ok(IO {
+                input,
+                output: Some(()),
+            })
+        } else {
+            Err(GeninError::new(
+                GeninErrorKind::Serialization,
+                "failed to serialize input because output file is None",
+            )
+            .into())
+        }
+    }
+}
+
+impl<I, O> IO<I, O> {
+    pub fn consume_output(self) -> IO<I, String> {
+        IO {
+            input: self.input,
+            output: Option::<String>::None,
+        }
+    }
+}
+
+impl<I, O> Display for IO<I, O>
+where
+    I: Display,
+    O: Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IO {
+                input: Some(input),
+                output: Some(output),
+            } => write!(f, "{}{}", input, output),
+            IO {
+                input: Some(input),
+                output: None,
+            } => write!(f, "{}", input),
+            IO {
+                input: None,
+                output: Some(output),
+            } => write!(f, "{}", output),
+            _ => write!(f, ""), //TODO
+        }
+    }
+}
+
+//#[cfg(test)]
+//mod test;

@@ -10,7 +10,7 @@ pub(super) fn read() -> ArgMatches {
         .dont_collapse_args_in_usage(true)
         .args(&[Arg::new("verbosity")
             .short('v')
-            .num_args(1..=2)
+            .action(ArgAction::Count)
             .global(true)
             .help("Set logging level based on -v (debug) or -vv (trace)")])
         .subcommands(vec![
@@ -134,7 +134,7 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("force")
                         .long("force")
                         .short('f')
-                        .action(ArgAction::Set)
+                        .action(ArgAction::SetTrue)
                         .help(
                             "Used to overwrite the output file, whether \
                             or not it exists.",
