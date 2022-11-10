@@ -103,7 +103,7 @@ pub(super) fn read() -> ArgMatches {
                         .long("print")
                         .short('p')
                         .action(ArgAction::Set)
-                        .default_values(&["colorized", "ports"])
+                        .default_values(["colorized", "ports"])
                         .num_args(1..=3)
                         .help("(list, optional): cluster print output option"),
                 ]),

@@ -13,6 +13,7 @@ fn topology_from_replicasets() {
             replication_factor: None,
             weight: None,
             zone: None,
+            failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
             config: HostV2Config::default(),
         },
@@ -22,6 +23,7 @@ fn topology_from_replicasets() {
             replication_factor: Some(2),
             weight: None,
             zone: None,
+            failure_domains: Vec::new(),
             roles: vec![Role::storage()],
             config: HostV2Config::default(),
         },
@@ -31,6 +33,7 @@ fn topology_from_replicasets() {
             replication_factor: Some(2),
             weight: None,
             zone: None,
+            failure_domains: Vec::new(),
             roles: vec![Role::storage()],
             config: HostV2Config::default(),
         },
@@ -42,6 +45,7 @@ fn topology_from_replicasets() {
             replication_factor: None,
             weight: None,
             zone: None,
+            failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
             config: HostV2Config::default(),
         },
@@ -51,6 +55,7 @@ fn topology_from_replicasets() {
             replication_factor: Some(2),
             weight: None,
             zone: None,
+            failure_domains: Vec::new(),
             roles: vec![Role::storage()],
             config: HostV2Config::default(),
         },
@@ -86,6 +91,7 @@ roles:
         replication_factor: None,
         weight: None,
         zone: None,
+        failure_domains: Vec::new(),
         roles: vec![Role::router(), Role::failover_coordinator()],
         config: HostV2Config::default(),
     };
@@ -121,16 +127,16 @@ hosts:
 
     let hosts_v2_model = HostV2::from("cluster")
         .with_hosts(vec![
-            HostV2::from("server-1")
+            HostV2::from(Name::from("cluster").with_raw_index("server-1"))
                 .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
-            HostV2::from("server-2")
+            HostV2::from(Name::from("cluster").with_raw_index("server-2"))
                 .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
         ])
         .with_config(HostV2Config::from((8081, 3301)));
 
     let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
         .unwrap()
-        .into_v2();
+        .into();
 
     assert_eq!(hosts_v2, hosts_v2_model);
 
@@ -179,11 +185,22 @@ vars:
     .into();
 
     let mut host_v2_model = HostV2::from("cluster")
-        .with_hosts(vec![HostV2::from("selectel").with_hosts(vec![
-            HostV2::from("server-1")
-                .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
-            HostV2::from("server-2")
-                .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
+        .with_hosts(vec![HostV2::from(
+            Name::from("cluster").with_raw_index("selectel"),
+        )
+        .with_hosts(vec![
+            HostV2::from(
+                Name::from("cluster")
+                    .with_raw_index("selectel")
+                    .with_raw_index("server-1"),
+            )
+            .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
+            HostV2::from(
+                Name::from("cluster")
+                    .with_raw_index("selectel")
+                    .with_raw_index("server-2"),
+            )
+            .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
         ])])
         .with_config(HostV2Config::from((8081, 3031)));
 

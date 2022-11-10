@@ -9,7 +9,6 @@ build_binary:
 build: build_binary
 
 permissions:
-	chmod 655 target/x86_64-apple-darwin/release/genin
-	chmod 655 target/x86_64-unknown-linux-gnu/release/genin
-	chmod 655 target/x86_64-unknown-linux-musl/release/genin
-
+	chmod 755 target/x86_64-apple-darwin/release/genin
+	chmod 755 target/x86_64-unknown-linux-gnu/release/genin
+	chmod 755 target/x86_64-unknown-linux-musl/release/genin
