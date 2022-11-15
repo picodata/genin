@@ -639,7 +639,7 @@ impl HostV2Config {
     pub fn create_advertise_uri_entry(&mut self) {
         self.additional_config.insert(
             String::from("advertise_uri"),
-            Value::String(format!("{}:{}", self.address, self.http_port.unwrap())),
+            Value::String(format!("{}:{}", self.address, self.binary_port.unwrap())),
         );
     }
 
