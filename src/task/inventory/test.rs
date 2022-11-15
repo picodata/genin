@@ -66,7 +66,8 @@ vars:
   ansible_user: ansible
   ansible_password: ansible
   cartridge_app_name: genin-app
-  cartridge_cluster_cookie: genin-app-secret-cookie"#.into();
+  cartridge_cluster_cookie: genin-app-secret-cookie"#
+        .into();
 
     let inventory_model_str: String = r#"---
 all:
@@ -84,75 +85,75 @@ all:
   hosts:
     api-1:
       config:
-        advertise_uri: "10.99.16.65:8100"
+        advertise_uri: "10.99.16.65:5002"
         http_port: "8100"
     storage-1-1:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.65:8101"
+        advertise_uri: "10.99.16.65:5003"
         http_port: "8101"
     storage-1-3:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.65:8102"
+        advertise_uri: "10.99.16.65:5004"
         http_port: "8102"
     storage-2-2:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.65:8103"
+        advertise_uri: "10.99.16.65:5005"
         http_port: "8103"
     cache-1-1:
       config:
-        advertise_uri: "10.99.16.65:8104"
+        advertise_uri: "10.99.16.65:5006"
         http_port: "8104"
     cache-1-3:
       config:
-        advertise_uri: "10.99.16.65:8105"
+        advertise_uri: "10.99.16.65:5007"
         http_port: "8105"
     cache-2-2:
       config:
-        advertise_uri: "10.99.16.65:8106"
+        advertise_uri: "10.99.16.65:5008"
         http_port: "8106"
     router-1:
       config:
-        advertise_uri: "10.99.16.65:8107"
+        advertise_uri: "10.99.16.65:5009"
         http_port: "8107"
     calculator-1:
       config:
-        advertise_uri: "10.99.16.66:8100"
+        advertise_uri: "10.99.16.66:5002"
         http_port: "8100"
     storage-1-2:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.66:8101"
+        advertise_uri: "10.99.16.66:5003"
         http_port: "8101"
     storage-2-1:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.66:8102"
+        advertise_uri: "10.99.16.66:5004"
         http_port: "8102"
     storage-2-3:
       config:
         memtx_memory: 1179869184
         vinyl_memory: 10345452343
-        advertise_uri: "10.99.16.66:8103"
+        advertise_uri: "10.99.16.66:5005"
         http_port: "8103"
     cache-1-2:
       config:
-        advertise_uri: "10.99.16.66:8104"
+        advertise_uri: "10.99.16.66:5006"
         http_port: "8104"
     cache-2-1:
       config:
-        advertise_uri: "10.99.16.66:8105"
+        advertise_uri: "10.99.16.66:5007"
         http_port: "8105"
     cache-2-3:
       config:
-        advertise_uri: "10.99.16.66:8106"
+        advertise_uri: "10.99.16.66:5008"
         http_port: "8106"
   children:
     api-replicaset:
