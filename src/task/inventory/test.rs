@@ -82,7 +82,7 @@ all:
         uri: "10.99.16.66:5001"
         password: genin-app
   hosts:
-    api-1-1:
+    api-1:
       config:
         advertise_uri: "10.99.16.65:8100"
         http_port: "8100"
@@ -116,11 +116,11 @@ all:
       config:
         advertise_uri: "10.99.16.65:8106"
         http_port: "8106"
-    router-1-1:
+    router-1:
       config:
         advertise_uri: "10.99.16.65:8107"
         http_port: "8107"
-    calculator-1-1:
+    calculator-1:
       config:
         advertise_uri: "10.99.16.66:8100"
         http_port: "8100"
@@ -155,12 +155,12 @@ all:
         advertise_uri: "10.99.16.66:8106"
         http_port: "8106"
   children:
-    api-1-replicaset:
+    api-replicaset:
       vars:
-        replicaset_alias: api-1
+        replicaset_alias: api
         weight: 10
         failover_priority:
-          - api-1-1
+          - api-1
         roles:
           - api
       hosts:
@@ -176,7 +176,9 @@ all:
         roles:
           - storage
       hosts:
-        storage-1: ~
+        storage-1-1: ~
+        storage-1-2: ~
+        storage-1-3: ~
     storage-2-replicaset:
       vars:
         replicaset_alias: storage-2
@@ -188,7 +190,9 @@ all:
         roles:
           - storage
       hosts:
-        storage-2: ~
+        storage-2-1: ~
+        storage-2-2: ~
+        storage-2-3: ~
     cache-1-replicaset:
       vars:
         replicaset_alias: cache-1
@@ -200,7 +204,9 @@ all:
         roles:
           - storage
       hosts:
-        cache-1: ~
+        cache-1-1: ~
+        cache-1-2: ~
+        cache-1-3: ~
     cache-2-replicaset:
       vars:
         replicaset_alias: cache-2
@@ -212,24 +218,26 @@ all:
         roles:
           - storage
       hosts:
-        cache-2: ~
-    router-1-replicaset:
+        cache-2-1: ~
+        cache-2-2: ~
+        cache-2-3: ~
+    router-replicaset:
       vars:
-        replicaset_alias: router-1
+        replicaset_alias: router
         weight: 10
         failover_priority:
-          - router-1-1
+          - router-1
         roles:
           - router
           - failover-coordinator
       hosts:
         router-1: ~
-    calculator-1-replicaset:
+    calculator-replicaset:
       vars:
-        replicaset_alias: calculator-1
+        replicaset_alias: calculator
         weight: 10
         failover_priority:
-          - calculator-1-1
+          - calculator-1
         roles:
           - calculator
       hosts:
@@ -238,19 +246,19 @@ all:
       vars:
         ansible_host: 10.99.16.65
       hosts:
-        api-1-1: ~
+        api-1: ~
         storage-1-1: ~
         storage-1-3: ~
         storage-2-2: ~
         cache-1-1: ~
         cache-1-3: ~
         cache-2-2: ~
-        router-1-1: ~
+        router-1: ~
     host-2:
       vars:
         ansible_host: 10.99.16.66
       hosts:
-        calculator-1-1: ~
+        calculator-1: ~
         storage-1-2: ~
         storage-2-1: ~
         storage-2-3: ~
