@@ -75,7 +75,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                     .iter()
                     .fold(IndexMap::new(), |mut accum, host| {
                         host.instances.iter().for_each(|instance| {
-                            accum
+                            let entry = accum
                                 .entry(format!("{}-replicaset", instance.name.get_parent()))
                                 .or_insert(InventoryReplicaset {
                                     vars: InventoryVars::ReplicasetInventoryVars {
@@ -86,14 +86,12 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                                             .collect(),
                                         roles: instance.roles.clone(),
                                     },
-                                    hosts: vec![(
-                                        instance.name.get_parent().to_string(),
-                                        Value::Null,
-                                    )]
-                                    .into_iter()
-                                    .collect(),
-                                })
-                                .extend_failover_priority(instance.name.to_string());
+                                    hosts: vec![(instance.name.to_string(), Value::Null)]
+                                        .into_iter()
+                                        .collect(),
+                                });
+                            entry.extend_failover_priority(instance.name.to_string());
+                            entry.insert_host(instance.name.to_string(), Value::Null);
                         });
                         accum
                     })
@@ -163,6 +161,11 @@ impl InventoryReplicaset {
             }
             _ => unimplemented!(),
         }
+    }
+
+    pub fn insert_host(&mut self, host: String, value: Value) {
+        self.hosts.insert(host, value);
+        self.hosts.sort_keys();
     }
 
     pub fn extend_hosts(&mut self, hosts: IndexMap<String, Value>) {

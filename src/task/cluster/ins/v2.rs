@@ -28,6 +28,17 @@ pub struct Replicaset {
 #[allow(unused)]
 impl Replicaset {
     pub fn instances(&self) -> Vec<InstanceV2> {
+        if self.replication_factor.is_none() {
+            return vec![InstanceV2 {
+                name: self.name.clone(),
+                stateboard: None,
+                weight: self.weight,
+                zone: self.zone.clone(),
+                failure_domains: self.failure_domains.clone(),
+                roles: self.roles.clone(),
+                config: self.config.clone(),
+            }];
+        }
         (1..=self.replication_factor.unwrap_or(1))
             .map(|index| InstanceV2 {
                 name: self.name.clone_with_index(index),
