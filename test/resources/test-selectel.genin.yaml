@@ -23,7 +23,7 @@ instances:
     roles:
       - app.roles.engine
 hosts:
-  - name: selectel
+  - name: cloud
     type: datacenter
     ports:
       http: 8081

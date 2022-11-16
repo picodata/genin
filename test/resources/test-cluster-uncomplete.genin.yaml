@@ -17,7 +17,7 @@ instances:
       - api
       - failover-coordinator
 hosts:
-  - name: selectel
+  - name: cloud
     type: datacenter
     ports:
       http: 8081

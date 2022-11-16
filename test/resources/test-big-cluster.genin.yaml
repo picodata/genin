@@ -44,7 +44,7 @@ instances:
     roles:
       - metrics
 hosts:
-  - name: selectel
+  - name: cloud
     type: region
     ports:
       http: 8100
