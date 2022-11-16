@@ -34,9 +34,13 @@ improper or incomplete configuration. Genin  allows you to stay confident while
 maintaining the configuration file and steer clear of inaccuracies and human errors. 
 Genin is the tool that will help you very quickly roll out cluster configuration updates.
 
+---
+
 ## Installation
 
 Download and unzip the archive for the desired architecture.
+
+---
 
 #### RHEL, CentOS, Rockylinux, Fedora
 There are two installation methods supported for RHEL, CentOS, Rockylinux and Fedora.
