@@ -5,10 +5,11 @@ pub enum GeninErrorKind {
     ArgsError,
     EmptyField,
     SpreadingError,
-    DeserializationError,
+    Deserialization,
     Serialization,
     UnknownFailureDomain,
     NotApplicable,
+    IO,
 }
 
 #[derive(Debug, PartialEq, Eq)]

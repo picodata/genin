@@ -6,7 +6,7 @@ pub mod name;
 
 use clap::ArgMatches;
 use indexmap::IndexMap;
-use log::trace;
+use log::{debug, trace};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
@@ -17,8 +17,8 @@ use std::net::IpAddr;
 use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::hst::v1::Host;
 use crate::task::cluster::hst::v2::{HostV2, HostV2Config};
-use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config};
-use crate::task::cluster::ins::{v2::Replicaset, Role, Type};
+use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config, Replicaset};
+use crate::task::cluster::ins::{Role, Type};
 use crate::task::cluster::name::Name;
 use crate::task::flv::Failover;
 use crate::task::inventory::{Child, HostVars, Inventory};
@@ -178,17 +178,7 @@ impl Default for Cluster {
             );
         let failover = Failover::default();
         if let Some(stb) = failover.as_stateboard() {
-            host.instances.push(InstanceV2 {
-                name: Name::from("stateboard"),
-                stateboard: Some(true),
-                weight: None,
-                failure_domains: host
-                    .get_name_by_address(&stb.uri.address)
-                    .map(|name| vec![name.to_string()])
-                    .unwrap_or_default(),
-                roles: Vec::new(),
-                config: InstanceV2Config::default(),
-            });
+            host.push_stateboard(stb);
         }
         host.spread();
         Self {
@@ -496,6 +486,103 @@ impl Cluster {
 
     pub fn failover(&self) -> &Failover {
         &self.failover
+    }
+
+    pub fn try_upgrade(mut self, new: &Cluster) -> Result<Self, GeninError> {
+        let old_hosts = self
+            .hosts()
+            .first()
+            .ok_or_else(|| {
+                GeninError::new(
+                    GeninErrorKind::EmptyField,
+                    "The top-level array with hosts is empty! \
+                All looks like the hosts config is empty.",
+                )
+            })?
+            .lower_level_hosts();
+        let new_hosts = new
+            .hosts()
+            .first()
+            .ok_or_else(|| {
+                GeninError::new(
+                    GeninErrorKind::EmptyField,
+                    "The top-level array with hosts is empty! \
+                All looks like the hosts config is empty.",
+                )
+            })?
+            .lower_level_hosts();
+
+        let mut diff = new_hosts
+            .into_iter()
+            .flat_map(|new_host| {
+                new_host.instances.iter().filter(|new_instance| {
+                    !old_hosts.iter().any(|old_host| {
+                        old_host
+                            .instances
+                            .iter()
+                            .any(|old_instance| old_instance.name.eq(&new_instance.name))
+                    })
+                })
+            })
+            .collect::<Vec<&InstanceV2>>();
+
+        diff.sort();
+
+        debug!(
+            "New instances: {}",
+            diff.iter()
+                .map(|instance| instance.name.to_string())
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+
+        self.failover = new.failover.clone();
+        self.vars = new.vars.clone();
+
+        if let Some(host) = self.hosts.first_mut() {
+            host.delete_stateboard();
+            host.merge(new.hosts.first().ok_or_else(|| {
+                GeninError::new(
+                    GeninErrorKind::EmptyField,
+                    "The top-level array with hosts is empty! \
+                        All looks like the hosts config is empty.",
+                )
+            })?);
+
+            host.instances = diff
+                .iter()
+                .map(
+                    |InstanceV2 {
+                         name,
+                         stateboard,
+                         weight,
+                         failure_domains,
+                         roles,
+                         config,
+                         ..
+                     }| InstanceV2 {
+                        name: name.clone(),
+                        stateboard: *stateboard,
+                        weight: *weight,
+                        failure_domains: failure_domains.clone(),
+                        roles: roles.clone(),
+                        config: InstanceV2Config {
+                            http_port: None,
+                            binary_port: None,
+                            ..config.clone()
+                        },
+                    },
+                )
+                .collect();
+
+            if let Some(stateboard) = new.failover.as_stateboard() {
+                host.push_stateboard(stateboard);
+            }
+
+            host.spread();
+        }
+
+        Ok(self)
     }
 }
 

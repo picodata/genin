@@ -51,7 +51,7 @@ use super::{
 ///             - name: server-10
 ///               ip: 10.99.3.100
 /// ```
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct HostV2 {
     pub name: Name,
     #[serde(skip_serializing_if = "HostV2Config::is_none", default)]
@@ -461,6 +461,26 @@ impl HostV2 {
         }
     }
 
+    pub fn prune_instances(&mut self) {
+        self.instances = Vec::new();
+        if !self.hosts.is_empty() {
+            self.hosts
+                .iter_mut()
+                .for_each(|host| host.prune_instances())
+        }
+    }
+
+    pub fn delete_stateboard(&mut self) {
+        if self.hosts.is_empty() {
+            self.instances
+                .retain(|instance| instance.name != Name::from("stateboard"))
+        } else {
+            self.hosts
+                .iter_mut()
+                .for_each(|host| host.delete_stateboard())
+        }
+    }
+
     pub fn push_stateboard(&mut self, stateboard: &StateboardParams) {
         self.instances.push(InstanceV2 {
             name: Name::from("stateboard"),
@@ -487,6 +507,32 @@ impl HostV2 {
                 ..InstanceV2Config::default()
             },
         });
+    }
+
+    pub fn merge(&mut self, rhs: &HostV2) {
+        if !rhs.hosts.is_empty() {
+            rhs.hosts.iter().for_each(|rhs_host| {
+                if let Some(self_host) = self
+                    .hosts
+                    .iter_mut()
+                    .find(|self_host| self_host.name.eq(&rhs_host.name))
+                {
+                    self_host.merge(rhs_host);
+                } else {
+                    self.hosts.push(HostV2 {
+                        instances: Vec::new(),
+                        ..rhs_host.clone()
+                    });
+                }
+            })
+        } else {
+            self.hosts = rhs.hosts.clone();
+            self.config = HostV2Config {
+                http_port: self.config.http_port,
+                binary_port: self.config.binary_port,
+                ..rhs.config.clone()
+            };
+        }
     }
 }
 

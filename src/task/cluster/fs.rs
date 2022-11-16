@@ -12,8 +12,9 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::error::{GeninError, GeninErrorKind};
 
-pub(in crate::task) const CLUSTER_YAML: &str = "cluster.genin.yaml";
-pub(in crate::task) const INVENTORY_YAML: &str = "inventory.yaml";
+pub const CLUSTER_YAML: &str = "cluster.genin.yaml";
+pub const INVENTORY_YAML: &str = "inventory.yaml";
+pub const UPGRADE_YAML: &str = "upgrade.genin.yaml";
 
 //TODO: remove it in next commits
 #[allow(unused)]
