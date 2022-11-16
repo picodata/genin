@@ -1,7 +1,8 @@
 pub (in crate::task) mod v1;
 pub (in crate::task) mod v2;
 
-use std::{fmt::Display, net::IpAddr};
+use std::{fmt::Display, net::IpAddr, hash::Hash};
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -54,16 +55,16 @@ impl PortsVariants {
         matches!(self, Self::None)
     }
 
-    pub fn http_as_option(&self) -> Option<usize> {
+    pub fn http_as_option(&self) -> Option<u16> {
         match self {
-            PortsVariants::Ports(p) => Some(usize::from(p.http)),
+            PortsVariants::Ports(p) => Some(p.http),
             PortsVariants::None => None,
         }
     }
 
-    pub fn binary_as_option(&self) -> Option<usize> {
+    pub fn binary_as_option(&self) -> Option<u16> {
         match self {
-            PortsVariants::Ports(p) => Some(usize::from(p.binary)),
+            PortsVariants::Ports(p) => Some(p.binary),
             PortsVariants::None => None,
         }
     }
@@ -122,6 +123,17 @@ impl IP {
 
 pub fn is_null(u: &usize) -> bool {
     matches!(u, 0)
+}
+
+pub fn merge_index_maps<A, B>(left: IndexMap<A, B>, right: IndexMap<A, B>) -> IndexMap<A, B>
+where
+    A: Hash + Eq,
+{
+    let mut left = left;
+    right.into_iter().for_each(|(key, value)| {
+        left.entry(key).or_insert(value);
+    });
+    left
 }
 
 #[cfg(test)]

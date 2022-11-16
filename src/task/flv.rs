@@ -1,15 +1,14 @@
-use std::{
-    fmt::Display,
-    net::{IpAddr, SocketAddr},
-};
 use clap::ArgMatches;
 use log::{error, trace, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
+use std::{fmt::Display, net::SocketAddr};
 
 use crate::{
     error::{GeninError, GeninErrorKind},
     DEFAULT_STATEBOARD_PORT,
 };
+
+use super::cluster::hst::v2::Address;
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 /// Failover enum
@@ -121,6 +120,18 @@ impl<'de> Deserialize<'de> for Failover {
                 error!("Failover looks like {:?}", e);
                 Err(e)
             }
+        }
+    }
+}
+
+impl Failover {
+    pub fn as_stateboard(&self) -> Option<&StateboardParams> {
+        match self {
+            Failover {
+                failover_variants: FailoverVariants::StateboardVariant(stb),
+                ..
+            } => Some(stb),
+            _ => None,
         }
     }
 }
@@ -294,16 +305,15 @@ impl FailoverVariants {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct StateboardParams {
-    #[serde(rename = "uri")]
-    pub url: Uri,
+    pub uri: Uri,
     pub password: String,
 }
 
 impl Default for StateboardParams {
     fn default() -> Self {
         StateboardParams {
-            url: Uri {
-                ip: "192.168.16.11".parse().unwrap(),
+            uri: Uri {
+                address: Address::Ip("192.168.16.11".parse().unwrap()),
                 port: DEFAULT_STATEBOARD_PORT,
             },
             password: "password".into(),
@@ -313,13 +323,13 @@ impl Default for StateboardParams {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Uri {
-    pub ip: IpAddr,
+    pub address: Address,
     pub port: u16,
 }
 
 impl Display for Uri {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.ip, self.port)
+        write!(f, "{}:{}", self.address, self.port)
     }
 }
 
@@ -332,20 +342,20 @@ impl<'de> Deserialize<'de> for Uri {
         #[serde(untagged)]
         enum UriHelper {
             Uri(String),
-            IpPort { ip: IpAddr, port: u16 },
+            IpPort { ip: Address, port: u16 },
         }
 
         UriHelper::deserialize(deserializer).map(|uri_helper| match uri_helper {
             UriHelper::Uri(uri_str) => uri_str
                 .parse::<SocketAddr>()
                 .map(|socket_addr| Uri {
-                    ip: socket_addr.ip(),
+                    address: Address::Ip(socket_addr.ip()),
                     port: socket_addr.port(),
                 })
                 .map_err(|error| {
                     serde::de::Error::custom(format!("failed to parse uri {}: {}", uri_str, error))
                 }),
-            UriHelper::IpPort { ip, port } => Ok(Uri { ip, port }),
+            UriHelper::IpPort { ip: address, port } => Ok(Uri { address, port }),
         })?
     }
 }
@@ -355,7 +365,7 @@ impl Serialize for Uri {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(format!("{}:{}", self.ip, self.port).as_str())
+        serializer.serialize_str(format!("{}:{}", self.address, self.port).as_str())
     }
 }
 

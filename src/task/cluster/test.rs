@@ -1,4 +1,8 @@
+use std::convert::TryFrom;
+
 use clap::{Arg, ArgAction, Command};
+
+use crate::task::{cluster::hst::v2::Address, flv::StateboardParams};
 
 use super::*;
 
@@ -12,30 +16,27 @@ fn topology_from_replicasets() {
             replicasets_count: Some(1),
             replication_factor: None,
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         Replicaset {
             name: Name::from("storage").with_index(1),
             replicasets_count: Some(2),
             replication_factor: Some(2),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: vec![Role::storage()],
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         Replicaset {
             name: Name::from("storage").with_index(2),
             replicasets_count: Some(2),
             replication_factor: Some(2),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: vec![Role::storage()],
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
     ];
     let topology_members_reference = vec![
@@ -44,20 +45,18 @@ fn topology_from_replicasets() {
             replicasets_count: Some(1),
             replication_factor: None,
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
         TopologyMemberV2 {
             name: "storage".into(),
             replicasets_count: Some(2),
             replication_factor: Some(2),
             weight: None,
-            zone: None,
             failure_domains: Vec::new(),
             roles: vec![Role::storage()],
-            config: HostV2Config::default(),
+            config: InstanceV2Config::default(),
         },
     ];
 
@@ -90,10 +89,9 @@ roles:
         replicasets_count: Some(1),
         replication_factor: None,
         weight: None,
-        zone: None,
         failure_domains: Vec::new(),
         roles: vec![Role::router(), Role::failover_coordinator()],
-        config: HostV2Config::default(),
+        config: InstanceV2Config::default(),
     };
 
     let topology_member: TopologyMemberV2 = serde_yaml::from_str(&topology_member_str).unwrap();
@@ -172,7 +170,7 @@ failover:
   mode: stateful
   state_provider: stateboard
   stateboard_params:
-    uri: 192.168.16.1:4401
+    uri: 192.168.16.11:4401
     password: some_password
 vars:
   ansible_user: ansible
@@ -204,11 +202,46 @@ vars:
         ])])
         .with_config(HostV2Config::from((8081, 3031)));
 
+    host_v2_model.push_stateboard(&StateboardParams {
+        uri: crate::task::flv::Uri {
+            address: Address::Ip("192.168.16.11".parse().unwrap()),
+            port: 4401,
+        },
+        password: "some_password".into(),
+    });
+
     host_v2_model.spread();
 
     let hosts_v2_model = vec![host_v2_model];
-
     let cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
+
+    println!(
+        "stateboard 1: {:?}",
+        hosts_v2_model
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .instances
+    );
+    println!(
+        "stateboard 2: {:?}",
+        cluster_v1
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .instances
+    );
 
     assert_eq!(cluster_v1.hosts, hosts_v2_model);
 
@@ -232,8 +265,8 @@ failover:
   mode: stateful
   state_provider: stateboard
   stateboard_params:
-    uri: "192.168.16.1:4401"
-    password: password
+    uri: "192.168.16.11:4401"
+    password: some_password
 vars:
   ansible_user: ansible
   ansible_password: ansible
@@ -245,6 +278,35 @@ vars:
     .into();
 
     let cluster_v2: Cluster = serde_yaml::from_str(&cluster_v2_str).unwrap();
+
+    println!(
+        "stateboard 3: {:?}",
+        cluster_v1
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .instances
+    );
+    println!(
+        "stateboard 4: {:?}",
+        cluster_v2
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .hosts
+            .first()
+            .unwrap()
+            .instances
+    );
 
     assert_eq!(cluster_v1.hosts, cluster_v2.hosts);
 }
@@ -560,4 +622,144 @@ vars:
     let cluster_v2_model: Cluster = serde_yaml::from_str(&cluster_v2_model_str).unwrap();
 
     assert_eq!(cluster_v2, cluster_v2_model);
+}
+
+#[test]
+fn cluster_v2_from_inventory() {
+    let inventory_str: String = r#"---
+all:
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:4401"
+        password: password
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+    storage-1-2:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: 8082
+    storage-2-2:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: 8083
+    stateboard:
+      stateboard: true
+      config:
+        listen: "192.168.16.11:4401"
+        password: password
+    storage-1-1:
+      config:
+        advertise_uri: "192.168.16.12:3031"
+        http_port: 8081
+    storage-2-1:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: 8082
+  children:
+    router-replicaset:
+      vars:
+        replicaset_alias: router
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        failover_priority:
+          - storage-1-1
+          - storage-1-2
+        roles:
+          - storage
+      hosts:
+        storage-1-2: ~
+        storage-1-1: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        failover_priority:
+          - storage-2-1
+          - storage-2-2
+        roles:
+          - storage
+      hosts:
+        storage-2-2: ~
+        storage-2-1: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        storage-1-2: ~
+        storage-2-2: ~
+        stateboard: ~
+    server-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        storage-1-1: ~
+        storage-2-1: ~"#
+        .into();
+
+    let inventory: Inventory = serde_yaml::from_str(&inventory_str).unwrap();
+
+    let cluster_v2 = Cluster::try_from(&Some(inventory)).unwrap();
+
+    let cluster_v2_str = serde_yaml::to_string(&cluster_v2).unwrap();
+
+    let cluster_v2_model_str: String = r#"---
+topology:
+  - name: router
+    replicasets_count: 1
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    replicasets_count: 2
+    replication_factor: 2
+    roles:
+      - storage
+hosts:
+  - name: server-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+      address: 192.168.16.11
+  - name: server-2
+    config:
+      http_port: 8081
+      binary_port: 3031
+      address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true
+"#
+    .into();
+
+    assert_eq!(cluster_v2_str, cluster_v2_model_str);
 }

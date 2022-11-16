@@ -26,6 +26,9 @@ node_modules
 /test/resources/*
 !/test/resources/test-*
 /test/resources/test-*-copy*:w
+/test/outputs/*
+!/test/outputs/test-*
+/test/outputs/test-*-copy*:w
 /.gitlab-ci.yml
 /deploy/.terraform.lock.hcl
 /deploy/.terraform/
