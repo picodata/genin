@@ -65,16 +65,16 @@ sudo yum install -y genin
 2. If you want to install `rpm` packages directly without adding our repository.
 ```shell
 # RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.0-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.4-1.el8.x86_64.rpm
 # RHEL 7.x, CentOS 7.x
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.0-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.4-1.el7.x86_64.rpm
 ```
 > **Note:** please don't forget to pick the right package for your OS version.
 
 #### Debian, Ubuntu
 We provide the `deb` Genin package for `debian`-based Linux distributions including the Ubuntu family. Use the following command to download and install the package:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.0.amd64.deb && sudo dpkg -i genin-0.4.0.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.4.amd64.deb && sudo dpkg -i genin-0.4.4.amd64.deb
 ```
 
 #### MacOSX
@@ -92,8 +92,8 @@ brew install genin
 Use the following command to grab and install Genin in macOS (10.10+) wihtout 
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.0-darwin-amd64.zip -o genin-0.4.0-darwin-amd64.zip 
-unzip genin-0.4.0-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.4-darwin-amd64.zip -o genin-0.4.4-darwin-amd64.zip 
+unzip genin-0.4.4-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory. 
 > Make sure the directory is in your `$PATH`.
@@ -102,8 +102,8 @@ unzip genin-0.4.0-darwin-amd64.zip -d ~/bin/
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.0-darwin-amd64.zip -o genin-0.4.0-windows-amd64.zip 
-unzip.exe genin-0.4.0-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.4-darwin-amd64.zip -o genin-0.4.4-windows-amd64.zip 
+unzip.exe genin-0.4.4-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** The application can then be found under the `.cargo/bin` folder inside 
 > your user profile folder. Make sure it is in your `%PATH%`.
@@ -166,8 +166,8 @@ topology:
 
 # map of regions, datacenters, and hosts
 hosts:
-  - name: selectel        # (mandatory) hostname or domain name
-                          # in this example, both hosts are in the same selectel data center
+  - name: cloud        # (mandatory) hostname or domain name
+                          # in this example, both hosts are in the same cloud data center
     config:               # (optional) begin binary and http port, by default 8081, 3031
                           # ports can be defined on all levels
       http: 8081          # (optional) http port to start counting from
@@ -178,7 +178,7 @@ hosts:
           address: 192.168.16.11  # address can be IP, url, subnet (subnet allowed only for higher levels)
       - name: host-2
         config:
-          address: host-1.selectel.com
+          address: host-1.cloud.com
 
 # failover parameters
 failover:
@@ -229,7 +229,7 @@ topology:
     replication_factor: 2
 
 hosts:
-  - name: selectel
+  - name: cloud
     config:
       address: 192.168.16.12/32
     hosts:
@@ -254,13 +254,13 @@ topology:
                               # the default will be 10 replicasets with 1 replica in each
 
 hosts:
-  - name: selectel
+  - name: cloud
     hosts:
       - name: host-1
         config:
           address: 192.168.16.11      # in this example, the address for each host is set separately, 
                                       # but for convenience, the address could be set by subnet, 
-                                      # specifying it one level higher for selectel
+                                      # specifying it one level higher for cloud
       - name: host-2
         config:
           address: 192.168.16.12
