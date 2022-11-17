@@ -238,6 +238,22 @@ impl Name {
         }
     }
 
+    pub fn as_replicaset_name(&self) -> Self {
+        if self.len() == 3 {
+            self.get_parent_name().clone_with_index("replicaset")
+        } else {
+            self.clone_with_index("replicaset")
+        }
+    }
+
+    pub fn as_replicaset_alias(&self) -> Self {
+        if self.len() == 3 {
+            self.get_parent_name()
+        } else {
+            self.clone()
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.childrens.len()
     }
