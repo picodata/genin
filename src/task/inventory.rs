@@ -87,17 +87,12 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                             .filter(|instance| !instance.is_stateboard())
                             .try_for_each(|instance| {
                                 let entry = accum
-                                    .entry(
-                                        instance
-                                            .name
-                                            .get_parent_name()
-                                            .clone_with_index("replicaset"),
-                                    )
+                                    .entry(instance.name.as_replicaset_name())
                                     .or_insert(Child::Replicaset {
                                         vars: ReplicasetVars {
                                             replicaset_alias: instance
                                                 .name
-                                                .get_parent_str()
+                                                .as_replicaset_alias()
                                                 .to_string(),
                                             failover_priority: vec![instance.name.to_string()]
                                                 .into_iter()

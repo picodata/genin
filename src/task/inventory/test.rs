@@ -161,9 +161,9 @@ all:
         listen: "10.99.16.66:5001"
         password: genin-app
   children:
-    api-replicaset:
+    api-1-replicaset:
       vars:
-        replicaset_alias: api
+        replicaset_alias: api-1
         failover_priority:
           - api-1
         roles:
@@ -227,9 +227,9 @@ all:
         cache-2-2: ~
         cache-2-1: ~
         cache-2-3: ~
-    router-replicaset:
+    router-1-replicaset:
       vars:
-        replicaset_alias: router
+        replicaset_alias: router-1
         failover_priority:
           - router-1
         roles:
@@ -238,9 +238,9 @@ all:
         weight: 10
       hosts:
         router-1: ~
-    calculator-replicaset:
+    calculator-1-replicaset:
       vars:
-        replicaset_alias: calculator
+        replicaset_alias: calculator-1
         failover_priority:
           - calculator-1
         roles:
