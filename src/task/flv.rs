@@ -420,17 +420,17 @@ impl<'a> TryFrom<&'a str> for UriWithProtocol {
                 protocol: Protocol::Http,
                 url: serde_yaml::from_str(url).map_err(|error| {
                     //TODO: replace whith rich types
-                    GeninError::new(GeninErrorKind::DeserializationError, error)
+                    GeninError::new(GeninErrorKind::Deserialization, error)
                 })?,
             }),
             (Some(&"https"), Some(&url)) => Ok(Self {
                 protocol: Protocol::Https,
                 url: serde_yaml::from_str(url).map_err(|error| {
-                    GeninError::new(GeninErrorKind::DeserializationError, error)
+                    GeninError::new(GeninErrorKind::Deserialization, error)
                 })?,
             }),
             _ => Err(GeninError::new(
-                GeninErrorKind::DeserializationError,
+                GeninErrorKind::Deserialization,
                 "Error while parsing ETCD2 url",
             )),
         }

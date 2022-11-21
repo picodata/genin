@@ -179,6 +179,71 @@ pub(super) fn read() -> ArgMatches {
                             or not it exists.",
                         ),
                 ]),
+            Command::new("upgrade")
+                .about(
+                    "Using the genin configuration and the inventory to be \
+                    modified creates a new inventory",
+                )
+                .args(&[
+                    Arg::new("old")
+                        .long("old")
+                        .action(ArgAction::Set)
+                        .required(true)
+                        .help(
+                            "Absolute or relative path of the file with \
+                            the description of the cluster to be generated",
+                        ),
+                    Arg::new("new")
+                        .long("new")
+                        .action(ArgAction::Set)
+                        .required(true)
+                        .help(
+                            "New cluster config based on which the upgrade \
+                            will be generated",
+                        ),
+                    Arg::new("output")
+                        .long("output")
+                        .short('o')
+                        .action(ArgAction::Set)
+                        .help(
+                            "The absolute or relative path where the \
+                            ready-made cluster inventory will be saved.",
+                        ),
+                    Arg::new("force")
+                        .long("force")
+                        .short('f')
+                        .action(ArgAction::SetTrue)
+                        .help(
+                            "Used to overwrite the output file, whether \
+                            or not it exists.",
+                        ),
+                    Arg::new("ansible-user")
+                        .long("ansible-user")
+                        .action(ArgAction::Set)
+                        .help("(string, optional): login to perform ansible playbook"),
+                    Arg::new("ansible-password")
+                        .long("ansible-password")
+                        .action(ArgAction::Set)
+                        .help("(string, optional) :password from ansible user"),
+                    Arg::new("cartridge-package-path")
+                        .long("catrige-package-path")
+                        .action(ArgAction::Set)
+                        .help("(string, optional): path to application package"),
+                    Arg::new("cartridge-cluster-cookie")
+                        .long("cartridge-cluster-cookie")
+                        .action(ArgAction::Set)
+                        .help("(string): cluster cookie for all cluster instances"),
+                    Arg::new("failover-mode")
+                        .long("failover-mode")
+                        .short('m')
+                        .action(ArgAction::Set)
+                        .help("(string): failover mode (statefull, eventual, disabled)"),
+                    Arg::new("failover-state-provider")
+                        .long("failover-state-provider")
+                        .short('F')
+                        .action(ArgAction::Set)
+                        .help("(string): failover state provider"),
+                ]),
         ])
         .get_matches()
 }

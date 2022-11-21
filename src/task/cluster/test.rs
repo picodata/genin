@@ -763,3 +763,133 @@ vars:
 
     assert_eq!(cluster_v2_str, cluster_v2_model_str);
 }
+
+#[test]
+fn cluster_v2_upgrade() {
+    let old_cluster_str: String = r#"---
+topology:
+  - name: router
+    replicasets_count: 1
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    replicasets_count: 2
+    replication_factor: 2
+    roles:
+      - storage
+  - name: api
+    failure_domains: [server-2]
+    role:
+      - api
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true"#
+        .into();
+
+    let new_cluster_str: String = r#"---
+topology:
+  - name: router
+    replicasets_count: 4
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    replicasets_count: 2
+    replication_factor: 2
+    roles:
+      - storage
+  - name: api
+    failure_domains: [server-2]
+    role:
+      - api
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true"#
+        .into();
+
+    let old_cluster: Cluster = serde_yaml::from_str(&old_cluster_str).unwrap();
+    let new_cluster: Cluster = serde_yaml::from_str(&new_cluster_str).unwrap();
+
+    let upgraded = old_cluster.try_upgrade(&new_cluster).unwrap();
+
+    let result_table: String = r#"+-------------+-------------+
+|          cluster          |
++-------------+-------------+
+|       datacenter-1        |
++-------------+-------------+
+|  server-1   |  server-2   |
++-------------+-------------+
+|  router-1   | storage-1-1 |
+|  8081 3031  | 8081 3031   |
++-------------+-------------+
+| storage-1-2 | storage-2-1 |
+| 8082 3032   | 8082 3032   |
++-------------+-------------+
+| storage-2-2 |  api-1      |
+| 8083 3033   |  8083 3033  |
++-------------+-------------+
+|  router-2   |  router-3   |
+|  8084 3034  |  8084 3034  |
++-------------+-------------+
+|  router-4   |             |
+|  8085 3035  |             |
++-------------+-------------+
+| stateboard  |             |
++-------------+-------------+"#
+        .into();
+
+    assert_eq!(upgraded.to_string(), result_table);
+}

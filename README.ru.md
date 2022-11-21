@@ -49,10 +49,12 @@ Genin уже заранее скомпилирован под разные ар�
 
 Универсальный исполняемый файл:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.5-x86_64-musl.tar.gz
-tar -xvf genin-0.4.5-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.6-x86_64-musl.tar.gz
+tar -xvf genin-0.4.6-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
 ```
+
 ---
+
 #### RHEL, CentOS, Rockylinux, Fedora
 
 Для операционных систем RHEL, CentOS, Rockylinux and Fedora доступно три вида установки.
@@ -82,11 +84,11 @@ sudo yum install -y genin
 2. Так же вы можете установить пакет `rpm` напрямую без добавления нашего репозитория.
 RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.5-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.6-1.el8.x86_64.rpm
 ```
 RHEL 7.x, CentOS 7.x
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.5-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.6-1.el7.x86_64.rpm
 ```
 > **Note:** будьте внимательны, так как при выборе не правильной версии ос могут быть ошибки 
 > при установке `rpm` 
@@ -113,7 +115,7 @@ sudo apt install -y genin
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.5.amd64.deb && sudo dpkg -i genin-0.4.5.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.6.amd64.deb && sudo dpkg -i genin-0.4.6.amd64.deb
 ```
 
 ---
@@ -138,7 +140,7 @@ sudo apt install -y genin
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.5.amd64.deb && sudo dpkg -i genin-0.4.5.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.6.amd64.deb && sudo dpkg -i genin-0.4.6.amd64.deb
 ```
 
 ---
@@ -158,8 +160,8 @@ brew install genin
 Для установки без помощи homebrew используйте следующие команды для загрузки и установки 
 Genin на macOS (10.10+):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.4.5-x86_64-macosx.tar.gz
-unzip genin-0.4.5-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.4.6-x86_64-macosx.tar.gz
+unzip genin-0.4.6-darwin-amd64.zip -d ~/bin/
 ```
 
 ---
@@ -173,8 +175,8 @@ unzip genin-0.4.5-darwin-amd64.zip -d ~/bin/
 Используйте следующие команды для скачивания и установки Genin на операционных системах
 Windows 7 64 и новее.
 ```shell
-curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.4.5-win64.zip
-unzip.exe genin-0.4.5-win64.zip -d %HOME%/.cargo/bin/
+curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.4.6-win64.zip
+unzip.exe genin-0.4.6-win64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** Genin будет распакован в директорию `.cargo/bin` которая находится в домашнем
 > каталоге важего пользователя. Перед использованием приложения пожалуйста удостоверьтесь 
@@ -184,7 +186,7 @@ unzip.exe genin-0.4.5-win64.zip -d %HOME%/.cargo/bin/
 ```
 genin --version
 ```
-Если вы видите сообщение `genin 0.4.5` значит установка прошла успешно.
+Если вы видите сообщение `genin 0.4.6` значит установка прошла успешно.
 
 ---
 ## Руководство по использованию
@@ -612,6 +614,39 @@ vars:
   cartridge_package_path: /tmp/myapp.rpm
   cartridge_bootstrap_vshard: true
 ```
+
+---
+
+#### Реконфигурация кластера
+
+Для обновления кластера развернутого с помощью сгенерированного `Genin` 
+инвентаря, существует специальная команда `upgrade`, предназначенная для 
+добавления новых инстансов. В отличии от повторной генерации инвентаря, при 
+которой все инстансы перераспределяются каждый раз заново, `upgrade` оставит 
+распределение как есть, и лишь добавит новыеинстансы. Это позволит 
+безболезненно обновить кластер, без полного редеплоя.
+
+Для запуска `upgrade` нужно передать два обязательных оргумента `--old` 
+и `--new`.
+```shell
+genin upgrade --old cluster.genin.yml --new upgrade.genin.yml -s inventory.yml
+```
+
+Опция `--old` указазывает путь к старому конфигу кластера которому мы хотим 
+сделать `upgrade`.  
+Опция `--new` путь к новой конфигурации кластера, на основе которой `Genin` 
+сделает `diff` и добавит те инстансы которых не было в конфиге переданном в 
+`--old`.
+
+| Old                                                                       | New                                                                       | Diff                                                          |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------|---------------------------------------------------------------|
+| <pre>- name: router<br/>  replicasets_count: 2                            | <pre>- name: router<br>  replicasets_count: 4                             | <pre>router-3<br>router-4                                     |
+| <pre>- name: storage<br>  replicasets_count: 2<br>  replication_factor: 2 | <pre>- name: storage<br>  replicasets_count: 2<br>  replication_factor: 4 | <pre>storage-1-3<br>storage-1-4<br>storage-2-3<br>storage-2-4 |
+
+---
+
+> **Note:** на текущий момент, `downgrade` кластера реализован лишь частично
+> и требует ручной проверки полученного в итоге инвентаря.
 
 ---
 

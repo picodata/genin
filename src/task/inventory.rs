@@ -28,7 +28,7 @@ impl<'a> TryFrom<&'a [u8]> for Inventory {
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         serde_yaml::from_slice(value).map_err(|error| {
             GeninError::new(
-                GeninErrorKind::DeserializationError,
+                GeninErrorKind::Deserialization,
                 format!("Deserizalization error {}", error).as_str(),
             )
         })
