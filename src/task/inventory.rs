@@ -41,11 +41,11 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
     fn try_from(cluster: &'a Option<Cluster>) -> Result<Self, Self::Error> {
         let (cl_hosts, vars) = if let Some(cluster) = cluster {
             (
-                cluster.hosts().first().unwrap().lower_level_hosts(),
+                cluster.hosts.lower_level_hosts(),
                 cluster
-                    .vars()
+                    .vars
                     .clone()
-                    .with_failover(cluster.failover().clone()),
+                    .with_failover(cluster.failover.clone()),
             )
         } else {
             return Err(GeninError::new(

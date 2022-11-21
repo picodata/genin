@@ -124,18 +124,6 @@ impl<'de> Deserialize<'de> for Failover {
     }
 }
 
-impl Failover {
-    pub fn as_stateboard(&self) -> Option<&StateboardParams> {
-        match self {
-            Failover {
-                failover_variants: FailoverVariants::StateboardVariant(stb),
-                ..
-            } => Some(stb),
-            _ => None,
-        }
-    }
-}
-
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub enum Mode {
     #[serde(rename = "stateful")]

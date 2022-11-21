@@ -154,10 +154,6 @@ impl From<IndexMap<String, Value>> for Config {
     }
 }
 
-pub trait AsV2Replicaset {
-    fn as_v2_replicaset(&self) -> Vec<v2::Replicaset>;
-}
-
 //TODO: fix test
 //#[cfg(test)]
 //mod test;

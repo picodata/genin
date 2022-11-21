@@ -169,13 +169,13 @@ impl Name {
     /// let instance_name = topology_member_name.clone_with_index(3);
     ///
     /// assert_eq!(instance_name.name(), "router-1-3");
-    /// assert_eq!(instance_name.get_ancestor(), "router");
+    /// assert_eq!(instance_name.get_ancestor_str(), "router");
     ///
     /// // Ancestor name of topology_member_name is "router" because he
     /// // does not have childrens.
-    /// assert_eq!(topology_member_name.get_ancestor(), "router");
+    /// assert_eq!(topology_member_name.get_ancestor_str(), "router");
     /// ```
-    pub fn get_ancestor(&self) -> &str {
+    pub fn get_ancestor_str(&self) -> &str {
         self.childrens.first().unwrap()
     }
 
@@ -236,6 +236,10 @@ impl Name {
         } else {
             self.clone()
         }
+    }
+
+    pub fn get_ancestor_name(&self) -> Self {
+        Self { childrens: self.childrens.clone().drain(0..1).collect() }
     }
 
     pub fn as_replicaset_name(&self) -> Self {

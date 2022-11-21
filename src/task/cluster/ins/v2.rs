@@ -3,12 +3,86 @@ use log::trace;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 use std::cmp::Ordering;
+use std::slice::{Iter, IterMut};
+use std::vec::IntoIter;
+use tabled::papergrid::AnsiColor;
 
 use crate::task::cluster::hst::merge_index_maps;
 use crate::task::cluster::hst::v2::HostV2Config;
-use crate::task::cluster::ins::{v1::Instance, AsV2Replicaset, Role};
+use crate::task::cluster::hst::view::View;
+use crate::task::cluster::ins::Role;
 use crate::task::cluster::name::Name;
-use crate::task::inventory::InvHostConfig;
+use crate::task::inventory::{InvHostConfig, InventoryHost};
+
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub struct Instances(Vec<InstanceV2>);
+
+impl From<Vec<InstanceV2>> for Instances {
+    fn from(instances: Vec<InstanceV2>) -> Self {
+        Self(instances)
+    }
+}
+
+impl Instances {
+    pub fn iter(&self) -> Iter<InstanceV2> {
+        self.0.iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<InstanceV2> {
+        self.0.iter_mut()
+    }
+
+    #[allow(unused)]
+    // used in tests
+    pub fn into_iter(self) -> IntoIter<InstanceV2> {
+        self.0.into_iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, index: usize) -> Option<&InstanceV2> {
+        self.0.get(index)
+    }
+
+    pub fn reverse(&mut self) {
+        self.0.reverse()
+    }
+
+    #[allow(unused)]
+    // used in tests
+    pub fn pop(&mut self) -> Option<InstanceV2> {
+        self.0.pop()
+    }
+
+    #[allow(unused)]
+    // used in tests
+    pub fn first(&self) -> Option<&InstanceV2> {
+        self.0.first()
+    }
+
+    #[allow(unused)]
+    // used in tests
+    pub fn last(&self) -> Option<&InstanceV2> {
+        self.0.last()
+    }
+
+    pub fn push(&mut self, instance: InstanceV2) {
+        self.0.push(instance)
+    }
+
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: FnMut(&InstanceV2) -> bool,
+    {
+        self.0.retain(f)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 /// Replicaset TODO: docs, remove public
@@ -28,70 +102,62 @@ pub struct Replicaset {
     pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
     pub config: InstanceV2Config,
-}
-
-#[allow(unused)]
-impl Replicaset {
-    pub fn instances(&self) -> Vec<InstanceV2> {
-        if self.replication_factor.is_none() {
-            return vec![InstanceV2 {
-                name: self.name.clone(),
-                stateboard: None,
-                weight: self.weight,
-                failure_domains: self.failure_domains.clone(),
-                roles: self.roles.clone(),
-                config: self.config.clone(),
-            }];
-        }
-        (1..=self.replication_factor.unwrap_or(1))
-            .map(|index| InstanceV2 {
-                name: self.name.clone_with_index(index),
-                stateboard: None,
-                weight: self.weight,
-                failure_domains: self.failure_domains.clone(),
-                roles: self.roles.clone(),
-                config: self.config.clone(),
-            })
-            .collect()
-    }
-
-    pub fn name(&self) -> String {
-        self.name.to_string()
-    }
-}
-
-impl PartialOrd for Replicaset {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.name.partial_cmp(&other.name) {
-            Some(Ordering::Equal) => Some(Ordering::Equal),
-            ord => ord,
-        }
-    }
-}
-
-impl Ord for Replicaset {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.name.cmp(&other.name)
-    }
+    pub view: View,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-/// TODO: docs, remove pub
+/// Single view, replicaset member, host in final inventory
 ///
+/// For example, such a topology unit will have two instances:
 /// ```yaml
 /// - name: "catalogue"
-///   type: "storage"
 ///   replicasets_count: 1
 ///   replication_factor: 2
 ///   weight: 10
 /// ```
+///
+/// This means that any topology eventually turns into a flat list of
+/// instances with different names but similar configuration (based on the parent)
+/// ```rust
+/// let instances = vec![
+///     InstanceV2 {
+///         name: Name::from("catalogue").with_index(1).with_index(1),
+///         stateboard: None,
+///         weight: Some(10),
+///         failure_domains: Vec::new(),
+///         roles: vec![String::from("catalogue")],
+///         config: InstanceV2Config::default(),
+///         view: View {
+///             alignment: Alignment::left(),
+///             color: FG_BLUE,
+///         },
+///     },
+///     InstanceV2 {
+///         name: Name::from("catalogue").with_index(1).with_index(2),
+///         stateboard: None,
+///         weight: Some(10),
+///         failure_domains: Vec::new(),
+///         roles: vec![String::from("catalogue")],
+///         config: InstanceV2Config::default(),
+///         view: View {
+///             alignment: Alignment::left(),
+///             color: FG_BLUE,
+///         },
+///     }
+/// ]
+/// ```
 pub struct InstanceV2 {
+    /// Instance name with replicaset number and the index of the instance in the replicaset
     pub name: Name,
+    //TODO: remove stateboard option
     pub stateboard: Option<bool>,
+    //TODO: move to config
     pub weight: Option<usize>,
+    //TODO: move to config
     pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
     pub config: InstanceV2Config,
+    pub view: View,
 }
 
 impl PartialOrd for InstanceV2 {
@@ -109,31 +175,31 @@ impl Ord for InstanceV2 {
     }
 }
 
-impl AsV2Replicaset for Vec<Instance> {
-    fn as_v2_replicaset(&self) -> Vec<Replicaset> {
-        self.iter()
-            .map(
-                |Instance {
-                     name,
-                     count,
-                     replicas,
-                     weight,
-                     roles,
-                     config,
-                     ..
-                 }| {
-                    Replicaset {
-                        name: Name::from(name.as_str()),
-                        replicasets_count: Some(*count),
-                        replication_factor: Some(*replicas),
-                        weight: Some(*weight),
-                        failure_domains: Vec::new(),
-                        roles: roles.clone(),
-                        config: InstanceV2Config::from(config),
-                    }
-                },
-            )
-            .collect()
+impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
+    fn from(inventory_host: (&'a Name, &'a InventoryHost)) -> Self {
+        Self {
+            name: inventory_host.0.clone(),
+            stateboard: inventory_host.1.stateboard.then_some(true),
+            weight: None,
+            failure_domains: Vec::default(),
+            roles: Vec::default(),
+            config: InstanceV2Config::from(&inventory_host.1.config),
+            view: View::default(),
+        }
+    }
+}
+
+impl From<Name> for InstanceV2 {
+    fn from(name: Name) -> Self {
+        Self {
+            name,
+            stateboard: None,
+            weight: None,
+            failure_domains: Vec::default(),
+            roles: Vec::default(),
+            config: InstanceV2Config::default(),
+            view: View::default(),
+        }
     }
 }
 
@@ -143,6 +209,19 @@ impl InstanceV2 {
             stateboard
         } else {
             false
+        }
+    }
+
+    pub fn with_roles(self, roles: Vec<Role>) -> Self {
+        Self { roles, ..self }
+    }
+
+    #[allow(unused)]
+    // used only in tests
+    pub fn with_color(self, color: AnsiColor<'static>) -> Self {
+        Self {
+            view: View { color, ..self.view },
+            ..self
         }
     }
 }
