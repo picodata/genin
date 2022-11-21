@@ -3,22 +3,23 @@ use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 use std::{borrow::Cow, cell::RefCell, cmp::Ordering, fmt::Display, net::IpAddr};
+use tabled::papergrid::AnsiColor;
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
+use crate::task::cluster::hst::view::BG_BLACK;
+use crate::task::cluster::hst::{merge_index_maps, v1::Host, v1::HostsVariants, view::View, IP};
+use crate::task::cluster::ins::v2::Instances;
+use crate::task::flv::{Failover, FailoverVariants};
 use crate::{
     error::{GeninError, GeninErrorKind},
     task::{
         cluster::ins::v2::{InstanceV2, InstanceV2Config},
-        flv::{StateboardParams, Uri},
+        flv::Uri,
     },
     task::{cluster::name::Name, inventory::InvHostConfig},
 };
 
-use super::{
-    merge_index_maps,
-    v1::{Host, HostsVariants},
-    IP,
-};
+use super::view::FG_BRIGHT_BLACK;
 
 /// Host can be Region, Datacenter, Server
 /// ```yaml
@@ -51,7 +52,7 @@ use super::{
 ///             - name: server-10
 ///               ip: 10.99.3.100
 /// ```
-#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct HostV2 {
     pub name: Name,
     #[serde(skip_serializing_if = "HostV2Config::is_none", default)]
@@ -59,7 +60,7 @@ pub struct HostV2 {
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub hosts: Vec<HostV2>,
     #[serde(skip)]
-    pub instances: Vec<InstanceV2>,
+    pub instances: Instances,
 }
 
 impl<'a> From<&'a str> for HostV2 {
@@ -67,8 +68,8 @@ impl<'a> From<&'a str> for HostV2 {
         Self {
             name: Name::from(s),
             config: HostV2Config::default(),
-            hosts: Vec::new(),
-            instances: Vec::new(),
+            hosts: Vec::default(),
+            instances: Instances::default(),
         }
     }
 }
@@ -78,8 +79,8 @@ impl From<Name> for HostV2 {
         Self {
             name,
             config: HostV2Config::default(),
-            hosts: Vec::new(),
-            instances: Vec::new(),
+            hosts: Vec::default(),
+            instances: Instances::default(),
         }
     }
 }
@@ -93,19 +94,92 @@ impl From<Vec<Host>> for HostV2 {
                 .into_iter()
                 .map(|host| HostV2::into_host_v2(Name::from("cluster"), host))
                 .collect(),
-            instances: Vec::new(),
+            instances: Instances::default(),
         }
     }
 }
 
-#[allow(unused)]
+impl From<Host> for HostV2 {
+    fn from(host: Host) -> Self {
+        HostV2 {
+            name: Name::from(host.name),
+            config: HostV2Config {
+                http_port: host.ports.http_as_option(),
+                binary_port: host.ports.binary_as_option(),
+                address: Address::from(host.ip),
+                distance: Some(host.distance).and_then(|distance| {
+                    if distance.eq(&0) {
+                        None
+                    } else {
+                        Some(distance)
+                    }
+                }),
+                additional_config: IndexMap::new(),
+            },
+            hosts: match host.hosts {
+                HostsVariants::None => Vec::new(),
+                HostsVariants::Hosts(hosts) => hosts.into_iter().map(HostV2::from).collect(),
+            },
+            instances: Instances::default(),
+        }
+    }
+}
+
+pub trait WithHosts<T> {
+    fn with_hosts(self, hosts: T) -> Self;
+}
+
+impl WithHosts<Vec<HostV2>> for HostV2 {
+    fn with_hosts(self, hosts: Vec<HostV2>) -> Self {
+        Self { hosts, ..self }
+    }
+}
+
+impl WithHosts<Vec<Host>> for HostV2 {
+    fn with_hosts(self, hosts: Vec<Host>) -> Self {
+        Self {
+            hosts: hosts.into_iter().map(HostV2::from).collect(),
+            ..self
+        }
+    }
+}
+
+impl PartialOrd for HostV2 {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.instances.len().partial_cmp(&other.instances.len()) {
+            Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
+            ord => ord,
+        }
+    }
+}
+
+impl Ord for HostV2 {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.instances.len().cmp(&other.instances.len()) {
+            Ordering::Equal => self.name.cmp(&other.name),
+            any => any,
+        }
+    }
+}
+
+impl Display for HostV2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let collector = RefCell::new(vec![Vec::new(); self.depth()]);
+        let depth = 0;
+
+        self.form_structure(depth, &collector);
+
+        let mut table = Builder::from_iter(collector.take().into_iter()).build();
+        table.with(Merge::horizontal());
+        table.with(Alignment::center());
+
+        write!(f, "{}", table)
+    }
+}
+
 impl HostV2 {
     pub fn with_config(self, config: HostV2Config) -> Self {
         Self { config, ..self }
-    }
-
-    pub fn with_hosts(self, hosts: Vec<HostV2>) -> Self {
-        Self { hosts, ..self }
     }
 
     fn into_host_v2(parent_name: Name, host: Host) -> HostV2 {
@@ -131,7 +205,7 @@ impl HostV2 {
                         .into_iter()
                         .map(|host| HostV2::into_host_v2(name.clone(), host))
                         .collect(),
-                    instances: Vec::new(),
+                    instances: Instances::default(),
                 }
             }
             Host {
@@ -149,13 +223,18 @@ impl HostV2 {
                     distance: None,
                     additional_config: IndexMap::new(),
                 },
-                hosts: Vec::new(),
-                instances: Vec::new(),
+                hosts: Vec::default(),
+                instances: Instances::default(),
             },
         }
     }
 
-    pub fn spread(&mut self) {
+    pub fn spread(mut self) -> Self {
+        self.inner_spread();
+        self
+    }
+
+    pub fn inner_spread(&mut self) {
         if self.hosts.is_empty() {
             self.instances
                 .iter_mut()
@@ -206,7 +285,7 @@ impl HostV2 {
         self.hosts.sort_by(|left, right| left.name.cmp(&right.name));
         self.hosts.iter_mut().for_each(|host| {
             host.config = host.config.clone().merge(self.config.clone());
-            host.spread();
+            host.inner_spread();
         });
     }
 
@@ -302,26 +381,7 @@ impl HostV2 {
         ))
     }
 
-    pub fn with_inner_hosts(mut self, hosts: Vec<HostV2>) -> Self {
-        self.hosts = hosts;
-        self
-    }
-
-    pub fn with_instances(mut self, instances: Vec<InstanceV2>) -> Self {
-        self.instances = instances;
-        self
-    }
-
-    pub fn with_http_port(mut self, port: u16) -> Self {
-        self.config.http_port = Some(port);
-        self
-    }
-
-    pub fn with_binary_port(mut self, port: u16) -> Self {
-        self.config.binary_port = Some(port);
-        self
-    }
-
+    #[allow(unused)]
     /// Count number for instances spreaded in HostV2 on all levels
     ///
     /// * If top level HostV2 has 10 instances and instances not spreaded `size() = 0`
@@ -416,6 +476,8 @@ impl HostV2 {
                                     name: instance.name.to_string(),
                                     http_port: instance.config.http_port.unwrap(),
                                     binary_port: instance.config.binary_port.unwrap(),
+                                    fg_color: instance.view.color.clone(),
+                                    bg_color: BG_BLACK,
                                 });
                             }
                         } else {
@@ -461,13 +523,8 @@ impl HostV2 {
         }
     }
 
-    pub fn prune_instances(&mut self) {
-        self.instances = Vec::new();
-        if !self.hosts.is_empty() {
-            self.hosts
-                .iter_mut()
-                .for_each(|host| host.prune_instances())
-        }
+    pub fn with_instances(self, instances: Instances) -> Self {
+        Self { instances, ..self }
     }
 
     pub fn delete_stateboard(&mut self) {
@@ -481,32 +538,79 @@ impl HostV2 {
         }
     }
 
-    pub fn push_stateboard(&mut self, stateboard: &StateboardParams) {
-        self.instances.push(InstanceV2 {
-            name: Name::from("stateboard"),
-            stateboard: Some(true),
-            weight: None,
-            failure_domains: self
-                .get_name_by_address(&stateboard.uri.address)
-                .map(|name| vec![name.to_string()])
-                .unwrap_or_default(),
-            roles: Vec::new(),
-            config: InstanceV2Config {
-                additional_config: vec![
-                    (
-                        String::from("listen"),
-                        Value::String(stateboard.uri.to_string()),
-                    ),
-                    (
-                        String::from("password"),
-                        Value::String(stateboard.password.clone()),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
-                ..InstanceV2Config::default()
+    pub fn with_stateboard(mut self, failover: &Failover) -> Self {
+        if let Failover {
+            failover_variants: FailoverVariants::StateboardVariant(stateboard),
+            ..
+        } = failover
+        {
+            self.instances.push(InstanceV2 {
+                name: Name::from("stateboard"),
+                stateboard: Some(true),
+                weight: None,
+                failure_domains: self
+                    .get_name_by_address(&stateboard.uri.address)
+                    .map(|name| vec![name.to_string()])
+                    .unwrap_or_default(),
+                roles: Vec::new(),
+                config: InstanceV2Config {
+                    additional_config: vec![
+                        (
+                            String::from("listen"),
+                            Value::String(stateboard.uri.to_string()),
+                        ),
+                        (
+                            String::from("password"),
+                            Value::String(stateboard.password.clone()),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    ..InstanceV2Config::default()
+                },
+                view: View {
+                    alignment: Alignment::center(),
+                    color: FG_BRIGHT_BLACK,
+                },
+            });
+        }
+        self
+    }
+
+    #[allow(unused)]
+    // used only in tests
+    pub fn with_http_port(self, http_port: u16) -> Self {
+        Self {
+            config: HostV2Config {
+                http_port: Some(http_port),
+                ..self.config
             },
-        });
+            ..self
+        }
+    }
+
+    #[allow(unused)]
+    // used only in tests
+    pub fn with_binary_port(self, binary_port: u16) -> Self {
+        Self {
+            config: HostV2Config {
+                binary_port: Some(binary_port),
+                ..self.config
+            },
+            ..self
+        }
+    }
+
+    #[allow(unused)]
+    // used only in tests
+    pub fn with_address(self, address: Address) -> Self {
+        Self {
+            config: HostV2Config {
+                address,
+                ..self.config
+            },
+            ..self
+        }
     }
 
     pub fn merge(&mut self, rhs: &HostV2) {
@@ -520,7 +624,7 @@ impl HostV2 {
                     self_host.merge(rhs_host);
                 } else {
                     self.hosts.push(HostV2 {
-                        instances: Vec::new(),
+                        instances: Instances::default(),
                         ..rhs_host.clone()
                     });
                 }
@@ -533,39 +637,6 @@ impl HostV2 {
                 ..rhs.config.clone()
             };
         }
-    }
-}
-
-impl PartialOrd for HostV2 {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.instances.len().partial_cmp(&other.instances.len()) {
-            Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
-            ord => ord,
-        }
-    }
-}
-
-impl Ord for HostV2 {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match self.instances.len().cmp(&other.instances.len()) {
-            Ordering::Equal => self.name.cmp(&other.name),
-            any => any,
-        }
-    }
-}
-
-impl Display for HostV2 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let collector = RefCell::new(vec![Vec::new(); self.depth()]);
-        let depth = 0;
-
-        self.form_structure(depth, &collector);
-
-        let mut table = Builder::from_iter(collector.take().into_iter()).build();
-        table.with(Merge::horizontal());
-        table.with(Alignment::center());
-
-        write!(f, "{}", table)
     }
 }
 
@@ -670,19 +741,7 @@ impl From<IndexMap<String, Value>> for HostV2Config {
     }
 }
 
-//TODO: check unused
-#[allow(unused)]
 impl HostV2Config {
-    pub fn into_default(self) -> Self {
-        Self {
-            http_port: Some(8081),
-            binary_port: Some(3301),
-            address: Address::Ip([127, 0, 0, 1].into()),
-            distance: Some(0),
-            additional_config: IndexMap::new(),
-        }
-    }
-
     pub fn is_none(&self) -> bool {
         self.http_port.is_none()
             && self.binary_port.is_none()
@@ -690,35 +749,10 @@ impl HostV2Config {
             && self.additional_config.is_empty()
     }
 
-    pub fn with_distance(self, distance: usize) -> Self {
-        Self {
-            distance: Some(distance),
-            ..self
-        }
-    }
-
     pub fn with_ports(self, ports: (u16, u16)) -> Self {
         Self {
             http_port: Some(ports.0),
             binary_port: Some(ports.1),
-            ..self
-        }
-    }
-
-    pub fn with_address(self, address: Address) -> Self {
-        Self { address, ..self }
-    }
-
-    pub fn with_http_port(self, http_port: u16) -> Self {
-        Self {
-            http_port: Some(http_port),
-            ..self
-        }
-    }
-
-    pub fn with_binary_port(self, binary_port: u16) -> Self {
-        Self {
-            binary_port: Some(binary_port),
             ..self
         }
     }
@@ -730,24 +764,8 @@ impl HostV2Config {
         }
     }
 
-    pub fn address_to_string(&self) -> String {
-        self.address.to_string()
-    }
-
     pub fn address(&self) -> Address {
         self.address.clone()
-    }
-
-    pub fn binary_port(&self) -> Option<u16> {
-        self.binary_port
-    }
-
-    pub fn http_port(&self) -> Option<u16> {
-        self.http_port
-    }
-
-    pub fn additional_config(&self) -> IndexMap<String, Value> {
-        self.additional_config.clone()
     }
 
     pub fn merge(self, other: HostV2Config) -> Self {
@@ -838,18 +856,14 @@ pub struct Params {
 
 #[derive(Clone, Tabled, Debug)]
 pub enum DomainMember {
-    #[tabled(display_with("Self::display_domain", args))]
     Domain(String),
-    #[tabled(display_with("Self::display_instance", args))]
     Instance {
-        #[tabled(inline)]
         name: String,
-        #[tabled(inline)]
         http_port: u16,
-        #[tabled(inline)]
         binary_port: u16,
+        fg_color: AnsiColor<'static>,
+        bg_color: AnsiColor<'static>,
     },
-    #[tabled(display_with("Self::display_valid", args))]
     Dummy,
 }
 
@@ -873,7 +887,18 @@ impl<'a> From<DomainMember> for Cow<'a, str> {
                 name,
                 http_port,
                 binary_port,
-            } => Cow::Owned(format!("{}\n{} {}", name, http_port, binary_port)),
+                fg_color,
+                ..
+            } => Cow::Owned(format!(
+                "{prefix}{name}{suffix}\n{bb_prefix}{http_port}/{binary_port}{bb_suffix}",
+                prefix = fg_color.get_prefix(),
+                suffix = fg_color.get_suffix(),
+                name = name,
+                http_port = http_port,
+                binary_port = binary_port,
+                bb_prefix = FG_BRIGHT_BLACK.get_prefix(),
+                bb_suffix = FG_BRIGHT_BLACK.get_suffix(),
+            )),
             DomainMember::Dummy => Cow::Owned(Default::default()),
         }
     }

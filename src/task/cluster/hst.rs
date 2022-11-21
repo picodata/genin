@@ -1,5 +1,6 @@
-pub (in crate::task) mod v1;
-pub (in crate::task) mod v2;
+pub mod view;
+pub mod v1;
+pub mod v2;
 
 use std::{fmt::Display, net::IpAddr, hash::Hash};
 use indexmap::IndexMap;
