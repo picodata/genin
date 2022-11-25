@@ -1,8 +1,8 @@
-pub(in crate::task) mod fd;
-pub(in crate::task) mod fs;
-pub(in crate::task) mod hst;
-pub(in crate::task) mod ins;
+pub mod fs;
+pub mod hst;
+pub mod ins;
 pub mod name;
+pub mod topology;
 
 use clap::ArgMatches;
 use indexmap::IndexMap;
@@ -10,19 +10,23 @@ use log::{debug, trace};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use std::cmp::Ordering;
 use std::fmt::Display;
 use std::net::IpAddr;
+use tabled::Alignment;
 
 use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::hst::v1::Host;
-use crate::task::cluster::hst::v2::{HostV2, HostV2Config};
-use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config, Replicaset};
-use crate::task::cluster::ins::{Role, Type};
+use crate::task::cluster::hst::v2::{HostV2, HostV2Config, WithHosts};
+use crate::task::cluster::hst::view::{View, BG_BRIGHT_BLACK};
+use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config, Instances};
+use crate::task::cluster::ins::Role;
 use crate::task::cluster::name::Name;
+use crate::task::cluster::topology::Topology;
 use crate::task::flv::Failover;
+use crate::task::flv::{Mode, StateProvider, StateboardParams};
 use crate::task::inventory::{Child, HostVars, Inventory};
 use crate::task::vars::Vars;
+use crate::{DEFAULT_BINARY_PORT, DEFAULT_HTTP_PORT};
 
 #[derive(Debug, PartialEq, Eq)]
 /// Cluster is a `genin` specific configuration file
@@ -91,11 +95,11 @@ use crate::task::vars::Vars;
 ///     vars: Vars,
 /// }
 /// ```
-pub(in crate::task) struct Cluster {
-    replicasets: Vec<Replicaset>,
-    hosts: Vec<HostV2>,
-    failover: Failover,
-    vars: Vars,
+pub struct Cluster {
+    pub topology: Topology,
+    pub hosts: HostV2,
+    pub failover: Failover,
+    pub vars: Vars,
 }
 
 impl Default for Cluster {
@@ -127,73 +131,44 @@ impl Default for Cluster {
     ///             ip: 10.99.3.100
     /// ```
     fn default() -> Self {
-        let replicasets = vec![
-            Replicaset {
-                name: Name::from("router").with_index(1),
-                replicasets_count: Some(1),
-                replication_factor: None,
-                weight: None,
-                failure_domains: Vec::new(),
-                roles: vec![Role::router(), Role::failover_coordinator()],
-                config: InstanceV2Config::default(),
-            },
-            Replicaset {
-                name: Name::from("storage").with_index(1),
-                replicasets_count: Some(2),
-                replication_factor: Some(2),
-                weight: None,
-                failure_domains: Vec::new(),
-                roles: vec![Role::storage()],
-                config: InstanceV2Config::default(),
-            },
-            Replicaset {
-                name: Name::from("storage").with_index(2),
-                replicasets_count: Some(2),
-                replication_factor: Some(2),
-                weight: None,
-                failure_domains: Vec::new(),
-                roles: vec![Role::storage()],
-                config: InstanceV2Config::default(),
-            },
-        ];
-        let mut host = HostV2::from("cluster")
-            .with_hosts(vec![HostV2::from("datacenter-1")
-                .with_hosts(vec![
-                    HostV2::from("server-1").with_config(
-                        HostV2Config::from(IpAddr::from([192, 168, 16, 11]))
-                            .with_ports((8081, 3031)),
-                    ),
-                    HostV2::from("server-2").with_config(
-                        HostV2Config::from(IpAddr::from([192, 168, 16, 12]))
-                            .with_ports((8081, 3031)),
-                    ),
-                ])
-                .with_config(HostV2Config::from((8081, 3031)))])
-            .with_config(HostV2Config::from((8081, 3031)))
-            .with_instances(
-                replicasets
-                    .iter()
-                    .flat_map(|replicaset| replicaset.instances())
-                    .collect(),
-            );
-        let failover = Failover::default();
-        if let Some(stb) = failover.as_stateboard() {
-            host.push_stateboard(stb);
-        }
-        host.spread();
         Self {
-            replicasets,
-            hosts: vec![host],
-            failover,
+            topology: Topology::default(),
+            hosts: HostV2::from("cluster")
+                .with_hosts(vec![HostV2::from("datacenter-1")
+                    .with_hosts(vec![
+                        HostV2::from("server-1").with_config(
+                            HostV2Config::from(IpAddr::from([192, 168, 16, 11]))
+                                .with_ports((8081, 3031)),
+                        ),
+                        HostV2::from("server-2").with_config(
+                            HostV2Config::from(IpAddr::from([192, 168, 16, 12]))
+                                .with_ports((8081, 3031)),
+                        ),
+                    ])
+                    .with_config(HostV2Config::from((8081, 3031)))])
+                .with_config(HostV2Config::from((8081, 3031))),
+            failover: Failover {
+                mode: Mode::Stateful,
+                state_provider: StateProvider::Stateboard,
+                failover_variants: super::flv::FailoverVariants::StateboardVariant(
+                    StateboardParams {
+                        uri: super::flv::Uri {
+                            address: hst::v2::Address::Ip(IpAddr::from([192, 168, 16, 11])),
+                            port: 4401,
+                        },
+                        password: String::from("password"),
+                    },
+                ),
+            },
             vars: Default::default(),
         }
+        .spread()
     }
 }
 
 impl Display for Cluster {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        trace!("{:?}", self.hosts);
-        write!(f, "{}", &self.hosts.first().unwrap().to_string())
+        write!(f, "{}", &self.hosts)
     }
 }
 
@@ -217,63 +192,33 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
     fn try_from(inventory: &'a Option<Inventory>) -> Result<Self, Self::Error> {
         if let Some(inventory) = inventory {
             Ok(Cluster {
-                replicasets: inventory
-                    .all
-                    .hosts
-                    .iter()
-                    .filter(|(_, host)| !host.stateboard)
-                    .fold(IndexMap::new(), |mut accum, (name, instance)| {
-                        trace!(
-                            "{} {:?} {:?}",
-                            name,
-                            name.parent_index_as_usize(),
-                            name.last_index_as_usize()
-                        );
-                        let entry =
-                            accum
-                                .entry(Name::from(name.get_ancestor()))
-                                .or_insert(Replicaset {
-                                    name: Name::from(name.get_ancestor()),
-                                    replicasets_count: Some(1),
-                                    replication_factor: None,
-                                    weight: None,
-                                    failure_domains: Vec::new(),
-                                    roles: inventory
-                                        .all
-                                        .children
-                                        .get(&name.get_parent_name().clone_with_index("replicaset"))
-                                        .map(|replicaset| match replicaset {
-                                            Child::Replicaset { vars, .. } => vars.roles.clone(),
-                                            _ => unreachable!(),
-                                        })
-                                        .unwrap(),
-                                    config: InstanceV2Config::from(&instance.config).clean_ports(),
-                                });
-                        //TODO: Refactor this in future
-                        match name.len() {
-                            2 => {
-                                if let Some(cnt) = entry.replicasets_count.as_mut() {
-                                    *cnt = name.last_index_as_usize().unwrap().max(*cnt);
-                                }
-                            }
-                            3 => {
-                                if let Some(cnt) = entry.replicasets_count.as_mut() {
-                                    *cnt = name.parent_index_as_usize().unwrap().max(*cnt);
-                                }
-                                if let Some(cnt) = entry.replication_factor.as_mut() {
-                                    *cnt = name.last_index_as_usize().unwrap().max(*cnt);
-                                } else {
-                                    entry.replication_factor =
-                                        Some(name.last_index_as_usize().unwrap());
-                                }
-                            }
-                            _ => {}
-                        }
-                        accum
-                    })
-                    .into_values()
-                    .collect(),
-                hosts: vec![HostV2::from("cluster").with_hosts(
+                topology: Topology::from(Instances::from(
+                    inventory
+                        .all
+                        .hosts
+                        .iter()
+                        .filter(|(_, host)| !host.stateboard)
+                        .map(|(name, inventory_host)| {
+                            let mut instance = InstanceV2::from((name, inventory_host)).with_roles(
+                                inventory
+                                    .all
+                                    .children
+                                    .get(&name.get_parent_name().clone_with_index("replicaset"))
+                                    .map(|replicaset| match replicaset {
+                                        Child::Replicaset { vars, .. } => vars.roles.clone(),
+                                        _ => unreachable!(),
+                                    })
+                                    .unwrap(),
+                            );
+
+                            instance.config.http_port = None;
+                            instance.config.binary_port = None;
+
+                            instance
+                        })
+                        .collect::<Vec<InstanceV2>>(),
+                )),
+                hosts: HostV2::from("cluster").with_hosts(
                     inventory
                         .all
                         .children
@@ -304,36 +249,41 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                                             }),
                                     ),
                                 hosts: Vec::new(),
-                                instances: inventory
-                                    .all
-                                    .hosts
-                                    .iter()
-                                    .filter_map(|(name, instance)| {
-                                        let config = HostV2Config::from(&instance.config);
-                                        trace!(
-                                            "ansible_host: {} instance_address: {}",
-                                            ansible_host,
-                                            config.address()
-                                        );
-                                        if ansible_host.eq(&config.address()) {
-                                            Some(InstanceV2 {
-                                                name: name.clone(),
-                                                stateboard: instance.stateboard.then_some(true),
-                                                weight: None,
-                                                failure_domains: Vec::new(),
-                                                roles: Vec::new(),
-                                                config: InstanceV2Config::from(&instance.config),
-                                            })
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .collect(),
+                                instances: Instances::from(
+                                    inventory
+                                        .all
+                                        .hosts
+                                        .iter()
+                                        .filter_map(|(name, instance)| {
+                                            let config = HostV2Config::from(&instance.config);
+                                            trace!(
+                                                "ansible_host: {} instance_address: {}",
+                                                ansible_host,
+                                                config.address()
+                                            );
+                                            if ansible_host.eq(&config.address()) {
+                                                Some(InstanceV2 {
+                                                    name: name.clone(),
+                                                    stateboard: instance.stateboard.then_some(true),
+                                                    weight: None,
+                                                    failure_domains: Vec::new(),
+                                                    roles: Vec::new(),
+                                                    config: InstanceV2Config::from(
+                                                        &instance.config,
+                                                    ),
+                                                    view: View::default(),
+                                                })
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .collect::<Vec<InstanceV2>>(),
+                                ),
                             }),
                             Child::Replicaset { .. } => None,
                         })
-                        .collect(),
-                )],
+                        .collect::<Vec<HostV2>>(),
+                ),
                 failover: inventory
                     .all
                     .vars
@@ -373,8 +323,8 @@ impl<'de> Deserialize<'de> for Cluster {
                 vars: Vars,
             },
             V2 {
-                topology: Vec<TopologyMemberV2>,
-                hosts: Vec<HostV2Helper>,
+                topology: Topology,
+                hosts: Vec<HostV2>,
                 #[serde(default)]
                 failover: Failover,
                 vars: Vars,
@@ -387,64 +337,31 @@ impl<'de> Deserialize<'de> for Cluster {
                 hosts,
                 failover,
                 vars,
-            } => {
-                let mut replicasets: Vec<Replicaset> = instances
-                    .into_iter()
-                    .flat_map(|member| member.to_replicasets())
-                    .collect();
-                let mut host = HostV2::from(hosts).with_config(HostV2Config::from((8081, 3031)));
-                host.instances = replicasets
-                    .iter_mut()
-                    .flat_map(|replicaset| replicaset.instances())
-                    .collect();
-                if let Some(stb) = failover.as_stateboard() {
-                    host.push_stateboard(stb);
-                }
-                host.spread();
-                Cluster {
-                    replicasets,
-                    hosts: vec![host],
-                    failover,
-                    vars,
-                }
+            } => Cluster {
+                hosts: HostV2::from("cluster")
+                    .with_hosts(hosts)
+                    .with_http_port(DEFAULT_HTTP_PORT)
+                    .with_binary_port(DEFAULT_BINARY_PORT),
+                topology: Topology::from(instances),
+                failover,
+                vars,
             }
+            .spread(),
             ClusterHelper::V2 {
-                mut topology,
+                topology,
                 hosts,
                 failover,
                 vars,
-            } => {
-                topology.sort();
-                let mut replicasets: Vec<Replicaset> = topology
-                    .into_iter()
-                    .flat_map(|member| member.to_replicasets())
-                    .collect();
-                let mut host = HostV2::from("cluster")
-                    .with_hosts(
-                        hosts
-                            .into_iter()
-                            .map(|host| {
-                                let name = Name::from("cluster").with_raw_index(host.name.as_str());
-                                host.into_host_v2(name)
-                            })
-                            .collect(),
-                    )
-                    .with_config(HostV2Config::from((8081, 3031)));
-                host.instances = replicasets
-                    .iter_mut()
-                    .flat_map(|replicaset| replicaset.instances())
-                    .collect();
-                if let Some(stb) = failover.as_stateboard() {
-                    host.push_stateboard(stb);
-                }
-                host.spread();
-                Cluster {
-                    replicasets,
-                    hosts: vec![host],
-                    failover,
-                    vars,
-                }
+            } => Cluster {
+                hosts: HostV2::from("cluster")
+                    .with_hosts(hosts)
+                    .with_http_port(DEFAULT_HTTP_PORT)
+                    .with_binary_port(DEFAULT_BINARY_PORT),
+                topology,
+                failover,
+                vars,
             }
+            .spread(),
         })
     }
 }
@@ -455,11 +372,8 @@ impl Serialize for Cluster {
         S: serde::Serializer,
     {
         let mut state = serializer.serialize_struct("Cluster", 4)?;
-        state.serialize_field(
-            "topology",
-            &TopologyMemberV2::from(self.replicasets.clone()),
-        )?;
-        state.serialize_field("hosts", &self.hosts.first().unwrap().hosts)?;
+        state.serialize_field("topology", &self.topology)?;
+        state.serialize_field("hosts", &self.hosts.hosts)?;
         state.serialize_field("failover", &self.failover)?;
 
         let mut vars = self.vars.clone();
@@ -470,47 +384,24 @@ impl Serialize for Cluster {
     }
 }
 
-#[allow(unused)]
 impl Cluster {
-    pub fn replicasets(&self) -> &Vec<Replicaset> {
-        &self.replicasets
-    }
-
-    pub fn hosts(&self) -> &Vec<HostV2> {
-        &self.hosts
-    }
-
-    pub fn vars(&self) -> &Vars {
-        &self.vars
-    }
-
-    pub fn failover(&self) -> &Failover {
-        &self.failover
+    pub fn spread(self) -> Self {
+        Self {
+            hosts: self
+                .hosts
+                .with_instances(Instances::from(&self.topology))
+                .spread()
+                .with_stateboard(&self.failover)
+                .spread(),
+            topology: self.topology,
+            failover: self.failover,
+            vars: self.vars,
+        }
     }
 
     pub fn try_upgrade(mut self, new: &Cluster) -> Result<Self, GeninError> {
-        let old_hosts = self
-            .hosts()
-            .first()
-            .ok_or_else(|| {
-                GeninError::new(
-                    GeninErrorKind::EmptyField,
-                    "The top-level array with hosts is empty! \
-                All looks like the hosts config is empty.",
-                )
-            })?
-            .lower_level_hosts();
-        let new_hosts = new
-            .hosts()
-            .first()
-            .ok_or_else(|| {
-                GeninError::new(
-                    GeninErrorKind::EmptyField,
-                    "The top-level array with hosts is empty! \
-                All looks like the hosts config is empty.",
-                )
-            })?
-            .lower_level_hosts();
+        let old_hosts = self.hosts.lower_level_hosts();
+        let new_hosts = new.hosts.lower_level_hosts();
 
         let mut diff = new_hosts
             .into_iter()
@@ -539,18 +430,11 @@ impl Cluster {
         self.failover = new.failover.clone();
         self.vars = new.vars.clone();
 
-        if let Some(host) = self.hosts.first_mut() {
-            host.delete_stateboard();
-            host.merge(new.hosts.first().ok_or_else(|| {
-                GeninError::new(
-                    GeninErrorKind::EmptyField,
-                    "The top-level array with hosts is empty! \
-                        All looks like the hosts config is empty.",
-                )
-            })?);
+        self.hosts.delete_stateboard();
+        self.hosts.merge(&new.hosts);
 
-            host.instances = diff
-                .iter()
+        self.hosts.instances = Instances::from(
+            diff.iter()
                 .map(
                     |InstanceV2 {
                          name,
@@ -571,16 +455,17 @@ impl Cluster {
                             binary_port: None,
                             ..config.clone()
                         },
+                        view: View {
+                            alignment: Alignment::left(),
+                            color: BG_BRIGHT_BLACK,
+                        },
                     },
                 )
-                .collect();
+                .collect::<Vec<InstanceV2>>(),
+        );
 
-            if let Some(stateboard) = new.failover.as_stateboard() {
-                host.push_stateboard(stateboard);
-            }
-
-            host.spread();
-        }
+        self.hosts = self.hosts.with_stateboard(&self.failover);
+        self.hosts = self.hosts.spread();
 
         Ok(self)
     }
@@ -608,8 +493,8 @@ impl HostV2Helper {
             return HostV2 {
                 name,
                 config: self.config,
-                hosts: Vec::new(),
-                instances: Vec::new(),
+                hosts: Vec::default(),
+                instances: Instances::default(),
             };
         }
 
@@ -624,7 +509,7 @@ impl HostV2Helper {
                 .collect(),
             name,
             config: self.config,
-            instances: Vec::new(),
+            instances: Instances::default(),
         }
     }
 }
@@ -632,11 +517,9 @@ impl HostV2Helper {
 #[allow(unused)]
 struct TopologyMemberV1 {
     name: Name,
-    itype: Type,
     count: usize,
     replicas: usize,
     weight: usize,
-    stateboard: bool,
     roles: Vec<Role>,
     config: IndexMap<String, Value>,
 }
@@ -649,8 +532,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
         #[derive(Deserialize)]
         struct Helper {
             name: String,
-            #[serde(default, rename = "type")]
-            itype: Type,
             #[serde(default)]
             count: usize,
             #[serde(default)]
@@ -666,7 +547,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
         Helper::deserialize(deserializer).map(
             |Helper {
                  name,
-                 mut itype,
                  count,
                  replicas,
                  weight,
@@ -674,202 +554,19 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
                  config,
                  ..
              }| {
-                if itype == Type::Unknown {
-                    itype = Type::from(name.as_str());
-                }
-
                 if roles.is_empty() {
                     roles = vec![Role::from(name.as_str())]
                 }
-                if itype == Type::Storage {
-                    TopologyMemberV1 {
-                        name: Name::from(name),
-                        itype,
-                        count,
-                        replicas,
-                        weight,
-                        roles,
-                        config,
-                        stateboard: false,
-                    }
-                } else {
-                    TopologyMemberV1 {
-                        itype: Type::from(name.as_str()),
-                        name: Name::from(name),
-                        count,
-                        replicas: 0,
-                        weight,
-                        roles,
-                        config,
-                        stateboard: false,
-                    }
-                }
-            },
-        )
-    }
-}
-
-impl TopologyMemberV1 {
-    fn to_replicasets(&self) -> Vec<Replicaset> {
-        (1..=self.count)
-            .map(|index| Replicaset {
-                name: self.name.clone_with_index(index),
-                replicasets_count: Some(self.count),
-                replication_factor: TopologyMemberV1::as_replication_factor(self.replicas),
-                weight: TopologyMemberV1::as_weight(self.weight),
-                failure_domains: Vec::new(),
-                roles: self.roles.clone(),
-                config: InstanceV2Config::from(&self.config),
-            })
-            .collect()
-    }
-
-    fn as_replication_factor(count: usize) -> Option<usize> {
-        if count == 0 {
-            return None;
-        }
-        Some(count + 1)
-    }
-
-    fn as_weight(weight: usize) -> Option<usize> {
-        if weight == 0 {
-            return None;
-        }
-        Some(weight)
-    }
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq)]
-struct TopologyMemberV2 {
-    name: Name,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    replicasets_count: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    replication_factor: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    weight: Option<usize>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    failure_domains: Vec<String>,
-    #[serde(default)]
-    roles: Vec<Role>,
-    #[serde(skip_serializing_if = "InstanceV2Config::is_none")]
-    config: InstanceV2Config,
-}
-
-impl<'de> Deserialize<'de> for TopologyMemberV2 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct Helper {
-            name: String,
-            #[serde(default)]
-            replicasets_count: Option<usize>,
-            #[serde(default)]
-            replication_factor: Option<usize>,
-            #[serde(default)]
-            weight: Option<usize>,
-            #[serde(default)]
-            failure_domains: Vec<String>,
-            #[serde(default)]
-            roles: Vec<Role>,
-            #[serde(default)]
-            config: InstanceV2Config,
-        }
-
-        Helper::deserialize(deserializer).map(
-            |Helper {
-                 name,
-                 replicasets_count,
-                 replication_factor,
-                 weight,
-                 failure_domains,
-                 mut roles,
-                 config,
-             }| {
-                // If type not defined in yaml let's try to infer based on name
-                if roles.is_empty() {
-                    roles = vec![Role::from(name.as_str())]
-                }
-                TopologyMemberV2 {
+                TopologyMemberV1 {
                     name: Name::from(name),
-                    replicasets_count,
-                    replication_factor,
+                    count,
+                    replicas,
                     weight,
-                    failure_domains,
                     roles,
                     config,
                 }
             },
         )
-    }
-}
-
-impl PartialOrd for TopologyMemberV2 {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (
-            &self.failure_domains.is_empty(),
-            &other.failure_domains.is_empty(),
-        ) {
-            (true, false) => Some(Ordering::Less),
-            (false, true) => Some(Ordering::Greater),
-            _ => Some(Ordering::Equal),
-        }
-    }
-}
-
-impl Ord for TopologyMemberV2 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match (
-            &self.failure_domains.is_empty(),
-            &other.failure_domains.is_empty(),
-        ) {
-            (true, false) => Ordering::Less,
-            (false, true) => Ordering::Greater,
-            _ => Ordering::Equal,
-        }
-    }
-}
-
-impl TopologyMemberV2 {
-    fn from(replicasets: Vec<Replicaset>) -> Vec<TopologyMemberV2> {
-        replicasets
-            .iter()
-            .fold(
-                IndexMap::<String, TopologyMemberV2>::new(),
-                |mut acc, replicaset| {
-                    trace!("Repliacest {}", replicaset.name);
-                    acc.entry(replicaset.name.get_ancestor().to_string())
-                        .or_insert(TopologyMemberV2 {
-                            name: Name::from(replicaset.name.get_ancestor()),
-                            replicasets_count: replicaset.replicasets_count,
-                            replication_factor: replicaset.replication_factor,
-                            weight: replicaset.weight,
-                            failure_domains: replicaset.failure_domains.clone(),
-                            roles: replicaset.roles.clone(),
-                            config: replicaset.config.clone(),
-                        });
-                    acc
-                },
-            )
-            .into_iter()
-            .map(|(_, value)| value)
-            .collect()
-    }
-
-    fn to_replicasets(&self) -> Vec<Replicaset> {
-        (1..=self.replicasets_count.unwrap_or(1))
-            .map(|index| Replicaset {
-                name: self.name.clone_with_index(index),
-                replicasets_count: self.replicasets_count,
-                replication_factor: self.replication_factor,
-                weight: self.weight,
-                failure_domains: self.failure_domains.clone(),
-                roles: self.roles.clone(),
-                config: self.config.clone(),
-            })
-            .collect()
     }
 }
 

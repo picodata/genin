@@ -7,105 +7,6 @@ use crate::task::{cluster::hst::v2::Address, flv::StateboardParams};
 use super::*;
 
 #[test]
-/// Forward and reverse conversion test between replicasets and topology_members
-/// replicasets -> topology_members -> replicasets
-fn topology_from_replicasets() {
-    let replicasets = vec![
-        Replicaset {
-            name: Name::from("router").with_index(1),
-            replicasets_count: Some(1),
-            replication_factor: None,
-            weight: None,
-            failure_domains: Vec::new(),
-            roles: vec![Role::router(), Role::failover_coordinator()],
-            config: InstanceV2Config::default(),
-        },
-        Replicaset {
-            name: Name::from("storage").with_index(1),
-            replicasets_count: Some(2),
-            replication_factor: Some(2),
-            weight: None,
-            failure_domains: Vec::new(),
-            roles: vec![Role::storage()],
-            config: InstanceV2Config::default(),
-        },
-        Replicaset {
-            name: Name::from("storage").with_index(2),
-            replicasets_count: Some(2),
-            replication_factor: Some(2),
-            weight: None,
-            failure_domains: Vec::new(),
-            roles: vec![Role::storage()],
-            config: InstanceV2Config::default(),
-        },
-    ];
-    let topology_members_reference = vec![
-        TopologyMemberV2 {
-            name: "router".into(),
-            replicasets_count: Some(1),
-            replication_factor: None,
-            weight: None,
-            failure_domains: Vec::new(),
-            roles: vec![Role::router(), Role::failover_coordinator()],
-            config: InstanceV2Config::default(),
-        },
-        TopologyMemberV2 {
-            name: "storage".into(),
-            replicasets_count: Some(2),
-            replication_factor: Some(2),
-            weight: None,
-            failure_domains: Vec::new(),
-            roles: vec![Role::storage()],
-            config: InstanceV2Config::default(),
-        },
-    ];
-
-    let topology_members = TopologyMemberV2::from(replicasets.clone());
-
-    assert_eq!(&topology_members, &topology_members_reference);
-
-    let reversed_replicasets: Vec<Replicaset> = topology_members
-        .iter()
-        .flat_map(|topology_member| topology_member.to_replicasets())
-        .collect();
-
-    assert_eq!(&reversed_replicasets, &replicasets);
-}
-
-#[test]
-/// ClusterV2.topology string -> TopologyMemberV2 -> ClusterV2.topology string
-fn topology_member_v2() {
-    let topology_member_str: String = r#"---
-name: router
-replicasets_count: 1
-roles:
-  - router
-  - failover-coordinator
-"#
-    .into();
-
-    let topology_member_model = TopologyMemberV2 {
-        name: Name::from("router"),
-        replicasets_count: Some(1),
-        replication_factor: None,
-        weight: None,
-        failure_domains: Vec::new(),
-        roles: vec![Role::router(), Role::failover_coordinator()],
-        config: InstanceV2Config::default(),
-    };
-
-    let topology_member: TopologyMemberV2 = serde_yaml::from_str(&topology_member_str).unwrap();
-
-    assert_eq!(topology_member, topology_member_model);
-
-    let topology_member_model_str = topology_member_str;
-
-    let topology_member_str = serde_yaml::to_string(&topology_member).unwrap();
-
-    assert_eq!(topology_member_str, topology_member_model_str);
-}
-
-#[test]
 /// ClusterV2.hosts string -> HostV2 -> ClusterV2.hosts string
 fn cluster_hosts_v2_serde() {
     let hosts_v2_str: String = r#"---
@@ -182,7 +83,7 @@ vars:
 "#
     .into();
 
-    let mut host_v2_model = HostV2::from("cluster")
+    let mut hosts_v2_model = HostV2::from("cluster")
         .with_hosts(vec![HostV2::from(
             Name::from("cluster").with_raw_index("selectel"),
         )
@@ -202,24 +103,27 @@ vars:
         ])])
         .with_config(HostV2Config::from((8081, 3031)));
 
-    host_v2_model.push_stateboard(&StateboardParams {
-        uri: crate::task::flv::Uri {
-            address: Address::Ip("192.168.16.11".parse().unwrap()),
-            port: 4401,
-        },
-        password: "some_password".into(),
+    hosts_v2_model = hosts_v2_model.with_stateboard(&Failover {
+        mode: Mode::Stateful,
+        state_provider: StateProvider::Stateboard,
+        failover_variants: crate::task::flv::FailoverVariants::StateboardVariant(
+            StateboardParams {
+                uri: crate::task::flv::Uri {
+                    address: Address::Ip("192.168.16.11".parse().unwrap()),
+                    port: 4401,
+                },
+                password: "some_password".into(),
+            },
+        ),
     });
 
-    host_v2_model.spread();
+    hosts_v2_model = hosts_v2_model.spread();
 
-    let hosts_v2_model = vec![host_v2_model];
     let cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
 
     println!(
         "stateboard 1: {:?}",
         hosts_v2_model
-            .first()
-            .unwrap()
             .hosts
             .first()
             .unwrap()
@@ -232,8 +136,6 @@ vars:
         "stateboard 2: {:?}",
         cluster_v1
             .hosts
-            .first()
-            .unwrap()
             .hosts
             .first()
             .unwrap()
@@ -283,8 +185,6 @@ vars:
         "stateboard 3: {:?}",
         cluster_v1
             .hosts
-            .first()
-            .unwrap()
             .hosts
             .first()
             .unwrap()
@@ -297,8 +197,6 @@ vars:
         "stateboard 4: {:?}",
         cluster_v2
             .hosts
-            .first()
-            .unwrap()
             .hosts
             .first()
             .unwrap()
@@ -416,7 +314,7 @@ failover:
   mode: stateful
   state_provider: stateboard
   stateboard_params:
-    uri: 192.168.16.1:4401
+    uri: 192.168.16.11:4401
     password: password
 vars:
   ansible_user: ansible
@@ -461,7 +359,7 @@ failover:
   mode: stateful
   state_provider: stateboard
   stateboard_params:
-    uri: "192.168.16.1:4401"
+    uri: "192.168.16.11:4401"
     password: password
 vars:
   ansible_user: ansible
@@ -865,30 +763,32 @@ vars:
 
     let upgraded = old_cluster.try_upgrade(&new_cluster).unwrap();
 
-    let result_table: String = r#"+-------------+-------------+
-|          cluster          |
-+-------------+-------------+
-|       datacenter-1        |
-+-------------+-------------+
-|  server-1   |  server-2   |
-+-------------+-------------+
-|  router-1   | storage-1-1 |
-|  8081 3031  | 8081 3031   |
-+-------------+-------------+
-| storage-1-2 | storage-2-1 |
-| 8082 3032   | 8082 3032   |
-+-------------+-------------+
-| storage-2-2 |  api-1      |
-| 8083 3033   |  8083 3033  |
-+-------------+-------------+
-|  router-2   |  router-3   |
-|  8084 3034  |  8084 3034  |
-+-------------+-------------+
-|  router-4   |             |
-|  8085 3035  |             |
-+-------------+-------------+
-| stateboard  |             |
-+-------------+-------------+"#
+    println!("{}", upgraded);
+
+    let result_table: String = "+-------------+-------------+\n\
+|          cluster          |\n\
++-------------+-------------+\n\
+|       datacenter-1        |\n\
++-------------+-------------+\n\
+|  server-1   |  server-2   |\n\
++-------------+-------------+\n\
+|  \u{1b}[37mrouter-1\u{1b}[39m   | \u{1b}[34mstorage-1-1\u{1b}[39m |\n\
+|  \u{1b}[90m8081/3031\u{1b}[39m  | \u{1b}[90m8081/3031\u{1b}[39m   |\n\
++-------------+-------------+\n\
+| \u{1b}[34mstorage-1-2\u{1b}[39m | \u{1b}[36mstorage-2-1\u{1b}[39m |\n\
+| \u{1b}[90m8082/3032\u{1b}[39m   | \u{1b}[90m8082/3032\u{1b}[39m   |\n\
++-------------+-------------+\n\
+| \u{1b}[36mstorage-2-2\u{1b}[39m |  \u{1b}[32mapi-1\u{1b}[39m      |\n\
+| \u{1b}[90m8083/3033\u{1b}[39m   |  \u{1b}[90m8083/3033\u{1b}[39m  |\n\
++-------------+-------------+\n\
+|  \u{1b}[100mrouter-2\u{1b}[49m   |  \u{1b}[100mrouter-3\u{1b}[49m   |\n\
+|  \u{1b}[90m8084/3034\u{1b}[39m  |  \u{1b}[90m8084/3034\u{1b}[39m  |\n\
++-------------+-------------+\n\
+|  \u{1b}[100mrouter-4\u{1b}[49m   |             |\n\
+|  \u{1b}[90m8085/3035\u{1b}[39m  |             |\n\
++-------------+-------------+\n\
+| stateboard  |             |\n\
++-------------+-------------+"
         .into();
 
     assert_eq!(upgraded.to_string(), result_table);
