@@ -268,6 +268,7 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                                                     weight: None,
                                                     failure_domains: Vec::new(),
                                                     roles: Vec::new(),
+                                                    cartridge_extra_env: instance.vars.clone(),
                                                     config: InstanceV2Config::from(
                                                         &instance.config,
                                                     ),
@@ -443,6 +444,7 @@ impl Cluster {
                          weight,
                          failure_domains,
                          roles,
+                         cartridge_extra_env,
                          config,
                          vars,
                          ..
@@ -452,6 +454,7 @@ impl Cluster {
                         weight: *weight,
                         failure_domains: failure_domains.clone(),
                         roles: roles.clone(),
+                        cartridge_extra_env: cartridge_extra_env.clone(),
                         config: InstanceV2Config {
                             http_port: None,
                             binary_port: None,

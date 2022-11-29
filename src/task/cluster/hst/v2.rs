@@ -553,6 +553,7 @@ impl HostV2 {
                     .map(|name| vec![name.to_string()])
                     .unwrap_or_default(),
                 roles: Vec::new(),
+                cartridge_extra_env: IndexMap::default(),
                 config: InstanceV2Config {
                     additional_config: vec![
                         (

@@ -39,6 +39,7 @@ fn topology_from_instances() {
             weight: None,
             failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
         },
@@ -49,6 +50,7 @@ fn topology_from_instances() {
             weight: None,
             failure_domains: Vec::new(),
             roles: vec![Role::storage()],
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
         },
@@ -82,6 +84,7 @@ roles:
         weight: None,
         failure_domains: Vec::new(),
         roles: vec![Role::router(), Role::failover_coordinator()],
+        cartridge_extra_env: IndexMap::new(),
         config: InstanceV2Config::default(),
         vars: IndexMap::default(),
     };
