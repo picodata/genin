@@ -32,6 +32,7 @@ impl From<Instances> for Topology {
                          weight,
                          failure_domains,
                          roles,
+                         cartridge_extra_env,
                          config,
                          vars,
                          ..
@@ -52,6 +53,7 @@ impl From<Instances> for Topology {
                                 weight: *weight,
                                 failure_domains: failure_domains.clone(),
                                 roles: roles.clone(),
+                                cartridge_extra_env: cartridge_extra_env.clone(),
                                 config: config.clone(),
                                 vars: vars.clone(),
                             })
@@ -76,6 +78,7 @@ impl From<Instances> for Topology {
                             weight,
                             failure_domains,
                             roles,
+                            cartridge_extra_env,
                             config,
                             vars,
                             ..
@@ -97,6 +100,7 @@ impl From<Instances> for Topology {
                                 weight,
                                 failure_domains,
                                 roles,
+                                cartridge_extra_env,
                                 config,
                                 vars,
                             })
@@ -143,6 +147,7 @@ impl<'a> From<&'a Topology> for Instances {
                          weight,
                          failure_domains,
                          roles,
+                         cartridge_extra_env,
                          config,
                          vars,
                      }| {
@@ -159,6 +164,7 @@ impl<'a> From<&'a Topology> for Instances {
                                             failure_domains: failure_domains.clone(),
                                             roles: roles.clone(),
                                             config: config.clone(),
+                                            cartridge_extra_env: cartridge_extra_env.clone(),
                                             vars: vars.clone(),
                                             view: View {
                                                 alignment: Alignment::left(),
@@ -175,6 +181,7 @@ impl<'a> From<&'a Topology> for Instances {
                                         weight: *weight,
                                         failure_domains: failure_domains.clone(),
                                         roles: roles.clone(),
+                                        cartridge_extra_env: cartridge_extra_env.clone(),
                                         config: config.clone(),
                                         vars: vars.clone(),
                                         view: View {
@@ -225,6 +232,7 @@ impl From<Vec<TopologyMemberV1>> for Topology {
                             }),
                             failure_domains: Vec::new(),
                             roles,
+                            cartridge_extra_env: IndexMap::default(),
                             config: InstanceV2Config {
                                 additional_config: config,
                                 ..InstanceV2Config::default()
@@ -248,6 +256,7 @@ impl Default for Topology {
                 weight: None,
                 failure_domains: Vec::new(),
                 roles: vec![Role::router(), Role::failover_coordinator()],
+                cartridge_extra_env: IndexMap::default(),
                 config: InstanceV2Config::default(),
                 vars: IndexMap::default(),
             },
@@ -258,6 +267,7 @@ impl Default for Topology {
                 weight: None,
                 failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
+                cartridge_extra_env: IndexMap::default(),
                 config: InstanceV2Config::default(),
                 vars: IndexMap::default(),
             },
@@ -278,6 +288,8 @@ struct TopologySet {
     failure_domains: Vec<String>,
     #[serde(default)]
     roles: Vec<Role>,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    cartridge_extra_env: IndexMap<String, Value>,
     #[serde(skip_serializing_if = "InstanceV2Config::is_none")]
     config: InstanceV2Config,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
@@ -303,6 +315,8 @@ impl<'de> Deserialize<'de> for TopologySet {
             #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
+            cartridge_extra_env: IndexMap<String, Value>,
+            #[serde(default)]
             config: InstanceV2Config,
             #[serde(default)]
             vars: IndexMap<String, Value>,
@@ -316,6 +330,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                  weight,
                  failure_domains,
                  mut roles,
+                 cartridge_extra_env,
                  config,
                  vars,
              }| {
@@ -336,6 +351,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                     weight,
                     failure_domains,
                     roles,
+                    cartridge_extra_env,
                     config,
                     vars,
                 }

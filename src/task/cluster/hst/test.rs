@@ -163,6 +163,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -176,6 +177,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -189,6 +191,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -202,6 +205,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -215,6 +219,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -228,6 +233,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -241,6 +247,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -254,6 +261,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -267,6 +275,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -280,6 +289,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -415,6 +425,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -428,6 +439,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -441,6 +453,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -454,6 +467,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -467,6 +481,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -480,6 +495,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -493,6 +509,7 @@ hosts:
             weight: None,
             failure_domains: Vec::new(),
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -506,6 +523,7 @@ hosts:
             weight: None,
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -519,6 +537,7 @@ hosts:
             weight: None,
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
+            cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View {
@@ -608,6 +627,7 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::router(), Role::failover_coordinator()],
                     failure_domains: Vec::new(),
+                    cartridge_extra_env: IndexMap::new(),
                     config: InstanceV2Config {
                         http_port: Some(8081),
                         binary_port: Some(3031),
@@ -625,6 +645,7 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::storage()],
                     failure_domains: Vec::new(),
+                    cartridge_extra_env: IndexMap::new(),
                     config: InstanceV2Config {
                         http_port: Some(8082),
                         binary_port: Some(3032),
@@ -642,6 +663,7 @@ fn hosts_v2_spreading() {
                     weight: None,
                     roles: vec![Role::storage()],
                     failure_domains: Vec::new(),
+                    cartridge_extra_env: IndexMap::new(),
                     config: InstanceV2Config {
                         http_port: Some(8083),
                         binary_port: Some(3033),
@@ -664,6 +686,7 @@ fn hosts_v2_spreading() {
                         weight: None,
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
+                        cartridge_extra_env: IndexMap::new(),
                         config: InstanceV2Config::default(),
                         vars: IndexMap::default(),
                         view: View {
@@ -677,6 +700,7 @@ fn hosts_v2_spreading() {
                         weight: None,
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
+                        cartridge_extra_env: IndexMap::new(),
                         config: InstanceV2Config::default(),
                         vars: IndexMap::default(),
                         view: View {
@@ -812,6 +836,7 @@ fn hosts_v2_spread_stateboard() {
         weight: None,
         failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()],
         roles: Vec::new(),
+        cartridge_extra_env: IndexMap::new(),
         config: InstanceV2Config::default(),
         vars: IndexMap::default(),
         view: View::default(),

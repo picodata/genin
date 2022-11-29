@@ -73,6 +73,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                                 InventoryHost {
                                     stateboard: instance.stateboard.unwrap_or(false),
                                     zone: instance.config.zone.clone(),
+                                    cartridge_extra_env: instance.cartridge_extra_env.clone(),
                                     config: InvHostConfig::from((instance, *host)),
                                     vars: instance.vars.clone(),
                                 },
@@ -155,6 +156,8 @@ pub struct InventoryHost {
     pub stateboard: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone: Option<String>,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub cartridge_extra_env: IndexMap<String, Value>,
     pub config: InvHostConfig,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     pub vars: IndexMap<String, Value>,

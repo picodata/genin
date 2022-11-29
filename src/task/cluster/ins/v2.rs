@@ -126,7 +126,9 @@ pub struct Replicaset {
 ///         weight: Some(10),
 ///         failure_domains: Vec::new(),
 ///         roles: vec![String::from("catalogue")],
+///         cartridge_extra_env: IndexMap::default(),
 ///         config: InstanceV2Config::default(),
+///         vars: IndexMap::default(),
 ///         view: View {
 ///             alignment: Alignment::left(),
 ///             color: FG_BLUE,
@@ -138,7 +140,9 @@ pub struct Replicaset {
 ///         weight: Some(10),
 ///         failure_domains: Vec::new(),
 ///         roles: vec![String::from("catalogue")],
+///         cartridge_extra_env: IndexMap::default(),
 ///         config: InstanceV2Config::default(),
+///         vars: IndexMap::default(),
 ///         view: View {
 ///             alignment: Alignment::left(),
 ///             color: FG_BLUE,
@@ -156,9 +160,10 @@ pub struct InstanceV2 {
     //TODO: move to config
     pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
+    pub cartridge_extra_env: IndexMap<String, Value>,
     pub config: InstanceV2Config,
     pub vars: IndexMap<String, Value>,
-    pub view: View
+    pub view: View,
 }
 
 impl PartialOrd for InstanceV2 {
@@ -184,10 +189,10 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
             weight: None,
             failure_domains: Vec::default(),
             roles: Vec::default(),
+            cartridge_extra_env: inventory_host.1.cartridge_extra_env.clone(),
             config: InstanceV2Config::from(&inventory_host.1.config),
             vars: inventory_host.1.vars.clone(),
             view: View::default(),
-
         }
     }
 }
@@ -200,6 +205,7 @@ impl From<Name> for InstanceV2 {
             weight: None,
             failure_domains: Vec::default(),
             roles: Vec::default(),
+            cartridge_extra_env: IndexMap::default(),
             config: InstanceV2Config::default(),
             vars: IndexMap::default(),
             view: View::default(),
