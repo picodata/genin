@@ -352,4 +352,8 @@ impl InstanceV2Config {
             ..self
         }
     }
+
+    pub fn with_all_rw(self, all_rw: Option<bool>) -> Self {
+        Self { all_rw, ..self }
+    }
 }

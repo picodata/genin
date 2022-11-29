@@ -79,8 +79,8 @@ failover:
     prefix: cartridge/myapp
     lock_delay: 30
     endpoints:
-      - "http://192.168.16.11:5699"
-      - "http://192.168.16.12:5699"
+      - 'http://192.168.16.11:5699'
+      - 'http://192.168.16.12:5699'
     username: change_me
     password: change_me
 vars:
