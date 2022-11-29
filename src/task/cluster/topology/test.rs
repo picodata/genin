@@ -1,3 +1,5 @@
+use indexmap::IndexMap;
+
 use crate::task::cluster::{
     hst::view::{FG_BLUE, FG_CYAN, FG_WHITE},
     ins::{
@@ -38,6 +40,7 @@ fn topology_from_instances() {
             failure_domains: Vec::new(),
             roles: vec![Role::router(), Role::failover_coordinator()],
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
         },
         TopologySet {
             name: "storage".into(),
@@ -47,6 +50,7 @@ fn topology_from_instances() {
             failure_domains: Vec::new(),
             roles: vec![Role::storage()],
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
         },
     ]);
 
@@ -79,6 +83,7 @@ roles:
         failure_domains: Vec::new(),
         roles: vec![Role::router(), Role::failover_coordinator()],
         config: InstanceV2Config::default(),
+        vars: IndexMap::default(),
     };
 
     let topology_member: TopologySet = serde_yaml::from_str(&topology_member_str).unwrap();

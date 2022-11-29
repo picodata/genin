@@ -1,5 +1,6 @@
 use std::net::IpAddr;
 
+use indexmap::IndexMap;
 use tabled::Alignment;
 
 use crate::task::cluster::{
@@ -163,6 +164,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -175,6 +177,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -187,6 +190,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -199,6 +203,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -211,6 +216,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -223,6 +229,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -235,6 +242,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -247,6 +255,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -259,6 +268,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -271,6 +281,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -405,6 +416,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_WHITE,
                 alignment: Alignment::left(),
@@ -417,6 +429,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -429,6 +442,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -441,6 +455,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_BLUE,
                 alignment: Alignment::left(),
@@ -453,6 +468,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_CYAN,
                 alignment: Alignment::left(),
@@ -465,6 +481,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_CYAN,
                 alignment: Alignment::left(),
@@ -477,6 +494,7 @@ hosts:
             failure_domains: Vec::new(),
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_CYAN,
                 alignment: Alignment::left(),
@@ -489,6 +507,7 @@ hosts:
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_GREEN,
                 alignment: Alignment::left(),
@@ -501,6 +520,7 @@ hosts:
             failure_domains: vec!["dc-2".to_string()],
             roles: Vec::new(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View {
                 color: FG_GREEN,
                 alignment: Alignment::left(),
@@ -593,6 +613,7 @@ fn hosts_v2_spreading() {
                         binary_port: Some(3031),
                         ..InstanceV2Config::default()
                     },
+                    vars: IndexMap::default(),
                     view: View {
                         color: FG_WHITE,
                         alignment: Alignment::left(),
@@ -609,6 +630,7 @@ fn hosts_v2_spreading() {
                         binary_port: Some(3032),
                         ..InstanceV2Config::default()
                     },
+                    vars: IndexMap::default(),
                     view: View {
                         color: FG_BLUE,
                         alignment: Alignment::left(),
@@ -625,6 +647,7 @@ fn hosts_v2_spreading() {
                         binary_port: Some(3033),
                         ..InstanceV2Config::default()
                     },
+                    vars: IndexMap::default(),
                     view: View {
                         color: FG_CYAN,
                         alignment: Alignment::left(),
@@ -642,6 +665,7 @@ fn hosts_v2_spreading() {
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
                         config: InstanceV2Config::default(),
+                        vars: IndexMap::default(),
                         view: View {
                             color: FG_BLUE,
                             alignment: Alignment::left(),
@@ -654,6 +678,7 @@ fn hosts_v2_spreading() {
                         roles: vec![Role::storage()],
                         failure_domains: Vec::new(),
                         config: InstanceV2Config::default(),
+                        vars: IndexMap::default(),
                         view: View {
                             color: FG_CYAN,
                             alignment: Alignment::left(),
@@ -788,6 +813,7 @@ fn hosts_v2_spread_stateboard() {
         failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()],
         roles: Vec::new(),
         config: InstanceV2Config::default(),
+        vars: IndexMap::default(),
         view: View::default(),
     });
 

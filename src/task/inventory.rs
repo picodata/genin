@@ -17,7 +17,7 @@ use crate::{
     task::cluster::ins::Role,
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Inventory {
     pub all: InventoryParts,
 }
@@ -74,6 +74,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                                     stateboard: instance.stateboard.unwrap_or(false),
                                     zone: instance.config.zone.clone(),
                                     config: InvHostConfig::from((instance, *host)),
+                                    vars: instance.vars.clone(),
                                 },
                             )
                         })
@@ -141,20 +142,22 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct InventoryParts {
     pub vars: Vars,
     pub hosts: IndexMap<Name, InventoryHost>,
     pub children: IndexMap<Name, Child>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct InventoryHost {
     #[serde(default, skip_serializing_if = "InventoryHost::not_stateboard")]
     pub stateboard: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub zone: Option<String>,
     pub config: InvHostConfig,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    pub vars: IndexMap<String, Value>,
 }
 
 impl InventoryHost {
@@ -163,7 +166,7 @@ impl InventoryHost {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum InvHostConfig {
     Instance {
@@ -213,7 +216,7 @@ impl InvHostConfig {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum Child {
     Replicaset {
@@ -264,7 +267,7 @@ impl Child {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct ReplicasetVars {
     pub replicaset_alias: String,
     pub failover_priority: IndexSet<String>,
@@ -277,7 +280,7 @@ pub struct ReplicasetVars {
     pub vshard_group: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct HostVars {
     pub ansible_host: Address,
     #[serde(flatten, default, skip_serializing_if = "IndexMap::is_empty")]

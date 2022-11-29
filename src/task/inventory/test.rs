@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use crate::task::cluster::Cluster;
 
 use super::Inventory;
@@ -282,4 +284,95 @@ all:
     let inventory_str = serde_yaml::to_string(&inventory).unwrap();
 
     assert_eq!(inventory_str, inventory_model_str);
+}
+
+#[test]
+fn inventory_per_instance_vars() {
+    let cluster_v2_str: String = r#"---
+topology:
+  - name: router
+    replicasets_count: 1
+    roles:
+      - router
+    vars:
+      cartridge_extra_env:
+        TARANTOOL_NET_MSG_MAX: 1536
+      cartridge_force_leader_control_instance: false
+hosts:
+  - name: datacenter-1
+    hosts:
+      - name: server-1
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.11
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true"#
+        .into();
+
+    let cluster = serde_yaml::from_str(&cluster_v2_str).unwrap();
+
+    let inventory_model_str: String = r#"---
+all:
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:4401"
+        password: password
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+      vars:
+        cartridge_extra_env:
+          TARANTOOL_NET_MSG_MAX: 1536
+        cartridge_force_leader_control_instance: false
+    stateboard:
+      stateboard: true
+      config:
+        listen: "192.168.16.11:4401"
+        password: password
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        failover_priority:
+          - router-1
+        roles:
+          - router
+      hosts:
+        router-1: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        stateboard: ~"#
+        .into();
+
+    let inventory_model = serde_yaml::from_str(&inventory_model_str).unwrap();
+
+    let inventory = Inventory::try_from(&Some(cluster)).unwrap();
+
+    assert_eq!(inventory, inventory_model);
 }

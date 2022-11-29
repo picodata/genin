@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use indexmap::IndexMap;
 use log::trace;
 use serde::{Deserialize, Serialize};
+use serde_yaml::Value;
 use tabled::Alignment;
 
 use super::{
@@ -32,6 +33,7 @@ impl From<Instances> for Topology {
                          failure_domains,
                          roles,
                          config,
+                         vars,
                          ..
                      }| {
                         trace!(
@@ -51,6 +53,7 @@ impl From<Instances> for Topology {
                                 failure_domains: failure_domains.clone(),
                                 roles: roles.clone(),
                                 config: config.clone(),
+                                vars: vars.clone(),
                             })
                             .replication_factor
                             .as_mut()
@@ -74,6 +77,7 @@ impl From<Instances> for Topology {
                             failure_domains,
                             roles,
                             config,
+                            vars,
                             ..
                         },
                     )| {
@@ -94,6 +98,7 @@ impl From<Instances> for Topology {
                                 failure_domains,
                                 roles,
                                 config,
+                                vars,
                             })
                             .replicasets_count
                             .as_mut()
@@ -139,6 +144,7 @@ impl<'a> From<&'a Topology> for Instances {
                          failure_domains,
                          roles,
                          config,
+                         vars,
                      }| {
                         (1..=replicasets_count.unwrap_or(1))
                             .flat_map(|repliaset_num| {
@@ -153,6 +159,7 @@ impl<'a> From<&'a Topology> for Instances {
                                             failure_domains: failure_domains.clone(),
                                             roles: roles.clone(),
                                             config: config.clone(),
+                                            vars: vars.clone(),
                                             view: View {
                                                 alignment: Alignment::left(),
                                                 color: table_colors.next_color(
@@ -169,6 +176,7 @@ impl<'a> From<&'a Topology> for Instances {
                                         failure_domains: failure_domains.clone(),
                                         roles: roles.clone(),
                                         config: config.clone(),
+                                        vars: vars.clone(),
                                         view: View {
                                             alignment: Alignment::left(),
                                             color: table_colors.next_color(name.clone()),
@@ -221,6 +229,7 @@ impl From<Vec<TopologyMemberV1>> for Topology {
                                 additional_config: config,
                                 ..InstanceV2Config::default()
                             },
+                            vars: IndexMap::default(),
                         }
                     },
                 )
@@ -240,6 +249,7 @@ impl Default for Topology {
                 failure_domains: Vec::new(),
                 roles: vec![Role::router(), Role::failover_coordinator()],
                 config: InstanceV2Config::default(),
+                vars: IndexMap::default(),
             },
             TopologySet {
                 name: Name::from("storage"),
@@ -249,6 +259,7 @@ impl Default for Topology {
                 failure_domains: Vec::new(),
                 roles: vec![Role::storage()],
                 config: InstanceV2Config::default(),
+                vars: IndexMap::default(),
             },
         ])
     }
@@ -269,6 +280,8 @@ struct TopologySet {
     roles: Vec<Role>,
     #[serde(skip_serializing_if = "InstanceV2Config::is_none")]
     config: InstanceV2Config,
+    #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
+    vars: IndexMap<String, Value>,
 }
 
 impl<'de> Deserialize<'de> for TopologySet {
@@ -291,6 +304,8 @@ impl<'de> Deserialize<'de> for TopologySet {
             roles: Vec<Role>,
             #[serde(default)]
             config: InstanceV2Config,
+            #[serde(default)]
+            vars: IndexMap<String, Value>,
         }
 
         Helper::deserialize(deserializer).map(
@@ -302,6 +317,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                  failure_domains,
                  mut roles,
                  config,
+                 vars,
              }| {
                 // If type not defined in yaml let's try to infer based on name
                 if roles.is_empty() {
@@ -321,6 +337,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                     failure_domains,
                     roles,
                     config,
+                    vars,
                 }
             },
         )

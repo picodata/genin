@@ -271,6 +271,7 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                                                     config: InstanceV2Config::from(
                                                         &instance.config,
                                                     ),
+                                                    vars: instance.vars.clone(),
                                                     view: View::default(),
                                                 })
                                             } else {
@@ -443,6 +444,7 @@ impl Cluster {
                          failure_domains,
                          roles,
                          config,
+                         vars,
                          ..
                      }| InstanceV2 {
                         name: name.clone(),
@@ -455,6 +457,7 @@ impl Cluster {
                             binary_port: None,
                             ..config.clone()
                         },
+                        vars: vars.clone(),
                         view: View {
                             alignment: Alignment::left(),
                             color: BG_BRIGHT_BLACK,
