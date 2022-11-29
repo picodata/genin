@@ -568,6 +568,7 @@ impl HostV2 {
                     .collect(),
                     ..InstanceV2Config::default()
                 },
+                vars: IndexMap::default(),
                 view: View {
                     alignment: Alignment::center(),
                     color: FG_BRIGHT_BLACK,

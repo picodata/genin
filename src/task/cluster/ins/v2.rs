@@ -157,7 +157,8 @@ pub struct InstanceV2 {
     pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
     pub config: InstanceV2Config,
-    pub view: View,
+    pub vars: IndexMap<String, Value>,
+    pub view: View
 }
 
 impl PartialOrd for InstanceV2 {
@@ -184,7 +185,9 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
             failure_domains: Vec::default(),
             roles: Vec::default(),
             config: InstanceV2Config::from(&inventory_host.1.config),
+            vars: inventory_host.1.vars.clone(),
             view: View::default(),
+
         }
     }
 }
@@ -198,6 +201,7 @@ impl From<Name> for InstanceV2 {
             failure_domains: Vec::default(),
             roles: Vec::default(),
             config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
             view: View::default(),
         }
     }
