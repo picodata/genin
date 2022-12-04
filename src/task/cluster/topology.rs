@@ -315,6 +315,8 @@ impl<'de> Deserialize<'de> for TopologySet {
             #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
+            all_rw: Option<bool>,
+            #[serde(default)]
             cartridge_extra_env: IndexMap<String, Value>,
             #[serde(default)]
             config: InstanceV2Config,
@@ -330,6 +332,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                  weight,
                  failure_domains,
                  mut roles,
+                 all_rw,
                  cartridge_extra_env,
                  config,
                  vars,
@@ -352,7 +355,7 @@ impl<'de> Deserialize<'de> for TopologySet {
                     failure_domains,
                     roles,
                     cartridge_extra_env,
-                    config,
+                    config: config.with_all_rw(all_rw),
                     vars,
                 }
             },

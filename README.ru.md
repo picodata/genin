@@ -9,6 +9,7 @@
 - [GENIN](#genin)
     * [Что такое генин?](#что-такое-genin)
     * [Установка](#установка)
+        - [Linux bin файл](#linux-bin-файл)
         - [RHEL, Fedora, Rockylinux](#rhel-centos-rockylinux-fedora)
         - [Ubuntu](#ubuntu)
         - [Debian](#debian)
@@ -49,8 +50,8 @@ Genin уже заранее скомпилирован под разные ар�
 
 Универсальный исполняемый файл:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.10-x86_64-musl.tar.gz
-tar -xvf genin-0.4.10-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.11-x86_64-musl.tar.gz
+tar -xvf genin-0.4.11-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
 ```
 
 ---
@@ -74,7 +75,10 @@ RHEL 7.x, CentOS 7.x
 ```shell
 sudo yum install -y https://download.picodata.io/tarantool-picodata/el/7/x86_64/picodata-release-1.1.0.11-1.el7.x86_64.rpm
 ```
-
+Обновите метаданные yum.
+```shell
+sudo yum update
+```
 Теперь можно запустить установку последней версии genin **Genin**:
 ```shell
 sudo yum install -y genin
@@ -84,11 +88,11 @@ sudo yum install -y genin
 2. Так же вы можете установить пакет `rpm` напрямую без добавления нашего репозитория.
 RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.10-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.11-1.el8.x86_64.rpm
 ```
 RHEL 7.x, CentOS 7.x
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.10-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.11-1.el7.x86_64.rpm
 ```
 > **Note:** будьте внимательны, так как при выборе не правильной версии ос могут быть ошибки 
 > при установке `rpm` 
@@ -115,7 +119,7 @@ sudo apt install -y genin
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.10.amd64.deb && sudo dpkg -i genin-0.4.10.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.11.amd64.deb && sudo dpkg -i genin-0.4.11.amd64.deb
 ```
 
 ---
@@ -140,7 +144,7 @@ sudo apt install -y genin
 
 2. Загрузкой и установкой пакета напрямую:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.10.amd64.deb && sudo dpkg -i genin-0.4.10.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.11.amd64.deb && sudo dpkg -i genin-0.4.11.amd64.deb
 ```
 
 ---
@@ -160,14 +164,24 @@ brew install genin
 Для установки без помощи homebrew используйте следующие команды для загрузки и установки 
 Genin на macOS (10.10+):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.4.10-x86_64-macosx.tar.gz
-unzip genin-0.4.10-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.4.11-x86_64-macosx.tar.gz
+unzip genin-0.4.11-darwin-amd64.zip -d ~/bin/
 ```
 
 ---
-
 > **Note:** Genin будет распакован в директорию `~/bin`. Перед использованием приложения 
 > пожалуйста удостоверьтесь что `~/bin` добавлена в переменную окружения `$PATH`
+---
+
+Если вы хотите установить какую то конкретную версию, то список версий можно посмотреть
+с помощью команды:
+```shell
+brew search genin
+```
+Установить конкретную версию:
+```shell
+brew install genin@0.3.8
+```
 
 ---
 
@@ -175,8 +189,8 @@ unzip genin-0.4.10-darwin-amd64.zip -d ~/bin/
 Используйте следующие команды для скачивания и установки Genin на операционных системах
 Windows 7 64 и новее.
 ```shell
-curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.4.10-win64.zip
-unzip.exe genin-0.4.10-win64.zip -d %HOME%/.cargo/bin/
+curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.4.11-win64.zip
+unzip.exe genin-0.4.11-win64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** Genin будет распакован в директорию `.cargo/bin` которая находится в домашнем
 > каталоге важего пользователя. Перед использованием приложения пожалуйста удостоверьтесь 
@@ -186,7 +200,7 @@ unzip.exe genin-0.4.10-win64.zip -d %HOME%/.cargo/bin/
 ```
 genin --version
 ```
-Если вы видите сообщение `genin 0.4.10` значит установка прошла успешно.
+Если вы видите сообщение `genin 0.4.11` значит установка прошла успешно.
 
 ---
 ## Руководство по использованию
@@ -255,7 +269,7 @@ topolgy:
 
 # список хостов на который будет устанавливаться кластер
 hosts:
-  - name: cloud          # (обязательно) имя хоста или домена
+  - name: cloud             # (обязательно) имя хоста или домена
                             # в данном примере оба хоста находятся в одном датацентре cloud
     config:                 # (опционально) порты с которых начнется распределение, по умолчанию 8081, 3031
                             # для удобства, что бы не задавать порты для каждого сервера на нижний уровнях
@@ -314,6 +328,7 @@ ansible-playbook -i inventory.yaml playbook.yaml
 ---
 
 #### Минимальная конфигурация
+
 Для начала давайте посмотрим как выглядел бы файл конфигурации в 
 минималистичном варианте.
 
@@ -404,7 +419,7 @@ hosts:
 Количество изменений в конфигурации для `Genin` совсем небольшое по сравнению 
 с первым примером , а размер итогового `invetory.yaml` для отредактированного 
 кластера отличается в 5 раз. А теперь попробуйте увличить количество `storage` 
-до 100шт.
+до 100шт. Now try increasing the amount of `storage` up to 100pcs.
 
 ---
 
