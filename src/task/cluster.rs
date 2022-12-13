@@ -10,7 +10,7 @@ use log::{debug, trace};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::net::IpAddr;
 use tabled::Alignment;
 
@@ -21,12 +21,18 @@ use crate::task::cluster::hst::view::{View, BG_BRIGHT_BLACK};
 use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config, Instances};
 use crate::task::cluster::ins::Role;
 use crate::task::cluster::name::Name;
-use crate::task::cluster::topology::Topology;
+use crate::task::cluster::topology::{InvalidTopologySet, Topology};
 use crate::task::flv::Failover;
 use crate::task::flv::{Mode, StateProvider, StateboardParams};
 use crate::task::inventory::{Child, HostVars, Inventory};
 use crate::task::vars::Vars;
+use crate::task::AsError;
+use crate::task::Validate;
 use crate::{DEFAULT_BINARY_PORT, DEFAULT_HTTP_PORT};
+
+use self::hst::v2::InvalidHostV2;
+
+use super::flv::InvalidFailover;
 
 #[derive(Debug, PartialEq, Eq)]
 /// Cluster is a `genin` specific configuration file
@@ -199,24 +205,34 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                         .iter()
                         .filter(|(_, host)| !host.stateboard)
                         .map(|(name, inventory_host)| {
+                            let replicaset_name =
+                                name.get_parent_name().clone_with_index("replicaset");
                             let mut instance = InstanceV2::from((name, inventory_host)).with_roles(
                                 inventory
                                     .all
                                     .children
-                                    .get(&name.get_parent_name().clone_with_index("replicaset"))
+                                    .get(&replicaset_name)
                                     .map(|replicaset| match replicaset {
                                         Child::Replicaset { vars, .. } => vars.roles.clone(),
                                         _ => unreachable!(),
                                     })
-                                    .unwrap(),
+                                    .ok_or_else(|| {
+                                        GeninError::new(
+                                            GeninErrorKind::Serialization,
+                                            format!(
+                                                "failed to get replicaset with name {}",
+                                                &replicaset_name
+                                            ),
+                                        )
+                                    })?,
                             );
 
                             instance.config.http_port = None;
                             instance.config.binary_port = None;
 
-                            instance
+                            Ok(instance)
                         })
-                        .collect::<Vec<InstanceV2>>(),
+                        .collect::<Result<Vec<InstanceV2>, GeninError>>()?,
                 )),
                 hosts: HostV2::from("cluster").with_hosts(
                     inventory
@@ -331,15 +347,16 @@ impl<'de> Deserialize<'de> for Cluster {
                 failover: Failover,
                 vars: Vars,
             },
+            InvalidCluster(Value),
         }
 
-        ClusterHelper::deserialize(deserializer).map(|cluster| match cluster {
+        ClusterHelper::deserialize(deserializer).and_then(|cluster| match cluster {
             ClusterHelper::V1 {
                 instances,
                 hosts,
                 failover,
                 vars,
-            } => Cluster {
+            } => Ok(Cluster {
                 hosts: HostV2::from("cluster")
                     .with_hosts(hosts)
                     .with_http_port(DEFAULT_HTTP_PORT)
@@ -348,13 +365,13 @@ impl<'de> Deserialize<'de> for Cluster {
                 failover,
                 vars,
             }
-            .spread(),
+            .spread()),
             ClusterHelper::V2 {
                 topology,
                 hosts,
                 failover,
                 vars,
-            } => Cluster {
+            } => Ok(Cluster {
                 hosts: HostV2::from("cluster")
                     .with_hosts(hosts)
                     .with_http_port(DEFAULT_HTTP_PORT)
@@ -363,7 +380,10 @@ impl<'de> Deserialize<'de> for Cluster {
                 failover,
                 vars,
             }
-            .spread(),
+            .spread()),
+            ClusterHelper::InvalidCluster(_) => Err(serde::de::Error::custom(
+                "Data did not match any variant of cluster configuration",
+            )),
         })
     }
 }
@@ -383,6 +403,19 @@ impl Serialize for Cluster {
 
         state.serialize_field("vars", &vars)?;
         state.end()
+    }
+}
+
+impl Validate for Cluster {
+    type Type = InvalidCluster;
+    type Error = serde_yaml::Error;
+
+    fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error> {
+        serde_yaml::from_slice(bytes)
+    }
+
+    fn whole_block(bytes: &[u8]) -> String {
+        String::from_utf8(bytes.to_vec()).unwrap()
     }
 }
 
@@ -573,6 +606,122 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
                 }
             },
         )
+    }
+}
+
+#[allow(unused)]
+#[derive(Deserialize, Default)]
+pub struct InvalidCluster {
+    #[serde(skip)]
+    offset: String,
+    #[serde(default)]
+    topology: Value,
+    #[serde(default)]
+    hosts: Value,
+    #[serde(default)]
+    failover: Value,
+    #[serde(default)]
+    vars: Value,
+}
+
+impl std::fmt::Debug for InvalidCluster {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // topology: Vec<TopologySet>
+        formatter.write_str("\n---\ntopology: ")?;
+        match &self.topology {
+            Value::Null => {
+                formatter.write_str("Missing field 'topology'".as_error().as_str())?;
+                formatter.write_str("\n")?;
+            }
+            Value::Sequence(sequence) => {
+                sequence
+                    .iter()
+                    .try_for_each(|value| -> Result<(), std::fmt::Error> {
+                        formatter.write_fmt(format_args!(
+                            "{}  {:?}",
+                            &self.offset,
+                            serde_yaml::from_value::<InvalidTopologySet>(value.clone())
+                                .map(|mut topology_set| {
+                                    topology_set.offset = format!("{}  ", &self.offset);
+                                    topology_set
+                                })
+                                .unwrap()
+                        ))
+                    })?;
+            }
+            _ => {
+                formatter.write_str("Topology must be a list".as_error().as_str())?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // hosts: Vec<Host>
+        match &self.hosts {
+            Value::Null => {
+                formatter.write_fmt(format_args!(
+                    "{}hosts: {}",
+                    &self.offset,
+                    "Missing field 'hosts'".as_error().as_str()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+            Value::Sequence(sequence) => {
+                formatter.write_fmt(format_args!("{}hosts:\n", &self.offset))?;
+                sequence
+                    .iter()
+                    .try_for_each(|host| -> Result<(), std::fmt::Error> {
+                        formatter.write_fmt(format_args!(
+                            "{}{:?}",
+                            &self.offset,
+                            serde_yaml::from_value::<InvalidHostV2>(host.clone())
+                                .map(|mut host| {
+                                    host.offset = format!("{}  ", &self.offset);
+                                    host
+                                })
+                                .unwrap()
+                        ))
+                    })?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}hosts: {}",
+                    &self.offset,
+                    "Hosts must be a list".as_error().as_str()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // failover: Failover
+        match &self.failover {
+            Value::Null => {}
+            mapping @ Value::Mapping(_) => {
+                formatter.write_str("\nfailover: ")?;
+                formatter.write_fmt(format_args!(
+                    "{} {:?}",
+                    &self.offset,
+                    serde_yaml::from_value::<InvalidFailover>(mapping.clone()).unwrap()
+                ))?;
+            }
+            _ => {
+                formatter.write_str("Failover must be a mapping".as_error().as_str())?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // vars: Vars
+        match &self.vars {
+            Value::Null => {}
+            Value::Mapping(_) => {}
+            _ => {
+                formatter.write_str("\nvars:: ")?;
+                formatter.write_str("Vars must be a mapping".as_error().as_str())?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        Ok(())
     }
 }
 

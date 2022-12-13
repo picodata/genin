@@ -1,7 +1,8 @@
 use indexmap::IndexMap;
 use log::{debug, trace};
 use serde::{Deserialize, Serialize};
-use serde_yaml::Value;
+use serde_yaml::{Number, Value};
+use std::fmt;
 use std::{borrow::Cow, cell::RefCell, cmp::Ordering, fmt::Display, net::IpAddr};
 use tabled::papergrid::AnsiColor;
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
@@ -10,6 +11,7 @@ use crate::task::cluster::hst::view::BG_BLACK;
 use crate::task::cluster::hst::{merge_index_maps, v1::Host, v1::HostsVariants, view::View, IP};
 use crate::task::cluster::ins::v2::Instances;
 use crate::task::flv::{Failover, FailoverVariants};
+use crate::task::{AsError, ErrConfMapping, TypeError, DICT, LIST, NUMBER, STRING};
 use crate::{
     error::{GeninError, GeninErrorKind},
     task::{
@@ -908,3 +910,236 @@ impl<'a> From<DomainMember> for Cow<'a, str> {
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct IPSubnet(Vec<IpAddr>);
+
+#[derive(Deserialize)]
+pub struct InvalidHostV2 {
+    #[serde(skip)]
+    pub offset: String,
+    #[serde(default)]
+    name: Value,
+    #[serde(default)]
+    config: Value,
+    #[serde(default)]
+    hosts: Value,
+}
+
+impl fmt::Debug for InvalidHostV2 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // name: String
+        match &self.name {
+            Value::Null => {
+                formatter.write_fmt(format_args!(
+                    "{}- name: {}",
+                    &self.offset,
+                    "Missing field 'name'".as_error().as_str()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+            Value::String(name) => {
+                formatter.write_fmt(format_args!("{}- name: {}", &self.offset, name))?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}- name: {}",
+                    &self.offset,
+                    self.name.type_error(STRING).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // config: InvalidHostV2Config
+        match &self.config {
+            Value::Null => {}
+            config @ Value::Mapping(_) => formatter.write_fmt(format_args!(
+                "{}  config: {:?}",
+                &self.offset,
+                serde_yaml::from_value::<InvalidHostV2Config>(config.clone())
+                    .map(|mut config| {
+                        config.offset = format!("{}    ", &self.offset);
+                        config
+                    })
+                    .unwrap()
+            ))?,
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}  config: {}",
+                    &self.offset,
+                    self.config.type_error(DICT).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // hosts: InvalidHostV2
+        match &self.hosts {
+            Value::Null => {}
+            Value::Sequence(hosts) => {
+                formatter.write_fmt(format_args!("{}  hosts:\n", &self.offset))?;
+                hosts
+                    .iter()
+                    .try_for_each(|host| -> Result<(), std::fmt::Error> {
+                        formatter.write_fmt(format_args!(
+                            "{:?}",
+                            serde_yaml::from_value::<InvalidHostV2>(host.clone())
+                                .map(|mut host| {
+                                    host.offset = format!("{}    ", &self.offset);
+                                    host
+                                })
+                                .unwrap()
+                        ))
+                    })?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}  hosts: {}",
+                    &self.offset,
+                    self.hosts.type_error(LIST).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
+pub struct InvalidHostV2Config {
+    #[serde(skip)]
+    offset: String,
+    #[serde(default)]
+    pub http_port: Value,
+    #[serde(default)]
+    pub binary_port: Value,
+    #[serde(default)]
+    pub address: Value,
+    #[serde(default)]
+    pub distance: Value,
+    #[serde(default)]
+    pub additional_config: Value,
+}
+
+impl fmt::Debug for InvalidHostV2Config {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("\n")?;
+        // http_port: u16
+        match &self.http_port {
+            Value::Null => {}
+            Value::Number(http_port) => {
+                if http_port > &Number::from(0) && http_port < &Number::from(u16::MAX) {
+                    formatter.write_fmt(format_args!("{}http_port: {}", self.offset, http_port))?;
+                    formatter.write_str("\n")?;
+                } else {
+                    formatter.write_fmt(format_args!(
+                        "{}http_port: {}",
+                        &self.offset,
+                        "Not in range 0..65535".as_error()
+                    ))?;
+                    formatter.write_str("\n")?;
+                }
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}http_port: {}",
+                    &self.offset,
+                    self.http_port.type_error(NUMBER).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // binary_port: u16
+        match &self.binary_port {
+            Value::Null => {}
+            Value::Number(binary_port) => {
+                if binary_port > &Number::from(0) && binary_port < &Number::from(u16::MAX) {
+                    formatter
+                        .write_fmt(format_args!("{}binary_port: {}", self.offset, binary_port))?;
+                    formatter.write_str("\n")?;
+                } else {
+                    formatter.write_fmt(format_args!(
+                        "{}binary_port: {}",
+                        &self.offset,
+                        "Not in range 0..65535".as_error()
+                    ))?;
+                    formatter.write_str("\n")?;
+                }
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}binary_port: {}",
+                    &self.offset,
+                    self.binary_port.type_error(NUMBER).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // address: String
+        match &self.address {
+            Value::Null => {}
+            Value::String(address) => {
+                formatter.write_fmt(format_args!("{}address: {}", self.offset, address))?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}address: {}",
+                    &self.offset,
+                    self.address.type_error(STRING).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // distance: usize
+        match &self.distance {
+            Value::Null => {}
+            Value::Number(distance) if distance >= &Number::from(0) => {
+                formatter.write_fmt(format_args!("{}distance: {}", self.offset, distance))?;
+                formatter.write_str("\n")?;
+            }
+            Value::Number(distance) if distance < &Number::from(0) => {
+                formatter.write_fmt(format_args!("{}distance: {}", self.offset, distance))?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}distance: {}",
+                    &self.offset,
+                    self.distance.type_error(NUMBER).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        // additional_config: IndexMap<String, Value>
+        match &self.additional_config {
+            Value::Null => {}
+            Value::Mapping(additional_config) => {
+                formatter.write_fmt(format_args!(
+                    "{}additional_config: {:?}",
+                    &self.offset,
+                    ErrConfMapping {
+                        offset: format!("{}  ", &self.offset),
+                        value: additional_config,
+                    }
+                ))?;
+                formatter.write_str("\n")?;
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}additional_config: {}",
+                    &self.offset,
+                    self.additional_config.type_error(DICT).as_error()
+                ))?;
+                formatter.write_str("\n")?;
+            }
+        }
+
+        Ok(())
+    }
+}

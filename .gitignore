@@ -35,3 +35,8 @@ node_modules
 /deploy/.terraform.tfstate.lock.info
 /deploy/terraform.tfstate
 /deploy/terraform.tfstate.backup
+*.genin.yml
+*.genin.yaml
+inventory.yml
+inventory.yaml
+

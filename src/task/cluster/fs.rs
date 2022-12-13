@@ -1,6 +1,6 @@
 use std::{
-    error::Error,
-    fmt::Display,
+    error::Error as StdError,
+    fmt::{self, Display},
     fs::File,
     io::{Read, Write},
     path::PathBuf,
@@ -10,7 +10,10 @@ use clap::ArgMatches;
 use log::{debug, trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::error::{GeninError, GeninErrorKind};
+use crate::{
+    error::{GeninError, GeninErrorKind},
+    task::{serde_genin, Validate},
+};
 
 pub const CLUSTER_YAML: &str = "cluster.genin.yaml";
 pub const INVENTORY_YAML: &str = "inventory.yaml";
@@ -226,7 +229,7 @@ impl IO<PathBuf, PathBuf> {
         source: Option<&str>,
         output: Option<&str>,
         force: bool,
-    ) -> Result<IO<File, File>, Box<dyn Error>> {
+    ) -> Result<IO<File, File>, Box<dyn StdError>> {
         Ok(IO {
             input: self
                 .input
@@ -262,14 +265,21 @@ impl IO<PathBuf, PathBuf> {
 }
 
 impl<I: Read, O> IO<I, O> {
-    pub fn deserialize_input<T: DeserializeOwned>(self) -> Result<IO<T, O>, Box<dyn Error>> {
-        Ok(IO {
-            input: Some(serde_yaml::from_reader(self.input.ok_or_else(|| {
+    pub fn deserialize_input<T>(self) -> Result<IO<T, O>, Box<dyn StdError>>
+    where
+        T: DeserializeOwned + fmt::Debug + Validate + 'static,
+    {
+        let mut bytes = Vec::new();
+        self.input
+            .ok_or_else(|| {
                 GeninError::new(
                     GeninErrorKind::EmptyField,
                     "IO struct has empty input field",
                 )
-            })?)?),
+            })?
+            .read_to_end(&mut bytes)?;
+        Ok(IO {
+            input: Some(serde_genin::from_slice(&bytes)?),
             output: self.output,
         })
     }
@@ -308,7 +318,7 @@ impl<I: Display, O> IO<I, O> {
 }
 
 impl<I: Serialize, O: Write> IO<I, O> {
-    pub fn serialize_input(self) -> Result<IO<I, ()>, Box<dyn Error>> {
+    pub fn serialize_input(self) -> Result<IO<I, ()>, Box<dyn StdError>> {
         if let IO {
             input,
             output: Some(mut writer),

@@ -2,11 +2,14 @@ mod args;
 pub mod cluster;
 mod flv;
 pub mod inventory;
+pub mod serde_genin;
 pub mod vars;
 
 use log::info;
+use serde_yaml::{Mapping, Value};
 use std::convert::TryFrom;
 use std::error::Error;
+use std::fmt;
 use std::fs::File;
 use std::io::Read;
 
@@ -17,6 +20,12 @@ use crate::task::{
     cluster::Cluster,
     inventory::Inventory,
 };
+
+const BOOL: &str = "Bool";
+const NUMBER: &str = "Number";
+const STRING: &str = "String";
+const LIST: &str = "List";
+const DICT: &str = "Dict";
 
 /// А function that launches an application and walks it through the state stages.
 pub fn run_v2() -> Result<(), Box<dyn Error>> {
@@ -72,6 +81,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
+                //.map_err(|err|ClusterError::from(err))?
                 .print_input()
                 .try_map(|IO { input, output }| {
                     Inventory::try_from(&input).map(|inventory| IO {
@@ -154,4 +164,139 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
+}
+
+pub trait Validate {
+    type Type: fmt::Debug + Default + 'static;
+    type Error: fmt::Debug;
+
+    fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error>;
+
+    fn whole_block(bytes: &[u8]) -> String;
+}
+
+trait AsError {
+    fn as_error(&self) -> String;
+}
+
+impl<T: std::fmt::Debug> AsError for T {
+    fn as_error(&self) -> String {
+        format!("\u{1b}[93m\u{1b}4{:?}\u{1b}[0m", self)
+    }
+}
+
+trait TypeError {
+    fn type_error(&self, expected: &str) -> String;
+}
+
+impl TypeError for Value {
+    fn type_error(&self, expected: &str) -> String {
+        match self {
+            Value::Null => format!("Expected type {} got Null", expected),
+            Value::Bool(_) => format!("Expected type {} got Bool", expected),
+            Value::Number(_) => format!("Expected type {} got Number", expected),
+            Value::String(_) => format!("Expected type {} got String", expected),
+            Value::Sequence(_) => format!("Expected type {} got List", expected),
+            Value::Mapping(_) => format!("Expected type {} got Dict", expected),
+        }
+    }
+}
+
+pub struct ErrSeqMapping<'a> {
+    pub offset: String,
+    pub value: &'a Vec<Value>,
+}
+
+impl<'a> std::fmt::Debug for ErrSeqMapping<'a> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("\n")?;
+        self.value.iter().try_for_each(|value| match value {
+            Value::String(value) => {
+                formatter.write_fmt(format_args!("{}- {}", &self.offset, value))?;
+                formatter.write_str("\n")
+            }
+            Value::Mapping(value) => {
+                formatter.write_fmt(format_args!(
+                    "{}- {:?}",
+                    &self.offset,
+                    ErrConfMapping {
+                        offset: self.offset.clone(),
+                        value,
+                    }
+                ))?;
+                formatter.write_str("\n")
+            }
+            _ => {
+                formatter.write_fmt(format_args!(
+                    "{}- {}",
+                    &self.offset,
+                    value.type_error(DICT).as_error()
+                ))?;
+                formatter.write_str("\n")
+            }
+        })?;
+
+        Ok(())
+    }
+}
+
+pub struct ErrConfMapping<'a> {
+    pub offset: String,
+    pub value: &'a Mapping,
+}
+
+impl<'a> std::fmt::Debug for ErrConfMapping<'a> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.value
+            .iter()
+            .try_for_each(|(key, value)| match (key, value) {
+                (Value::String(key), Value::String(value)) => {
+                    formatter.write_str("\n")?;
+                    formatter.write_fmt(format_args!("{}  {}: {}", &self.offset, key, value))
+                }
+                (Value::String(key), Value::Sequence(value)) => {
+                    formatter.write_str("\n")?;
+                    formatter.write_fmt(format_args!(
+                        "{}  {}: {:?}",
+                        &self.offset,
+                        key,
+                        ErrSeqMapping {
+                            offset: format!("{}  ", &self.offset),
+                            value
+                        }
+                    ))
+                }
+                (Value::String(key), Value::Mapping(value)) => {
+                    formatter.write_str("\n")?;
+                    formatter.write_fmt(format_args!(
+                        "{}  {}: {:?}",
+                        &self.offset,
+                        key,
+                        ErrConfMapping {
+                            offset: format!("{}  ", &self.offset),
+                            value,
+                        }
+                    ))
+                }
+                (Value::String(key), value) => {
+                    formatter.write_str("\n")?;
+                    formatter.write_fmt(format_args!(
+                        "{}  - {}: {}",
+                        &self.offset,
+                        key,
+                        value.type_error(DICT).as_error()
+                    ))
+                }
+                _ => {
+                    formatter.write_str("\n")?;
+                    formatter.write_fmt(format_args!(
+                        "{}  - {}",
+                        &self.offset,
+                        "Errorneous field".as_error(),
+                    ))
+                }
+            })?;
+
+        Ok(())
+    }
 }

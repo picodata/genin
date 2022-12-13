@@ -150,7 +150,7 @@ count: 1
 }
 
 #[test]
-fn test_default_instances() {
+fn default_instances() {
     let instances = vec![
         InstanceV2 {
             name: "router".into(),
@@ -177,3 +177,4 @@ fn test_default_instances() {
     ];
     assert_eq!(Cluster::default().topology(), instances);
 }
+

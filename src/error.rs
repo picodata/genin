@@ -1,4 +1,5 @@
-use std::{error::Error, fmt::Display};
+use std::fmt::Display;
+use std::error::Error as StdError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GeninErrorKind {
@@ -24,7 +25,7 @@ impl Display for GeninError {
     }
 }
 
-impl Error for GeninError {}
+impl StdError for GeninError {}
 
 impl GeninError {
     pub fn new<T: Display>(err_kind: GeninErrorKind, err: T) -> Self {
@@ -34,3 +35,4 @@ impl GeninError {
         }
     }
 }
+

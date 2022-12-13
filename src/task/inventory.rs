@@ -5,13 +5,14 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
-use super::cluster::hst::v2::HostV2;
-use super::cluster::ins::v2::InstanceV2;
-use super::flv::Uri;
 use crate::task::cluster::hst::v2::Address;
+use crate::task::cluster::hst::v2::HostV2;
+use crate::task::cluster::ins::v2::InstanceV2;
 use crate::task::cluster::name::Name;
+use crate::task::flv::Uri;
 use crate::task::vars::Vars;
 use crate::task::Cluster;
+use crate::task::Validate;
 use crate::{
     error::{GeninError, GeninErrorKind},
     task::cluster::ins::Role,
@@ -42,10 +43,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
         let (cl_hosts, vars) = if let Some(cluster) = cluster {
             (
                 cluster.hosts.lower_level_hosts(),
-                cluster
-                    .vars
-                    .clone()
-                    .with_failover(cluster.failover.clone()),
+                cluster.vars.clone().with_failover(cluster.failover.clone()),
             )
         } else {
             return Err(GeninError::new(
@@ -140,6 +138,19 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                     .collect(),
             },
         })
+    }
+}
+
+impl Validate for Inventory {
+    type Type = String;
+    type Error = String;
+
+    fn validate(_bytes: &[u8]) -> Result<Self::Type, Self::Error> {
+        Ok(String::default())
+    }
+
+    fn whole_block(bytes: &[u8]) -> String {
+        String::from_utf8(bytes.to_vec()).unwrap()
     }
 }
 
