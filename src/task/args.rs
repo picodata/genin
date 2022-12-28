@@ -108,7 +108,6 @@ pub(super) fn read() -> ArgMatches {
                         .help("(list, optional): cluster print output option"),
                 ]),
             Command::new("inspect")
-                .override_help("Generate and show cluster scheme whithout saving")
                 .about(
                     "Read cluster.genin.yaml configuration or inventory.yaml \
                         and display cluster schema. This command is needed \
@@ -147,11 +146,10 @@ pub(super) fn read() -> ArgMatches {
                         .help("Export resulting schema as csv."),
                 ]),
             Command::new("reverse")
-                .override_help("Reverse parsing inventory.yaml and save the configuration.")
                 .about(
                     "In some cases, you may need to get a cluster.genin.yaml \
-                            based on an already prepared inventory. This subcommand \
-                            is for that.",
+                    based on an already prepared inventory. This subcommand \
+                    is for that.",
                 )
                 .args(&[
                     Arg::new("source")

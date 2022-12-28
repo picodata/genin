@@ -1,4 +1,5 @@
 use clap::ArgMatches;
+use core::fmt;
 use log::{error, trace, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use std::{fmt::Display, net::SocketAddr};
@@ -413,9 +414,8 @@ impl<'a> TryFrom<&'a str> for UriWithProtocol {
             }),
             (Some(&"https"), Some(&url)) => Ok(Self {
                 protocol: Protocol::Https,
-                url: serde_yaml::from_str(url).map_err(|error| {
-                    GeninError::new(GeninErrorKind::Deserialization, error)
-                })?,
+                url: serde_yaml::from_str(url)
+                    .map_err(|error| GeninError::new(GeninErrorKind::Deserialization, error))?,
             }),
             _ => Err(GeninError::new(
                 GeninErrorKind::Deserialization,
@@ -477,6 +477,15 @@ impl Display for Protocol {
             Self::Http => write!(f, "http"),
             Self::Https => write!(f, "https"),
         }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct InvalidFailover {}
+
+impl fmt::Debug for InvalidFailover {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("InvalidFailover").finish()
     }
 }
 

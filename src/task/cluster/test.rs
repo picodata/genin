@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use clap::{Arg, ArgAction, Command};
 
-use crate::task::{cluster::hst::v2::Address, flv::StateboardParams};
+use crate::task::{cluster::hst::v2::Address, flv::StateboardParams, serde_genin};
 
 use super::*;
 
@@ -792,4 +792,102 @@ vars:
         .into();
 
     assert_eq!(upgraded.to_string(), result_table);
+}
+
+#[test]
+fn mallformed_content_err() {
+    let bytes = r"
+topology:
+      config:
+        http_port: -1000000
+
+    - replication_factor: 1
+      roles: [value]
+"
+    .as_bytes();
+
+    let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    let error_str = "Err(while parsing a block mapping, did not find expected key \
+    at line 6 column 5(Err(\u{1b}[93m\u{1b}4\"Mallformed content\"\u{1b}[0m)))";
+
+    assert_eq!(result, error_str)
+}
+
+#[test]
+fn missing_main_fields_err() {
+    let bytes = r#"---
+topology:
+complex:
+"#
+    .as_bytes();
+
+    let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    let error_str = "Err(Data did not match any variant of cluster configuration(Ok(\n---\
+        \ntopology: \u{1b}[93m\u{1b}4\"Missing field 'topology'\"\u{1b}[0m\nhosts: \
+        \u{1b}[93m\u{1b}4\"Missing field 'hosts'\"\u{1b}[0m\n)))";
+
+    assert_eq!(result, error_str)
+}
+
+#[test]
+fn missing_toplogy_set_fields() {
+    let bytes = r"
+topology:
+    - replicasets_count: 3
+      replication_factor: 10
+      cartridge_extra_env:
+        FOO: bar
+        BIZ:
+          - 10
+          - two
+      roles: [calculator]
+      vars:
+        ENV_1: 1000
+        ENV_2: 600
+      config:
+        http_port: -1000000
+
+    - replication_factor: 1
+      roles: [value]
+"
+    .as_bytes();
+
+    let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    let error_str = "Err(Data did not match any variant of cluster configuration(Ok(\n---\
+        \ntopology:   \n  - name: \u{1b}[93m\u{1b}4\"Missing field 'name'\"\u{1b}[0m\n    \
+        replicasets_count: 3\n    replication_factor: 10\n    roles: \n      - calculator\n    \
+        cartridge_extra_env: \n      FOO: bar\n      BIZ: \n      - \u{1b}[93m\u{1b}4\
+        \"Expected type Dict got Number\"\u{1b}[0m\n      - two\n\n    config: \n      \
+        http_port: \u{1b}[93m\u{1b}4\"Not in range 0..65535\"\u{1b}[0m\n    vars: \n      \
+        - ENV_1: \u{1b}[93m\u{1b}4\"Expected type Dict got Number\"\u{1b}[0m\n      - ENV_2: \
+        \u{1b}[93m\u{1b}4\"Expected type Dict got Number\"\u{1b}[0m\n  \n  - name: \u{1b}[93m\
+        \u{1b}4\"Missing field 'name'\"\u{1b}[0m\n    replication_factor: 1\n    roles: \n      \
+        - value\nhosts: \u{1b}[93m\u{1b}4\"Missing field 'hosts'\"\u{1b}[0m\n)))";
+
+    assert_eq!(result, error_str)
+}
+
+#[test]
+fn missing_host_fields() {
+    let bytes = r"
+hosts:
+  - name: server-1
+    config:
+      - some: value
+  - config:
+      distance: 1000
+    hosts:
+      - name: server-10
+      - name: server-11
+"
+    .as_bytes();
+
+    println!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    println!("{:?}", result);
 }
