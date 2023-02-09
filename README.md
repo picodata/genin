@@ -251,6 +251,10 @@ topology:
     weight: 10
     roles:
       - storage
+    config:
+      vshard_group: storage   # (optional) vshard group for vshard-storage
+      all_rw: true            # (optional) all replicas can write data
+      zone: tokio             # (optional) zone for ansible cartridge
 
 # map of regions, datacenters, and hosts
 hosts:

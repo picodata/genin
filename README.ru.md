@@ -266,6 +266,10 @@ topolgy:
     weight: 10
     roles:
       - storage
+    config:
+      vshard_group: storage   # (опционально) vshard группа для vshard-storage
+      all_rw: true            # (опционально) только чтение
+      zone: tokio             # (опционально) зона которую будет учитывать ansible cartridge
 
 # список хостов на который будет устанавливаться кластер
 hosts:
