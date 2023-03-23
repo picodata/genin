@@ -81,7 +81,6 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
-                //.map_err(|err|ClusterError::from(err))?
                 .print_input()
                 .try_map(|IO { input, output }| {
                     Inventory::try_from(&input).map(|inventory| IO {
@@ -168,7 +167,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
 
 pub trait Validate {
     type Type: fmt::Debug + Default + 'static;
-    type Error: fmt::Debug;
+    type Error: fmt::Debug + ToString;
 
     fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error>;
 

@@ -808,8 +808,9 @@ topology:
 
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    let error_str = "Err(while parsing a block mapping, did not find expected key \
-    at line 6 column 5(Err(\u{1b}[93m\u{1b}4\"Mallformed content\"\u{1b}[0m)))";
+    let error_str = "Err(while parsing a block mapping, did not find expected key at \
+    line 6 column 5(Err(while parsing a block mapping, did not find expected key at \
+    line 6 column 5)))";
 
     assert_eq!(result, error_str)
 }
@@ -890,4 +891,37 @@ hosts:
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
     println!("{:?}", result);
+}
+
+#[test]
+fn placeholders_in_config() {
+    let bytes = r"
+---
+topology:
+  - name: router
+    replicasets_count: <<replicasets_count>> # указываем здесь количество репликасетов хранилищ из сайзинга
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    replicasets_count: <<replicasets_count>>
+    replication_factor: <<replication_factor>>  #для инсталляции в одном ЦОД это число должно быть 2, для инсталяции в двух ЦОД - 4
+    roles:
+      - storage
+".as_bytes();
+
+    let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
+
+    let error_str = "Err(Data did not match any variant of cluster configuration\
+    (Err(\n\n---\ntopology:\n  - name: router\n    replicasets_count: \
+    Err(\u{1b}[93m\u{1b}4\"The placeholder <<replicasets_count>> was not replaced! \
+    указываем здесь количество репликасетов хранилищ из сайзинга\"\u{1b}[0m)\n    \
+    roles:\n      - router\n      - failover-coordinator\n  - name: storage\n    \
+    replicasets_count: Err(\u{1b}[93m\u{1b}4\"The placeholder <<replicasets_count>> \
+    was not replaced! Please replace or remove!\"\u{1b}[0m)\n    replication_factor: \
+    Err(\u{1b}[93m\u{1b}4\"The placeholder <<replication_factor>> was not replaced! \
+    для инсталляции в одном ЦОД это число должно быть 2, для инсталяции в двух \
+    ЦОД - 4\"\u{1b}[0m)\n    roles:\n      - storage\n)))";
+
+    assert_eq!(result, error_str)
 }
