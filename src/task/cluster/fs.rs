@@ -318,7 +318,7 @@ impl<I: Display, O> IO<I, O> {
 }
 
 impl<I: Serialize, O: Write> IO<I, O> {
-    pub fn serialize_input(self) -> Result<IO<I, ()>, Box<dyn StdError>> {
+    pub fn serialize_input(self) -> Result<IO<I, O>, Box<dyn StdError>> {
         if let IO {
             input,
             output: Some(mut writer),
@@ -327,7 +327,7 @@ impl<I: Serialize, O: Write> IO<I, O> {
             serde_yaml::to_writer(&mut writer, &input)?;
             Ok(IO {
                 input,
-                output: Some(()),
+                output: Some(writer),
             })
         } else {
             Err(GeninError::new(

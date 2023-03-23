@@ -46,8 +46,8 @@ Download and unzip the archive for the desired architecture.
 
 Universal executable:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.13-x86_64-musl.tar.gz
-tar -xvf genin-0.4.13-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.4.14-x86_64-musl.tar.gz
+tar -xvf genin-0.4.14-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
 ```
 
 ---
@@ -84,11 +84,11 @@ sudo yum install -y genin
 2. If you want to install `rpm` packages directly without 
 adding our repository.
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.13-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.14-1.el8.x86_64.rpm
 ```
 RHEL 7.x, CentOS 7.x
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.13-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.14-1.el7.x86_64.rpm
 ```
 
 ---
@@ -116,7 +116,7 @@ sudo apt install -y genin
 
 2. Downloading and installing the package directly:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.13.amd64.deb && sudo dpkg -i genin-0.4.13.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.14.amd64.deb && sudo dpkg -i genin-0.4.14.amd64.deb
 ```
 
 ---
@@ -142,7 +142,7 @@ sudo apt install -y genin
 
 2. Downloading and installing the package directly:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.13.amd64.deb && sudo dpkg -i genin-0.4.13.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.14.amd64.deb && sudo dpkg -i genin-0.4.14.amd64.deb
 ```
 
 ---
@@ -162,8 +162,8 @@ brew install genin
 Use the following command to grab and install Genin in macOS (10.10+) wihtout 
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.13-darwin-amd64.zip -o genin-0.4.13-darwin-amd64.zip 
-unzip genin-0.4.13-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.14-darwin-amd64.zip -o genin-0.4.14-darwin-amd64.zip 
+unzip genin-0.4.14-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory. 
 > Make sure the directory is in your `$PATH`.
@@ -181,8 +181,8 @@ brew install genin@0.3.8
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.13-darwin-amd64.zip -o genin-0.4.13-windows-amd64.zip 
-unzip.exe genin-0.4.13-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.14-darwin-amd64.zip -o genin-0.4.14-windows-amd64.zip 
+unzip.exe genin-0.4.14-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** The application can then be found under the `.cargo/bin` folder inside 
 > your user profile folder. Make sure it is in your `%PATH%`.
@@ -261,8 +261,8 @@ hosts:
                           # in this example, both hosts are in the same cloud data center
     config:               # (optional) begin binary and http port, by default 8081, 3031
                           # ports can be defined on all levels
-      http: 8081          # (optional) http port to start counting from
-      binary: 3031        # (optional) binary port to start counting from
+      http_port: 8081          # (optional) http port to start counting from
+      binary_port: 3031        # (optional) binary port to start counting from
     hosts: 
       - name: host-1      # (mandatory) hostname or domain name
         config:
