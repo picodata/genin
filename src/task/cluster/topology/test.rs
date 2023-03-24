@@ -7,7 +7,7 @@ use crate::task::cluster::{
         Role,
     },
     name::Name,
-    topology::{Topology, TopologySet}, Cluster,
+    topology::{Topology, TopologySet},
 };
 
 #[test]
@@ -99,4 +99,3 @@ roles:
 
     assert_eq!(topology_member_str, topology_member_model_str);
 }
-

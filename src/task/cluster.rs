@@ -7,6 +7,7 @@ pub mod topology;
 use clap::ArgMatches;
 use indexmap::IndexMap;
 use log::{debug, trace};
+use regex::{Captures, RegexBuilder};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
@@ -411,12 +412,51 @@ impl Validate for Cluster {
     type Error = serde_yaml::Error;
 
     fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error> {
-        serde_yaml::from_slice(bytes)
+        serde_yaml::from_str(&check_placeholders(bytes)?)
     }
 
     fn whole_block(bytes: &[u8]) -> String {
         String::from_utf8(bytes.to_vec()).unwrap()
     }
+}
+
+pub fn check_placeholders(slice: &[u8]) -> Result<String, serde_yaml::Error> {
+    let text = String::from_utf8_lossy(slice).to_string();
+    let reg = RegexBuilder::new(r"(?P<key>^.+:) +(<<.*>>) *(?:# *([^#:]+)$)*")
+        .multi_line(true)
+        .build()
+        .map_err(|err| serde::de::Error::custom(err))?;
+    let captures = reg.captures_iter(&text).collect::<Vec<Captures>>();
+
+    if captures.is_empty() {
+        return Ok(text);
+    }
+
+    let mut result = format!("\n{}", text);
+
+    for c in captures {
+        let placeholder = c.get(2).map(|r| r.as_str().to_string()).unwrap_or_default();
+        let comment = c
+            .get(3)
+            .map(|r| r.as_str().to_string())
+            .unwrap_or("Please replace or remove!".to_string());
+
+        result = reg
+            .replace(
+                &result,
+                &format!(
+                    "$key Err({})",
+                    format!(
+                        "The placeholder {} was not replaced! {}",
+                        placeholder, comment
+                    )
+                    .as_error()
+                ),
+            )
+            .to_string();
+    }
+
+    Err(serde::de::Error::custom(&result))
 }
 
 impl Cluster {
@@ -715,7 +755,7 @@ impl std::fmt::Debug for InvalidCluster {
             Value::Null => {}
             Value::Mapping(_) => {}
             _ => {
-                formatter.write_str("\nvars:: ")?;
+                formatter.write_str("\nvars: ")?;
                 formatter.write_str("Vars must be a mapping".as_error().as_str())?;
                 formatter.write_str("\n")?;
             }

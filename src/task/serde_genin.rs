@@ -5,8 +5,6 @@ use std::fmt::Display;
 
 use crate::task;
 
-use super::AsError;
-
 pub struct Error<T: fmt::Debug> {
     message: String,
     inner: T,
@@ -49,6 +47,8 @@ where
 {
     serde_yaml::from_slice::<T>(slice).map_err(|err| Error {
         message: err.to_string(),
-        inner: T::validate(slice).map_err(|_| MallformedContent("Mallformed content".as_error())),
+        inner: T::validate(slice).map_err(|err| {
+            MallformedContent(err.to_string())
+        }),
     })
 }

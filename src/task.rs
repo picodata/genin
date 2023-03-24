@@ -6,12 +6,14 @@ pub mod serde_genin;
 pub mod vars;
 
 use log::info;
+use regex::RegexBuilder;
 use serde_yaml::{Mapping, Value};
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::fs::{TryMap, IO, UPGRADE_YAML};
@@ -50,6 +52,74 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         std::env::var("RUST_LOG").unwrap_or_else(|_| "warn".into())
     );
 
+    // Cluster init comments
+
+    let comments = [
+        (
+            "replicasets_count".to_string(),
+            "# How many masters we want, by default equal 1".to_string(),
+        ),
+        (
+            "replication_factor".to_string(),
+            "# Number of replicas in replicaset, default for router 0".to_string(),
+        ),
+        (
+            "address".to_string(),
+            "# Host or instance address (may be IP or URI)".to_string(),
+        ),
+        (
+            "http_port".to_string(),
+            "# Specify http port to start counting from".to_string(),
+        ),
+        (
+            "binary_port".to_string(),
+            "# Specify binary port to start counting from".to_string(),
+        ),
+        (
+            "weight".to_string(),
+            "# Vshard replicaset weight (matters only if `vshard-storage` role is enabled)"
+                .to_string(),
+        ),
+        (
+            "zone".to_string(),
+            "# Zone parameter for ansible cartridge playbook".to_string(),
+        ),
+        (
+            "config".to_string(),
+            "# Config with arbitrary key-values pairs".to_string(),
+        ),
+        (
+            "mode".to_string(),
+            "# Failover mode (stateful, eventual, disabled)".to_string(),
+        ),
+        (
+            "state_provider".to_string(),
+            "# What is serve failover (stateboard, stateful)".to_string(),
+        ),
+        (
+            "stateboard_params".to_string(),
+            "# Params for chosen in state_provider failover type".to_string(),
+        ),
+        (
+            "ansible_user".to_string(),
+            "# Username under which the ansible will connect to the servers".to_string(),
+        ),
+        (
+            "ansible_password".to_string(),
+            "# Ansible user password".to_string(),
+        ),
+        (
+            "cartridge_cluster_cookie".to_string(),
+            "# Cookie for connecting to the administrative console of the instances".to_string(),
+        ),
+        (
+            "cartridge_package_path".to_string(),
+            "# Path to the application package".to_string(),
+        ),
+    ]
+    .into_iter()
+    .collect::<HashMap<String, String>>();
+
     // The idea of the first step of creating a task:
     //      - create FsInteration
     //      - map FsInteration as:
@@ -71,7 +141,37 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     })
                 })?
                 .print_input()
-                .serialize_input()?;
+                .try_map(|io| {
+                    if let IO {
+                        input: Some(cluster),
+                        output: Some(mut file),
+                    } = io
+                    {
+                        let mut text = serde_yaml::to_string(&cluster)
+                            .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
+
+                        for (k, v) in comments {
+                            let comment =
+                                RegexBuilder::new(&format!(r"(?P<key>^.+{}:[ ]*[^#<> ]+)$", k))
+                                    .multi_line(true)
+                                    .build()
+                                    .unwrap();
+                            text = comment
+                                .replace_all(&text, &format!("$key {}", v))
+                                .to_string();
+
+                            file.write(text.as_bytes()).map_err(|err| {
+                                GeninError::new(GeninErrorKind::Deserialization, err)
+                            })?;
+                        }
+
+                        return Ok(IO {
+                            input: Some(()),
+                            output: Some(()),
+                        });
+                    }
+                    Err(GeninError::new(GeninErrorKind::EmptyField, "TODO"))
+                })?;
         }
         Some(("build", args)) => {
             IO::from(args)
@@ -81,7 +181,6 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
-                //.map_err(|err|ClusterError::from(err))?
                 .print_input()
                 .try_map(|IO { input, output }| {
                     Inventory::try_from(&input).map(|inventory| IO {
@@ -168,7 +267,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
 
 pub trait Validate {
     type Type: fmt::Debug + Default + 'static;
-    type Error: fmt::Debug;
+    type Error: fmt::Debug + ToString;
 
     fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error>;
 
