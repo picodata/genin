@@ -119,7 +119,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                             .or_insert(Child::Host {
                                 vars: HostVars {
                                     ansible_host: host.config.address(),
-                                    additional_config: IndexMap::new(),
+                                    additional_config: host.config.additional_config.clone(),
                                 },
                                 hosts: host
                                     .instances

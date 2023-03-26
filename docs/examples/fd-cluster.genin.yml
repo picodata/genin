@@ -1,0 +1,39 @@
+---
+topology:
+  - name: router
+    replicasets_count: 1
+    roles: [ router, failover-coordinator ]
+    failure_domains: [ server-2 ]                   # In this case, all router instances will be distributed to server-2
+  - name: storage
+    replicasets_count: 2
+    replication_factor: 2
+    roles: [ storage ]
+  - name: cache
+    replicasets_count: 3
+    roles: [ cache ]
+    failure_domains: [ server-1 ]                   # In this case, all 3 instances will be distributed to server-1
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: <<http_start_port>>                # Specify http port to start counting from
+      binary_port: <<binary_start_port>>            # Specify binary port to start counting from
+    hosts:
+      - name: server-1
+        config:
+          address: <<host_address>>                 # Host or instance address (maybe IP or URI)
+      - name: server-2
+        config:
+          address: <<host_address>>                 # Host or instance address (maybe IP or URI)
+failover:
+  mode: stateful                                    # Failover mode (stateful, eventual, disabled)
+  state_provider: stateboard                        # What is serve failover (stateboard, stateful)
+  stateboard_params:
+    uri: <<host_address_and_port>>                 # Uri on which the stateboard will be available (ip:port)
+    password: <<stateboard_password>>               # Stateboard password
+vars:
+  ansible_user: <<ansible_user>>                    # Username under which the ansible will connect to the servers
+  ansible_password: <<ansible_password>>            # Ansible's user password
+  cartridge_app_name: <<application_name>>
+  cartridge_cluster_cookie: <<cookie>>              # Cookie for connecting to the administrative console of the instances
+  cartridge_package_path: <<absolute_path>>         # Path to the application package
+  cartridge_bootstrap_vshard: true
