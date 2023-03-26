@@ -37,6 +37,6 @@ node_modules
 /deploy/terraform.tfstate.backup
 *.genin.yml
 *.genin.yaml
+!/docs/examples/*
 inventory.yml
 inventory.yaml
-

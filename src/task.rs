@@ -61,11 +61,11 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         ),
         (
             "replication_factor".to_string(),
-            "# Number of replicas in replicaset, default for router 0".to_string(),
+            "# Number of replicas in replicaset, default 0".to_string(),
         ),
         (
             "address".to_string(),
-            "# Host or instance address (may be IP or URI)".to_string(),
+            "# Host or instance address (maybe IP or URI)".to_string(),
         ),
         (
             "http_port".to_string(),
@@ -81,12 +81,33 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .to_string(),
         ),
         (
+            "all_rw".to_string(),
+            "# A flag indicating that all servers in the replicaset should be read-write"
+                .to_string(),
+        ),
+        (
             "zone".to_string(),
             "# Zone parameter for ansible cartridge playbook".to_string(),
         ),
         (
             "config".to_string(),
             "# Config with arbitrary key-values pairs".to_string(),
+        ),
+        (
+            "vshard_group".to_string(),
+            "# Vshard group for vshard-storage".to_string(),
+        ),
+        (
+            "additional_config".to_string(),
+            "# Additional parameters to be added to the host config".to_string(),
+        ),
+        (
+            "cartridge_extra_env".to_string(),
+            "# Environment variables for instance service (systemd service)".to_string(),
+        ),
+        (
+            "vars".to_string(),
+            "# Ansible wars to be added to hosts".to_string(),
         ),
         (
             "mode".to_string(),
@@ -100,6 +121,11 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             "stateboard_params".to_string(),
             "# Params for chosen in state_provider failover type".to_string(),
         ),
+        (
+            "uri".to_string(),
+            "# Uri on which the stateboard will be available".to_string(),
+        ),
+        ("password".to_string(), "# Stateboard password".to_string()),
         (
             "ansible_user".to_string(),
             "# Username under which the ansible will connect to the servers".to_string(),
@@ -121,14 +147,14 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     .collect::<HashMap<String, String>>();
 
     // The idea of the first step of creating a task:
-    //      - create FsInteration
-    //      - map FsInteration as:
+    //      - create FsInteraction
+    //      - map FsInteraction as:
     //          - read source from disk
     //          - [map] source deserialized to Data or default Data created (data type depends of
-    //          subcomand)
+    //          subcommand)
     //          - [map] map data to scheme created from data
     //          - [map] move scheme and data into two closures and return them with fs
-    //      - return tupple
+    //      - return tuple
     match args.subcommand() {
         Some(("init", args)) => {
             IO::from(args)
@@ -150,6 +176,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         let mut text = serde_yaml::to_string(&cluster)
                             .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
 
+                        println!("{}", &text);
+
                         for (k, v) in comments {
                             let comment =
                                 RegexBuilder::new(&format!(r"(?P<key>^.+{}:[ ]*[^#<> ]+)$", k))
@@ -159,11 +187,9 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                             text = comment
                                 .replace_all(&text, &format!("$key {}", v))
                                 .to_string();
-
-                            file.write(text.as_bytes()).map_err(|err| {
-                                GeninError::new(GeninErrorKind::Deserialization, err)
-                            })?;
                         }
+                        file.write(text.as_bytes())
+                            .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
 
                         return Ok(IO {
                             input: Some(()),
