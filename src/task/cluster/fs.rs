@@ -274,7 +274,7 @@ impl<I: Read, O> IO<I, O> {
             .ok_or_else(|| {
                 GeninError::new(
                     GeninErrorKind::EmptyField,
-                    "IO struct has empty input field",
+                    "IO struct has empty input field. Maybe the file doesn't exist!",
                 )
             })?
             .read_to_end(&mut bytes)?;
