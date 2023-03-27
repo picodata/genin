@@ -14,6 +14,7 @@ use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::path::PathBuf;
 
 use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::fs::{TryMap, IO, UPGRADE_YAML};
@@ -237,51 +238,60 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .serialize_input()?;
         }
         Some(("upgrade", args)) => {
-            IO::from(args)
-                .try_into_files(
-                    Some(CLUSTER_YAML),
-                    Some(INVENTORY_YAML),
-                    args.get_flag("force"),
-                )?
-                .deserialize_input::<Cluster>()?
-                .try_map(|IO { input, output }| {
-                    // 1. read source cluster yaml file what should be upgraded
-                    // 2. read cluster yaml which should contains information about upgrade
-                    File::open(
-                        args.get_one::<String>("new")
-                            .unwrap_or(&UPGRADE_YAML.to_string()),
-                    )
-                    .map_err(|err| GeninError::new(GeninErrorKind::IO, err))
-                    .and_then(|mut file| {
-                        let mut buffer = Vec::new();
-                        file.read_to_end(&mut buffer)
-                            .map_err(|err| GeninError::new(GeninErrorKind::IO, err))?;
-                        Ok(buffer)
-                    })
-                    .and_then(|buffer| {
-                        serde_yaml::from_slice::<Cluster>(&buffer)
-                            .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))
-                    })
-                    .and_then(|new| {
-                        input
-                            .ok_or_else(|| {
-                                GeninError::new(GeninErrorKind::EmptyField, "input file is empty")
-                            })
-                            .and_then(|input_cluster| input_cluster.try_upgrade(&new))
-                    })
-                    .map(|upgraded| IO {
-                        input: Some(upgraded),
-                        output,
-                    })
-                })?
-                .print_input()
-                .try_map(|IO { input, output }| {
-                    Inventory::try_from(&input).map(|inventory| IO {
-                        input: Some(inventory),
-                        output,
-                    })
-                })?
-                .serialize_input()?;
+            IO {
+                input: args
+                    .try_get_one::<String>("old")
+                    .transpose()
+                    .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+                output: args
+                    .try_get_one::<String>("output")
+                    .transpose()
+                    .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+            }
+            .try_into_files(
+                Some(CLUSTER_YAML),
+                Some(INVENTORY_YAML),
+                args.get_flag("force"),
+            )?
+            .deserialize_input::<Cluster>()?
+            .try_map(|IO { input, output }| {
+                // 1. read source cluster yaml file what should be upgraded
+                // 2. read cluster yaml which should contains information about upgrade
+                File::open(
+                    args.get_one::<String>("new")
+                        .unwrap_or(&UPGRADE_YAML.to_string()),
+                )
+                .map_err(|err| GeninError::new(GeninErrorKind::IO, err))
+                .and_then(|mut file| {
+                    let mut buffer = Vec::new();
+                    file.read_to_end(&mut buffer)
+                        .map_err(|err| GeninError::new(GeninErrorKind::IO, err))?;
+                    Ok(buffer)
+                })
+                .and_then(|buffer| {
+                    serde_yaml::from_slice::<Cluster>(&buffer)
+                        .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))
+                })
+                .and_then(|new| {
+                    input
+                        .ok_or_else(|| {
+                            GeninError::new(GeninErrorKind::EmptyField, "input file is empty")
+                        })
+                        .and_then(|input_cluster| input_cluster.try_upgrade(&new))
+                })
+                .map(|upgraded| IO {
+                    input: Some(upgraded),
+                    output,
+                })
+            })?
+            .print_input()
+            .try_map(|IO { input, output }| {
+                Inventory::try_from(&input).map(|inventory| IO {
+                    input: Some(inventory),
+                    output,
+                })
+            })?
+            .serialize_input()?;
         }
         _ => {
             return Err(GeninError::new(GeninErrorKind::ArgsError, "subcommand missing").into());
