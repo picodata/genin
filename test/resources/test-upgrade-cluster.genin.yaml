@@ -1,7 +1,7 @@
 ---
 topology:
   - name: router
-    replicasets_count: 1                            # How many masters we want, by default equal 1
+    replicasets_count: 2                            # How many masters we want, by default equal 1
     replication_factor: 0                           # Number of replicas in replicaset, default 0
     roles: [ router, failover-coordinator ]
     weight: 10                                      # Vshard replicaset weight (matters only if `vshard-storage` role is enabled)
@@ -21,8 +21,8 @@ topology:
       ansible_user: user
       ansible_password: password
   - name: storage
-    replicasets_count: 2                            # How many masters we want, by default equal 1
-    replication_factor: 1                           # Number of replicas in replicaset, default 0
+    replicasets_count: 5                            # How many masters we want, by default equal 1
+    replication_factor: 2                           # Number of replicas in replicaset, default 0
     roles: [ storage ]
 hosts:
   - name: datacenter-1
