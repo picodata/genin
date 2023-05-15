@@ -25,13 +25,13 @@
 ---
 
 ## About
-Genin is an inventory generator for `Ansible Cartridge`. It provides a command-line 
+Genin is an inventory generator for `Ansible Cartridge`. It provides a command-line
 tool that allows quick inventory creation for clusters of any size.
-For example, an inventory file for a cluster of 50 replicasets can easily be of thousand 
-lines or more. Any slight change of the configuration, eg. adding a new configuration 
-option for all storages, means a lot of manual routine and increases the risk of 
-improper or incomplete configuration. Genin  allows you to stay confident while 
-maintaining the configuration file and steer clear of inaccuracies and human errors. 
+For example, an inventory file for a cluster of 50 replicasets can easily be of thousand
+lines or more. Any slight change of the configuration, eg. adding a new configuration
+option for all storages, means a lot of manual routine and increases the risk of
+improper or incomplete configuration. Genin  allows you to stay confident while
+maintaining the configuration file and steer clear of inaccuracies and human errors.
 Genin is the tool that will help you very quickly roll out cluster configuration updates.
 
 ---
@@ -78,10 +78,10 @@ Install latest **Genin** package:
 ```shell
 sudo yum install -y genin
 
-> **Note:** with this installation method, all updates will 
+> **Note:** with this installation method, all updates will
 > also be available to you using `yum upgrade genin`
 
-2. If you want to install `rpm` packages directly without 
+2. If you want to install `rpm` packages directly without
 adding our repository.
 ```shell
 sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.4.17-1.el8.x86_64.rpm
@@ -97,7 +97,7 @@ sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.4.1
 
 ####  Ubuntu
 
-A `deb` package with `Genin` is available for installation on `ubuntu`. 
+A `deb` package with `Genin` is available for installation on `ubuntu`.
 Install package possible in two ways.
 
 1. From the `picodata` repository:
@@ -149,7 +149,7 @@ curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.4.17.amd64
 
 #### MacOSX
 Installing with the `homebrew` package manager is the easiest way to
-install Genin on MacOSX family (10.10+). If this is the first product of 
+install Genin on MacOSX family (10.10+). If this is the first product of
 `picodata` which you pay to use then you first need to add our `Tap`.
 ```shell
 brew tap picodata/homebrew-tap
@@ -159,13 +159,13 @@ Now you can install Genin.
 brew install genin
 ```
 
-Use the following command to grab and install Genin in macOS (10.10+) wihtout 
+Use the following command to grab and install Genin in macOS (10.10+) wihtout
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.17-darwin-amd64.zip -o genin-0.4.17-darwin-amd64.zip 
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.4.17-darwin-amd64.zip -o genin-0.4.17-darwin-amd64.zip
 unzip genin-0.4.17-darwin-amd64.zip -d ~/bin/
 ```
-> **Note:** The application can then be found under the `~/bin` directory. 
+> **Note:** The application can then be found under the `~/bin` directory.
 > Make sure the directory is in your `$PATH`.
 
 If you want to install a specific version, you can see the list of versions
@@ -181,10 +181,10 @@ brew install genin@0.3.8
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.17-darwin-amd64.zip -o genin-0.4.17-windows-amd64.zip 
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.4.17-darwin-amd64.zip -o genin-0.4.17-windows-amd64.zip
 unzip.exe genin-0.4.17-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
-> **Note:** The application can then be found under the `.cargo/bin` folder inside 
+> **Note:** The application can then be found under the `.cargo/bin` folder inside
 > your user profile folder. Make sure it is in your `%PATH%`.
 
 Сheck that the installation was successful:
@@ -196,23 +196,23 @@ genin --version
 ## Usage guide
 
 ### Inventory generation
- 
-First, let's generate a simple cluster for the `Vagrant` virtual environment. 
-For that `Genin` will need a `yaml` file with a concise list of cluster 
-details. That is a minimal cluster configuration file that features `Genin's` 
-own formatting. As long as users will likely need to have a descriptive 
-template of that file, `Genin` can automatically generate it with a built-in 
+
+First, let's generate a simple cluster for the `Vagrant` virtual environment.
+For that `Genin` will need a `yaml` file with a concise list of cluster
+details. That is a minimal cluster configuration file that features `Genin's`
+own formatting. As long as users will likely need to have a descriptive
+template of that file, `Genin` can automatically generate it with a built-in
 dedicated subcommand:
 
 ```shell
 genin init
 ```
-This will result in creating the `cluster.genin.yaml` file in the current 
+This will result in creating the `cluster.genin.yaml` file in the current
 directory.
 
-> **Note:** If the `cluster.genin.yml` file already exists in current 
+> **Note:** If the `cluster.genin.yml` file already exists in current
 > directory, then the new file will be named `cluster.genin.copy.yaml`.
-> The `genin init` command will always append the `.copy` suffix to the 
+> The `genin init` command will always append the `.copy` suffix to the
 > file's name if the expected file exists.
 
 Also, you can explicitly set the configuration file name:
@@ -220,8 +220,8 @@ Also, you can explicitly set the configuration file name:
 ```shell
 genin init --output mycluster.yml
 ```
-> **Note:** Use the `--output` flag together with the full path to 
-> `mycluster.yml` to specify the directory where the final cluster 
+> **Note:** Use the `--output` flag together with the full path to
+> `mycluster.yml` to specify the directory where the final cluster
 > files will be saved.
 
 Now you can open the file and examine the syntax.
@@ -263,7 +263,7 @@ hosts:
                           # ports can be defined on all levels
       http_port: 8081          # (optional) http port to start counting from
       binary_port: 3031        # (optional) binary port to start counting from
-    hosts: 
+    hosts:
       - name: host-1      # (mandatory) hostname or domain name
         config:
           address: 192.168.16.11  # address can be IP, url, subnet (subnet allowed only for higher levels)
@@ -289,18 +289,18 @@ vars:
   # put here you personally key/value ansible cartridge vars
 ```
 
-Replace the stubs with the actual values of your hosts and their parameters 
+Replace the stubs with the actual values of your hosts and their parameters
 and save the file.
 
-So far you are already halfway through getting things done! Use the resulted 
-`Genin` configuration file to generate the final inventory file. Here is the 
+So far you are already halfway through getting things done! Use the resulted
+`Genin` configuration file to generate the final inventory file. Here is the
 required command for that:
 
 ```shell
 genin build
 ```
 
-Done! The `inventory.yaml` file will appear in the same directory where you 
+Done! The `inventory.yaml` file will appear in the same directory where you
 launched `Genin`. Now we can set up the cluster:
 
 ```shell
@@ -315,7 +315,7 @@ ansible-playbook -i inventory.yaml playbook.yaml
 
 #### Minimal configuration
 
-The initial cluster configuration file can be slimmed down to the following 
+The initial cluster configuration file can be slimmed down to the following
 minimal variant:
 
 ```yaml
@@ -337,7 +337,7 @@ hosts:
       - name: host-2        # ip 192.168.16.13 will be automatically allocated from the above subnet
 ```
 
-This is a perfectly valid and working configuration file. The rest of the 
+This is a perfectly valid and working configuration file. The rest of the
 parameters wil use their default values.
 
 A set of examples can be found in the directory [docs/examples](docs/examples).
@@ -345,7 +345,7 @@ A set of examples can be found in the directory [docs/examples](docs/examples).
 ---
 
 #### Changing the Topology
- 
+
 ---
 
 Now let's change the file, and expand our cluster to make the inventory more
@@ -357,11 +357,11 @@ and add a custom replicaset `cache` in the amount of 5 pieces.
 ---
 topology:
   - name: router
-    replication_factor: 10    # this replicaset has no roles defined and its name is a router, 
-                              # so the replicasets_count parameter will be ignored 
+    replication_factor: 10    # this replicaset has no roles defined and its name is a router,
+                              # so the replicasets_count parameter will be ignored
                               # and the default number of replicasets will be set to 1
   - name: storage
-    replicasets_count: 10     # since the number of replicases in replicaset is not set, 
+    replicasets_count: 10     # since the number of replicases in replicaset is not set,
                               # the default will be 10 replicasets with 1 replica in each
 
 hosts:
@@ -369,8 +369,8 @@ hosts:
     hosts:
       - name: host-1
         config:
-          address: 192.168.16.11      # in this example, the address for each host is set separately, 
-                                      # but for convenience, the address could be set by subnet, 
+          address: 192.168.16.11      # in this example, the address for each host is set separately,
+                                      # but for convenience, the address could be set by subnet,
                                       # specifying it one level higher for cloud
       - name: host-2
         config:
@@ -400,9 +400,9 @@ hosts:
         config:
           address: 192.168.16.20
 ```
-The actual difference between the 2 replicasets configuration and a large 
-cluster configuration is not that great, whereas the resulting inventory file 
-for the large cluster will be 5 times bigger. 
+The actual difference between the 2 replicasets configuration and a large
+cluster configuration is not that great, whereas the resulting inventory file
+for the large cluster will be 5 times bigger.
 
 ---
 
@@ -429,7 +429,7 @@ genin init --failover-mode disabled
 `disabled` argument for `failover-mode` and `failover-state-provider` disable
 failover.
 
-You can learn more about the operation of the failover and the possible options 
+You can learn more about the operation of the failover and the possible options
 in the documentation. [Tarantool documentation](https://www.tarantool.io/ru/doc/1.10/book/cartridge/topics/failover/).
 
 ---
@@ -479,9 +479,9 @@ hosts:
 
 ![default-spreading](docs/images/default-spreading.gif)
 
-Although for most automatic distribution clusters `Genin` should be enough, 
-there can always be a situation where some replicasets must be allocated to 
-a specific host or group of hosts. For this there is a special option 
+Although for most automatic distribution clusters `Genin` should be enough,
+there can always be a situation where some replicasets must be allocated to
+a specific host or group of hosts. For this there is a special option
 `failure_domains` in the `Genin` configuration.
 
 ```yaml
@@ -535,25 +535,25 @@ will be on the specified hosts.
 
 ### Reverse parsing config
 
-Since `Genin` is a relatively new tool, and `picodata` is far from full 
-`tarantool` clusters were generated with it, then to simplify transition 
+Since `Genin` is a relatively new tool, and `picodata` is far from full
+`tarantool` clusters were generated with it, then to simplify transition
 there is a `reverse` command.
 
 ```shell
 genin reverse -s inventory.yml -o cluster.genin.yml
 ```
 
-This command allows you to parse the already finished inventory and get the 
-configuration `cluster.genin.yml` for `genin build`. Why might this be needed? 
-For example for the `upgrade` command. which serves to add new replicasets or 
+This command allows you to parse the already finished inventory and get the
+configuration `cluster.genin.yml` for `genin build`. Why might this be needed?
+For example for the `upgrade` command. which serves to add new replicasets or
 instances and requires 2 configuration files.
 
 The `reverse` command has several important features:
-1. Since the inventory is a flat list, without division by domains, data 
-centers, regions, then `genin` cannot know anything about the structure and 
+1. Since the inventory is a flat list, without division by domains, data
+centers, regions, then `genin` cannot know anything about the structure and
 will generate a flat configuration too.
 
-For example, if we go through a loop, then we will lose all information about 
+For example, if we go through a loop, then we will lose all information about
 `failure` domains:
 ```shell
 genin init -o cluster.genin.yml
@@ -628,16 +628,16 @@ vars:
 
 #### Cluster reconfiguration
 
-To update a deployed cluster using the generated `Genin` inventory, there is 
-a special `upgrade` command for adding new instances. Unlike inventory 
-regeneration, when which all instances are redistributed each time anew, 
-`upgrade` will leave distribution as is, and will only add new instances. 
+To update a deployed cluster using the generated `Genin` inventory, there is
+a special `upgrade` command for adding new instances. Unlike inventory
+regeneration, when which all instances are redistributed each time anew,
+`upgrade` will leave distribution as is, and will only add new instances.
 This will allow painlessly upgrade the cluster, without a full redeploy.
 
 To run `upgrade` you need to pass two required arguments `--old`
 and `--new`.
 ```shell
-genin upgrade --old cluster.genin.yml --new upgrade.genin.yml -s inventory.yml
+genin upgrade --old cluster.genin.yml --new upgrade.genin.yml -o inventory.yml
 ```
 
 The `--old` option specifies the path to the old cluster config we want
@@ -653,18 +653,18 @@ will make `diff` and add those instances that were not in the config passed to
 
 ---
 
-> **Note:** currently, cluster `downgrade` is only partially implemented and 
+> **Note:** currently, cluster `downgrade` is only partially implemented and
 > requires manual verification of the resulting inventory.
 
 ---
 
 ### Flags and options
 
-Here we describe few other useful flags and options that you might want to 
-use with `genin`. 
-First, you can always change paths of both source and target configuration 
-files using the `--source` (short `-s`) and `--output` (short `-o`) flags 
-respectively. We recommend using the `.genin.` suffix for naming convenience. 
+Here we describe few other useful flags and options that you might want to
+use with `genin`.
+First, you can always change paths of both source and target configuration
+files using the `--source` (short `-s`) and `--output` (short `-o`) flags
+respectively. We recommend using the `.genin.` suffix for naming convenience.
 Here is the example command in two variants:
 ```shell
 genin init --output /home/tarantool/custom_cluster_name.yml
@@ -676,9 +676,9 @@ genin build -s /home/user/path/my_cluster.genin.yml -o /home/tarantool/cluster-n
 > `build`, `init` etc. `Genin` will look for files with default names
 > (such as cluster.genin.yaml, inventory.yaml)
 
-Next, there is a very useful option for controlling the log output. There 
-are three supported log levels that you can enable using the `-v` flag with 
-a desired number of extra `v` letters for more verbosity (up to`-vvv`). 
+Next, there is a very useful option for controlling the log output. There
+are three supported log levels that you can enable using the `-v` flag with
+a desired number of extra `v` letters for more verbosity (up to`-vvv`).
 Single `v` means *INFO*, double means *DEBUG*, and three or more mean *TRACE*.
 ```
 genin build -vvv
@@ -691,7 +691,7 @@ genin build -vvv
 
 ---
 
-There is an option `--scheme` to control how the schema is displayed (short 
+There is an option `--scheme` to control how the schema is displayed (short
 option -p) which accepts a sequence of equivalent characters display options.
 
 // Character table under development
@@ -756,14 +756,14 @@ genin --version
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to 
+Pull requests are welcome. For major changes, please open an issue first to
 discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, 
+We use [SemVer](http://semver.org/) for versioning. For the versions available,
 see the [tags on this repository](https://github.com/picodata/genin/tags).
 
 ## Authors
