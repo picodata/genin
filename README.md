@@ -461,14 +461,18 @@ hosts:
   - name: dc-1
     hosts:
       - name: server-1
+        config:
           address: 192.168.16.11
       - name: server-2
+        config:
           address: 192.168.16.12
   - name: dc-2
     hosts:
       - name: server-3
+        config:
           address: 192.168.16.13
       - name: server-4
+        config:
           address: 192.168.16.14
 ...
 ```
@@ -502,14 +506,18 @@ hosts:
   - name: dc-1
     hosts:
       - name: server-1
+        config:
           address: 192.168.16.11
       - name: server-2
+        config:
           address: 192.168.16.12
   - name: dc-2
     hosts:
       - name: server-3
+        config:
           address: 192.168.16.13
       - name: server-4
+        config:
           address: 192.168.16.14
 ...
 ```
