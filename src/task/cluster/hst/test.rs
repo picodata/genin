@@ -384,8 +384,7 @@ hosts:
     );
 }
 
-#[test]
-fn hosts_force_failure_domain() {
+fn failure_domain_test_host() -> HostV2 {
     let hosts_v2_str: String = r#"---
 name: cluster
 config:
@@ -547,7 +546,12 @@ hosts:
         },
     ]);
 
-    host = host.spread();
+    host.spread()
+}
+
+#[test]
+fn hosts_force_failure_domain() {
+    let host = failure_domain_test_host();
 
     assert_eq!(
         host.hosts
@@ -581,6 +585,33 @@ hosts:
             .to_string(),
         "cache-1".to_string()
     );
+}
+
+#[test]
+fn hosts_use_failure_domain_as_zone() {
+    fn failure_domain_instance_zone(host: &HostV2, host_index: usize) -> Option<&str> {
+        host.hosts
+            // dc-2
+            .last()
+            .unwrap()
+            .hosts[host_index]
+            // server-1
+            .instances
+            .last()
+            .unwrap()
+            .config
+            .zone
+            .as_ref()
+            .map(|zone| zone.as_str())
+    }
+
+    let mut host = failure_domain_test_host();
+    assert_eq!(failure_domain_instance_zone(&host, 0), None);
+    assert_eq!(failure_domain_instance_zone(&host, 1), None);
+
+    host.use_failure_domain_as_zone();
+    assert_eq!(failure_domain_instance_zone(&host, 0), Some("dc-2"));
+    assert_eq!(failure_domain_instance_zone(&host, 1), Some("dc-2"));
 }
 
 #[test]

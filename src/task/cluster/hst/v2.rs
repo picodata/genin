@@ -337,6 +337,12 @@ impl HostV2 {
                 );
                 instance.failure_domains = Vec::new();
             }
+            // if it is the last failure domain binding(in other words, we find the needed place for instance),
+            // keep that failure domain name in the instance and remove others.
+            if instance.failure_domains.is_empty() {
+                instance.failure_domains = vec![self.name.to_string()];
+            }
+
             self.hosts.sort();
             return self.push(instance);
         };
@@ -640,6 +646,18 @@ impl HostV2 {
                 binary_port: self.config.binary_port,
                 ..rhs.config.clone()
             };
+        }
+    }
+
+    /// For every instance that has failure domain available, replace its zone with that domain name.
+    pub fn use_failure_domain_as_zone(&mut self) {
+        for instance in self.instances.iter_mut() {
+            if let Some(failure_domain) = instance.failure_domains.first() {
+                instance.config.zone = Some(failure_domain.clone());
+            }
+        }
+        for sub_host in self.hosts.iter_mut() {
+            sub_host.use_failure_domain_as_zone()
         }
     }
 }

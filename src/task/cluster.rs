@@ -548,6 +548,16 @@ impl Cluster {
 
         Ok(self)
     }
+
+    /// It will traverse the cluster, replacing every instance's zone with its `failure_domain`.
+    ///
+    /// Note that method is intended to be called after cluster is spread
+    /// - that's it, when there may only be single domain name in instance's `failure_domains`.
+    pub fn use_failure_domain_as_zone_for_instances(&mut self) {
+        for host in self.hosts.hosts.iter_mut() {
+            host.use_failure_domain_as_zone()
+        }
+    }
 }
 
 #[derive(Deserialize)]
