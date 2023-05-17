@@ -67,6 +67,12 @@ pub(super) fn read() -> ArgMatches {
                         .short('F')
                         .action(ArgAction::Set)
                         .help("(string): failover state provider"),
+                    Arg::new("fd-as-zone")
+                        .long("fd-as-zone")
+                        .action(ArgAction::SetTrue)
+                        .help(
+                            "Used to insert 'failure_domain' field's value of instances in their 'zone' field.",
+                        ),
                 ]),
             Command::new("init")
                 .about("Init genin and create cluster.genin.yaml configuration")
