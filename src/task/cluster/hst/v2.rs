@@ -325,14 +325,15 @@ impl HostV2 {
         // if we found some name equality between host name and failure domain
         // remove it and push instance
         if let Some(index) = failure_domain_index {
+            let domain_name = instance.failure_domains.remove(index);
             trace!(
-                "removing {} failure domain from bindings in {}",
-                instance.failure_domains.remove(index),
+                "found failure domain {} for {} instance",
+                domain_name,
                 instance.name
             );
             if !self.contains_failure_domains(&instance.failure_domains) {
                 trace!(
-                    "removing all failure domains from bindings in {}",
+                    "cleaning failure domains for instance {}, as no more needed failure domains can be found",
                     instance.name
                 );
                 instance.failure_domains = Vec::new();
@@ -342,6 +343,12 @@ impl HostV2 {
             if instance.failure_domains.is_empty() {
                 instance.failure_domains = vec![self.name.to_string()];
             }
+
+            trace!(
+                "failure domains for {} is: {}",
+                instance.name,
+                instance.failure_domains.join(" ")
+            );
 
             self.hosts.sort();
             return self.push(instance);
