@@ -533,7 +533,6 @@ will be on the specified hosts.
 
 ---
 #### Use failure domain name as zone for instance config
----
 
 You can also use failure domain name as `zone` config property for instances. Just add `--fd-as-zone` flag to your `build` command, for example: `genin build --fd-as-zone`
 
