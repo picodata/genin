@@ -532,6 +532,17 @@ will be on the specified hosts.
 ![failure-domains-2](docs/images/failure-domains-2.gif)
 
 ---
+#### Use failure domain name as zone for instance config
+---
+
+You can also use failure domain name as `zone` config property for instances. Just add `--fd-as-zone` flag to your `build` command, for example: `genin build --fd-as-zone`
+
+Algorithm, simulated by that flag, is as follows:
+
+1. Instances are placed on the needed host depending on their `failure_domains` list(*default behaviour* of `failure_domains`);
+2. The final host, where each instance is placed(actual `failure_domain`), is used as `zone` parameter of that instance's config.
+
+---
 
 ### Reverse parsing config
 
