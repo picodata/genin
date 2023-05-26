@@ -534,12 +534,11 @@ will be on the specified hosts.
 ---
 #### Use failure domain name as zone for instance config
 
-
-You can also use failure domain name as a value for [`zone`](https://github.com/tarantool/ansible-cartridge/blob/master/doc/variables.md?plain=1#L90) property of instances config. Just add `--fd-as-zone` flag to your `build` command, for example: `genin build --fd-as-zone`
+You can also use a failure domain name as a value for the [`zone`](https://github.com/tarantool/ansible-cartridge/blob/master/doc/variables.md?plain=1#L90) property of the instances config. Just add the `--fd-as-zone` flag to your `build` command, for example: `genin build --fd-as-zone`
 
 Failure domains algorithm (described above), executed with this flag, would be as follows:
 
-0. Instances are placed on the needed host depending on their `failure_domains` list (*default behavior* of `failure_domains` algorithm);
+0. Instances are placed on the needed host according to their `failure_domains` list (*default behavior* of `failure_domains` algorithm);
 1. The final host, where each instance is placed (actual `failure_domain`), is used as `zone` parameter of that instance's config.
 
 ---
