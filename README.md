@@ -539,8 +539,8 @@ You can also use failure domain name as a value for [`zone`](https://github.com/
 
 Failure domains algorithm (described above), executed with this flag, would be as follows:
 
-1. Instances are placed on the needed host depending on their `failure_domains` list (*default behavior* of `failure_domains` algorithm);
-2. The final host, where each instance is placed (actual `failure_domain`), is used as `zone` parameter of that instance's config.
+0. Instances are placed on the needed host depending on their `failure_domains` list (*default behavior* of `failure_domains` algorithm);
+1. The final host, where each instance is placed (actual `failure_domain`), is used as `zone` parameter of that instance's config.
 
 ---
 
