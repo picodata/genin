@@ -209,7 +209,12 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 )?
                 .deserialize_input::<Cluster>()?
                 .print_input()
-                .try_map(|IO { input, output }| {
+                .try_map(|IO { mut input, output }| {
+                    if args.get_flag("fd-as-zone") {
+                        input
+                            .iter_mut()
+                            .for_each(Cluster::use_failure_domain_as_zone_for_instances);
+                    }
                     Inventory::try_from(&input).map(|inventory| IO {
                         input: Some(inventory),
                         output,
