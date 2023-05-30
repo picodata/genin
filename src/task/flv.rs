@@ -335,15 +335,31 @@ impl<'de> Deserialize<'de> for Uri {
         }
 
         UriHelper::deserialize(deserializer).map(|uri_helper| match uri_helper {
-            UriHelper::Uri(uri_str) => uri_str
-                .parse::<SocketAddr>()
-                .map(|socket_addr| Uri {
-                    address: Address::Ip(socket_addr.ip()),
-                    port: socket_addr.port(),
+            UriHelper::Uri(uri_str) => {
+                if let Ok(socket_addr) = uri_str.parse::<SocketAddr>() {
+                    trace!("uri {} looks like socket address", socket_addr);
+                    return Ok(Uri {
+                        address: Address::Ip(socket_addr.ip()),
+                        port: socket_addr.port(),
+                    });
+                }
+                trace!("uri {} looks like string host:port", uri_str);
+                let parts = uri_str
+                    .rsplit_once(':')
+                    .ok_or(serde::de::Error::custom(format!(
+                        "uri {} does not match the pattern [host][:port]",
+                        uri_str
+                    )))?;
+                Ok(Uri {
+                    address: Address::Uri(parts.0.into()),
+                    port: parts.1.parse::<u16>().map_err(|err| {
+                        serde::de::Error::custom(format!(
+                            "failed to parse port {}: {}",
+                            parts.1, err
+                        ))
+                    })?,
                 })
-                .map_err(|error| {
-                    serde::de::Error::custom(format!("failed to parse uri {}: {}", uri_str, error))
-                }),
+            }
             UriHelper::IpPort { ip: address, port } => Ok(Uri { address, port }),
         })?
     }
