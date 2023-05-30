@@ -361,3 +361,31 @@ stateboard_params:
 
     assert_eq!(failover_str, failover_model_str);
 }
+
+#[test]
+fn failover_wrong_stateboard() {
+    let flv_str = r#"
+mode: stateful
+state_provider: stateboard
+stateboard_params:
+  uri: 'foo-baz-bar.dpc.fpc.gachi.ru:4401'
+  password: 'sosiska-123'
+"#
+    .to_string();
+
+    let flv: Failover = serde_yaml::from_str(&flv_str).unwrap();
+
+    let flv_model = Failover {
+        mode: Mode::Stateful,
+        state_provider: StateProvider::Stateboard,
+        failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
+            uri: Uri {
+                address: Address::Uri("foo-baz-bar.dpc.fpc.gachi.ru".into()),
+                port: 4401,
+            },
+            password: "sosiska-123".into(),
+        }),
+    };
+
+    assert_eq!(flv, flv_model);
+}
