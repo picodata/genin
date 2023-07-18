@@ -108,3 +108,4 @@ fn init_with_comments() {
         assert_eq!(line, model_lines[i]);
     }
 }
+

@@ -188,10 +188,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output,
                     })
                 })?
+                .print_input(args.get_flag("quiet"))
                 .try_map(|io| {
-                    if let (Some(input), false) = (io.input.as_ref(), args.get_flag("quiet")) {
-                        println!("{input}")
-                    }
                     if let IO {
                         input: Some(cluster),
                         output: Some(mut file),
@@ -240,10 +238,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
+                .print_input(args.get_flag("quiet"))
                 .try_map(|IO { mut input, output }| {
-                    if let (Some(input), false) = (input.as_ref(), args.get_flag("quiet")) {
-                        println!("{input}")
-                    }
                     if args.get_flag("fd-as-zone") {
                         input
                             .iter_mut()
@@ -260,7 +256,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             IO::from(args)
                 .try_into_files(Some(CLUSTER_YAML), None, args.get_flag("force"))?
                 .deserialize_input::<Cluster>()?
-                .print_input()
+                .print_input(true)
                 .consume_output();
         }
         Some(("reverse", args)) => {
@@ -273,7 +269,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output,
                     })
                 })?
-                .print_input()
+                .print_input(args.get_flag("quiet"))
                 .serialize_input()?;
         }
         Some(("upgrade", args)) => {
@@ -323,7 +319,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     output,
                 })
             })?
-            .print_input()
+            .print_input(args.get_flag("quiet"))
             .try_map(|IO { input, output }| {
                 Inventory::try_from(&input).map(|inventory| IO {
                     input: Some(inventory),

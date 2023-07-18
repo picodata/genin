@@ -33,5 +33,3 @@ node_modules
 ./*.genin.yml
 ./*.genin.yaml
 !/docs/examples/*
-inventory.yml
-inventory.yaml

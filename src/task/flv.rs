@@ -1,6 +1,6 @@
 use clap::ArgMatches;
 use core::fmt;
-use log::{error, trace, warn};
+use log::{debug, error, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use std::{fmt::Display, net::SocketAddr};
 
@@ -179,7 +179,7 @@ impl<'s> TryFrom<&'s str> for Mode {
     type Error = GeninError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        trace!("failover mode: {}", s);
+        debug!("failover mode: {}", s);
         match s.to_lowercase().as_str() {
             "stateful" => Ok(Self::Stateful),
             "eventual" => Ok(Self::Eventual),
@@ -337,13 +337,13 @@ impl<'de> Deserialize<'de> for Uri {
         UriHelper::deserialize(deserializer).map(|uri_helper| match uri_helper {
             UriHelper::Uri(uri_str) => {
                 if let Ok(socket_addr) = uri_str.parse::<SocketAddr>() {
-                    trace!("uri {} looks like socket address", socket_addr);
+                    debug!("uri {} looks like socket address", socket_addr);
                     return Ok(Uri {
                         address: Address::Ip(socket_addr.ip()),
                         port: socket_addr.port(),
                     });
                 }
-                trace!("uri {} looks like string host:port", uri_str);
+                debug!("uri {} looks like string host:port", uri_str);
                 let parts = uri_str
                     .rsplit_once(':')
                     .ok_or(serde::de::Error::custom(format!(

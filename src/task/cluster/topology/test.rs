@@ -56,7 +56,7 @@ fn topology_from_instances() {
         },
     ]);
 
-    let topology = Topology::from(instances_model.clone());
+    let topology = Topology::try_from(instances_model.clone()).unwrap();
 
     assert_eq!(&topology, &topology_model);
 
@@ -98,4 +98,60 @@ roles:
     let topology_member_str = serde_yaml::to_string(&topology_member).unwrap();
 
     assert_eq!(topology_member_str, topology_member_model_str);
+}
+
+#[test]
+fn non_unique_replicaset_names() {
+    let instances = Instances::from(vec![
+        InstanceV2::from(Name::from("router").with_index(1))
+            .with_roles(vec![Role::router(), Role::failover_coordinator()])
+            .with_color(FG_WHITE),
+        InstanceV2::from(Name::from("storage").with_index(1).with_index(1))
+            .with_roles(vec![Role::storage()])
+            .with_color(FG_BLUE),
+        InstanceV2::from(Name::from("storage").with_index(1).with_index(1))
+            .with_roles(vec![Role::storage()])
+            .with_color(FG_BLUE),
+        InstanceV2::from(Name::from("storage").with_index(2).with_index(1))
+            .with_roles(vec![Role::storage()])
+            .with_color(FG_CYAN),
+        InstanceV2::from(Name::from("storage").with_index(2).with_index(2))
+            .with_roles(vec![Role::storage()])
+            .with_color(FG_CYAN),
+    ]);
+
+    assert_eq!(
+        Topology::try_from(instances),
+        Err("Replicaset names must be unique".into())
+    );
+
+    let topology = Topology(vec![
+        TopologySet {
+            name: "router".into(),
+            replicasets_count: Some(1),
+            replication_factor: None,
+            weight: None,
+            failure_domains: Vec::new(),
+            roles: vec![Role::router(), Role::failover_coordinator()],
+            cartridge_extra_env: IndexMap::new(),
+            config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
+        },
+        TopologySet {
+            name: "router".into(),
+            replicasets_count: Some(2),
+            replication_factor: Some(2),
+            weight: None,
+            failure_domains: Vec::new(),
+            roles: vec![Role::storage()],
+            cartridge_extra_env: IndexMap::new(),
+            config: InstanceV2Config::default(),
+            vars: IndexMap::default(),
+        },
+    ]);
+
+    assert_eq!(
+        topology.check_unique(),
+        Err("Replicaset names must be unique".into())
+    )
 }

@@ -601,8 +601,7 @@ fn hosts_use_failure_domain_as_zone() {
             .unwrap()
             .config
             .zone
-            .as_ref()
-            .map(|zone| zone.as_str())
+            .as_deref()
     }
 
     let mut host = failure_domain_test_host();

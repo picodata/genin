@@ -1,0 +1,88 @@
+---
+all:
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:4401"
+        password: password
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+    storage-1-2:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: 8082
+    storage-2-2:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: 8083
+    stateboard:
+      stateboard: true
+      config:
+        listen: "192.168.16.11:4401"
+        password: password
+    storage-1-1:
+      config:
+        advertise_uri: "192.168.16.12:3031"
+        http_port: 8081
+    storage-2-1:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: 8082
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        failover_priority:
+          - storage-1-1
+          - storage-1-2
+        roles:
+          - storage
+      hosts:
+        storage-1-2: ~
+        storage-1-1: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        failover_priority:
+          - storage-2-1
+          - storage-2-2
+        roles:
+          - storage
+      hosts:
+        storage-2-2: ~
+        storage-2-1: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        storage-1-2: ~
+        storage-2-2: ~
+        stateboard: ~
+    server-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        storage-1-1: ~
+        storage-2-1: ~

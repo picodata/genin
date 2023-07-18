@@ -192,6 +192,11 @@ pub(super) fn read() -> ArgMatches {
                             "Used to overwrite the output file, whether \
                             or not it exists.",
                         ),
+                    Arg::new("quiet")
+                        .long("quiet")
+                        .short('q')
+                        .action(ArgAction::SetTrue)
+                        .help("do not print table and cluster yaml"),
                 ]),
             Command::new("upgrade")
                 .about(
@@ -257,6 +262,11 @@ pub(super) fn read() -> ArgMatches {
                         .short('F')
                         .action(ArgAction::Set)
                         .help("(string): failover state provider"),
+                    Arg::new("quiet")
+                        .long("quiet")
+                        .short('q')
+                        .action(ArgAction::SetTrue)
+                        .help("do not print table and cluster yaml"),
                 ]),
         ])
         .get_matches()

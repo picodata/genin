@@ -7,7 +7,7 @@ use std::{
 };
 
 use clap::ArgMatches;
-use log::{trace, warn};
+use log::{debug, warn};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
@@ -95,7 +95,7 @@ fn right_ext(path: PathBuf, path_str: String, second_try: bool) -> Option<PathBu
     ) {
         (false, Some("yml"), false) => {
             let new_path_str = path_str.replace(".yml", ".yaml");
-            trace!("file_exists: false, extension: .yml, second_try: false");
+            debug!("file_exists: false, extension: .yml, second_try: false");
             warn!(
                 "file {} does not exists, trying to open {}",
                 path_str, &new_path_str
@@ -104,7 +104,7 @@ fn right_ext(path: PathBuf, path_str: String, second_try: bool) -> Option<PathBu
         }
         (false, Some("yaml"), false) => {
             let new_path_str = path_str.replace(".yaml", ".yml");
-            trace!("file_exists: false, extension: .yaml, second_try: false");
+            debug!("file_exists: false, extension: .yaml, second_try: false");
             warn!(
                 "file {} does not exists, trying to open {}",
                 path_str, &new_path_str
@@ -275,9 +275,9 @@ impl<I, O, A, B> TryMap<A, B> for IO<I, O> {
 }
 
 impl<I: Display, O> IO<I, O> {
-    pub fn print_input(self) -> Self {
-        if let Some(input) = self.input.as_ref() {
-            println!("{}", input)
+    pub fn print_input(self, quiet: bool) -> Self {
+        if let (Some(input), false) = (self.input.as_ref(), quiet) {
+            println!("{input}")
         }
         self
     }
