@@ -46,7 +46,9 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             _ => "trace",
         },
     );
-    env_logger::init();
+    env_logger::builder()
+        .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
+        .init();
 
     info!(
         "Log level {}",
@@ -167,8 +169,10 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output,
                     })
                 })?
-                .print_input()
                 .try_map(|io| {
+                    if let (Some(input), false) = (io.input.as_ref(), args.get_flag("quiet")) {
+                        println!("{input}")
+                    }
                     if let IO {
                         input: Some(cluster),
                         output: Some(mut file),
@@ -177,7 +181,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         let mut text = serde_yaml::to_string(&cluster)
                             .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
 
-                        println!("{}", &text);
+                        //println!("{}", &text);
 
                         for (k, v) in comments {
                             let comment =
@@ -208,8 +212,10 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
-                .print_input()
                 .try_map(|IO { mut input, output }| {
+                    if let (Some(input), false) = (input.as_ref(), args.get_flag("quiet")) {
+                        println!("{input}")
+                    }
                     if args.get_flag("fd-as-zone") {
                         input
                             .iter_mut()

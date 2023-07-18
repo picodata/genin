@@ -28,7 +28,7 @@ fn build_consistency_100_times() {
         .try_get_matches_from(vec![
             "genin",
             "--source",
-            "test/resources/test-cluster.genin.yaml",
+            "tests/resources/test-cluster.genin.yaml",
         ])
         .unwrap();
 
@@ -70,9 +70,9 @@ fn upgrade_consistency_100_times() {
         .try_get_matches_from(vec![
             "genin",
             "--old",
-            "test/resources/test-cluster.genin.yaml",
+            "tests/resources/test-cluster.genin.yaml",
             "--new",
-            "test/resources/test-upgrade-cluster.genin.yaml",
+            "tests/resources/test-upgrade-cluster.genin.yaml",
         ])
         .unwrap();
 

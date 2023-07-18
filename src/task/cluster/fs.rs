@@ -2,7 +2,7 @@ use std::{
     error::Error as StdError,
     fmt::{self, Display},
     fs::File,
-    io::{Read, Write},
+    io::{self, Read, Write},
     path::PathBuf,
 };
 
@@ -15,9 +15,9 @@ use crate::{
     task::{serde_genin, Validate},
 };
 
-pub const CLUSTER_YAML: &str = "cluster.genin.yaml";
-pub const INVENTORY_YAML: &str = "inventory.yaml";
-pub const UPGRADE_YAML: &str = "upgrade.genin.yaml";
+pub const CLUSTER_YAML: &str = "cluster.genin.yml";
+pub const INVENTORY_YAML: &str = "inventory.yml";
+pub const UPGRADE_YAML: &str = "upgrade.genin.yml";
 
 //TODO: remove it in next commits
 #[allow(unused)]
@@ -31,13 +31,13 @@ impl<'a> From<&'a ArgMatches> for FsInteraction {
     fn from(args: &'a ArgMatches) -> Self {
         FsInteraction {
             source: args
-                .try_get_one::<String>("source")
-                .transpose()
-                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+                .try_get_one::<&str>("source")
+                .unwrap_or_default()
+                .map(PathBuf::from),
             output: args
-                .try_get_one::<String>("output")
-                .transpose()
-                .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
+                .try_get_one::<&str>("output")
+                .unwrap_or_default()
+                .map(PathBuf::from),
         }
     }
 }
@@ -45,38 +45,6 @@ impl<'a> From<&'a ArgMatches> for FsInteraction {
 //TODO: remove in future commits
 #[allow(unused)]
 impl FsInteraction {
-    /// After string args transofrmed to `PathBuf` this function should check
-    /// `soure` and `output` existence, and replace to default value
-    pub fn check(self, source: Option<&str>, output: Option<&str>, force: bool) -> Self {
-        Self {
-            source: self
-                .source
-                .or_else(|| source.map(PathBuf::from))
-                .and_then(|path| {
-                    path.clone()
-                        .to_str()
-                        .map(|path_str| (path, path_str.to_string()))
-                })
-                .and_then(|(path, path_str)| right_ext(path, path_str, false)),
-            output: self
-                .output
-                .or_else(|| output.map(PathBuf::from))
-                .and_then(|path| {
-                    path.clone()
-                        .to_str()
-                        .map(|path_str| (path, path_str.to_string()))
-                })
-                .map(|(path, path_str)| {
-                    force
-                        .then(|| {
-                            debug!("output file will be overrided because flag force defined");
-                            path.clone()
-                        })
-                        .unwrap_or_else(|| as_copy(path, path_str))
-                }),
-        }
-    }
-
     /// Reading source file
     ///
     /// # panic
@@ -145,24 +113,6 @@ fn right_ext(path: PathBuf, path_str: String, second_try: bool) -> Option<PathBu
         }
         (false, _, true) => None,
         _ => Some(path),
-    }
-}
-
-#[inline]
-/// Check that target file not exists and return concatenated path with copy suffix
-fn as_copy(path: PathBuf, path_str: String) -> PathBuf {
-    match (path.is_file(), path.extension()) {
-        (true, Some(e)) => {
-            let ext = format!(".{}", e.to_str().unwrap_or_default());
-            let new_path_str = format!("{}.copy{}", path_str.replace(&ext, ""), ext);
-            warn!(
-                "the target file {} already exists so \
-                the new file will be saved with the name {}",
-                path_str, new_path_str
-            );
-            as_copy(PathBuf::from(&path_str), new_path_str)
-        }
-        _ => path,
     }
 }
 
@@ -243,22 +193,38 @@ impl IO<PathBuf, PathBuf> {
                 .map(File::open)
                 .transpose()?,
             output: self
+                // can be
                 .output
                 .or_else(|| output.map(PathBuf::from))
-                .and_then(|path| {
-                    path.clone()
-                        .to_str()
-                        .map(|path_str| (path, path_str.to_string()))
+                .map(|path| {
+                    if !path.exists() || force {
+                        File::create(path)
+                    } else if path.is_file() {
+                        let file_ext = path
+                            .extension()
+                            .expect("Failed to get file extension")
+                            .to_str()
+                            .expect("Failed to cast into str");
+                        let file_name = path
+                            .file_stem()
+                            .expect("Failed to get filename")
+                            .to_str()
+                            .expect("Failed to cast into str");
+
+                        warn!(
+                            "the target file {} already exists so the new file will be \
+                                saved with name {file_name}.copy.{file_ext}",
+                            path.display(),
+                        );
+
+                        File::create(format!("{file_name}.copy.{file_ext}"))
+                    } else {
+                        Err(io::Error::new(
+                            io::ErrorKind::Other,
+                            "output is not file or not valid path",
+                        ))
+                    }
                 })
-                .map(|(path, path_str)| {
-                    force
-                        .then(|| {
-                            debug!("output file will be overrided because flag force defined");
-                            path.clone()
-                        })
-                        .unwrap_or_else(|| as_copy(path, path_str))
-                })
-                .map(File::create)
                 .transpose()?,
         })
     }

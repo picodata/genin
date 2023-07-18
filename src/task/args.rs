@@ -73,6 +73,11 @@ pub(super) fn read() -> ArgMatches {
                         .help(
                             "Used to insert 'failure_domain' field's value of instances in their 'zone' field.",
                         ),
+                    Arg::new("quiet")
+                        .long("quiet")
+                        .short('q')
+                        .action(ArgAction::SetTrue)
+                        .help("do not print table and cluster yaml"),
                 ]),
             Command::new("init")
                 .about("Init genin and create cluster.genin.yaml configuration")
@@ -112,6 +117,11 @@ pub(super) fn read() -> ArgMatches {
                         .default_values(["colorized", "ports"])
                         .num_args(1..=3)
                         .help("(list, optional): cluster print output option"),
+                    Arg::new("quiet")
+                        .long("quiet")
+                        .short('q')
+                        .action(ArgAction::SetTrue)
+                        .help("do not print table and cluster yaml"),
                 ]),
             Command::new("inspect")
                 .about(
