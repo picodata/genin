@@ -36,6 +36,8 @@ fn warning_message_on_init_output() {
     result.write_all(&output.stdout).unwrap();
     result.write_all(&output.stderr).unwrap();
 
+    println!("{}", String::from_utf8(result.clone()).unwrap());
+
     assert_eq!(
         result,
         b"WARN: the target file cluster.genin.yml already exists so the new file will \
@@ -78,6 +80,31 @@ fn warning_message_on_build_output() {
 
     assert_eq!(
         result,
-        b"WARN: the target file inventory.yml already exists so the new file will be saved with name inventory.copy.yml\n"
+        b"WARN: the target file inventory.yml already exists so the new file will be \
+            saved with name inventory.copy.yml\n"
     );
+}
+
+#[test]
+fn init_with_comments() {
+    cleanup_test_dir("tests/.tmp3");
+
+    Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("init")
+    .arg("-q")
+    .current_dir("tests/.tmp3")
+    .output()
+    .expect("Failed to execute command");
+
+    let generated = std::fs::read_to_string("tests/.tmp3/cluster.genin.yml").unwrap();
+    let generated_lines = generated.lines();
+    let model = std::fs::read_to_string("tests/resources/cluster.genin.yml").unwrap();
+    let model_lines = model.lines().collect::<Vec<&str>>();
+
+    for (i, line) in generated_lines.enumerate() {
+        assert_eq!(line, model_lines[i]);
+    }
 }
