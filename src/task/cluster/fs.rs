@@ -7,7 +7,7 @@ use std::{
 };
 
 use clap::ArgMatches;
-use log::{debug, trace, warn};
+use log::{trace, warn};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{

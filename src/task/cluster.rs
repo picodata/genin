@@ -425,7 +425,7 @@ pub fn check_placeholders(slice: &[u8]) -> Result<String, serde_yaml::Error> {
     let reg = RegexBuilder::new(r"(?P<key>^.+:) +(<<.*>>) *(?:# *([^#:]+)$)*")
         .multi_line(true)
         .build()
-        .map_err(|err| serde::de::Error::custom(err))?;
+        .map_err(serde::de::Error::custom)?;
     let captures = reg.captures_iter(&text).collect::<Vec<Captures>>();
 
     if captures.is_empty() {
