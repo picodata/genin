@@ -1,5 +1,5 @@
 use indexmap::IndexMap;
-use log::{debug, trace};
+use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Number, Value};
 use std::fmt;
@@ -249,11 +249,9 @@ impl HostV2 {
                             .merge_and_up_ports(self.config.clone(), index as u16),
                         ..instance.clone()
                     };
-                    trace!(
+                    debug!(
                         "host: {} instance: {} config: {:?}",
-                        self.name,
-                        instance.name,
-                        instance.config
+                        self.name, instance.name, instance.config
                     );
                 });
             return;
@@ -276,7 +274,7 @@ impl HostV2 {
                 self.hosts.sort();
                 self.push(instance).unwrap();
             } else {
-                trace!(
+                debug!(
                     "start pushing instance {} with failure domain",
                     instance.name
                 );
@@ -311,10 +309,9 @@ impl HostV2 {
     }
 
     fn push_to_failure_domain(&mut self, mut instance: InstanceV2) -> Result<(), GeninError> {
-        trace!(
+        debug!(
             "trying to find reqested failure_domains inside host {} for instance {}",
-            self.name,
-            instance.name,
+            self.name, instance.name,
         );
 
         let failure_domain_index = instance
@@ -326,13 +323,12 @@ impl HostV2 {
         // remove it and push instance
         if let Some(index) = failure_domain_index {
             let domain_name = instance.failure_domains.remove(index);
-            trace!(
+            debug!(
                 "found failure domain {} for {} instance",
-                domain_name,
-                instance.name
+                domain_name, instance.name
             );
             if !self.contains_failure_domains(&instance.failure_domains) {
-                trace!(
+                debug!(
                     "cleaning failure domains for instance {}, as no more needed failure domains can be found",
                     instance.name
                 );
@@ -344,7 +340,7 @@ impl HostV2 {
                 instance.failure_domains = vec![self.name.to_string()];
             }
 
-            trace!(
+            debug!(
                 "failure domains for {} is: {}",
                 instance.name,
                 instance.failure_domains.join(" ")
@@ -366,7 +362,7 @@ impl HostV2 {
             })
             .collect();
         if !failure_domain_hosts.is_empty() {
-            trace!(
+            debug!(
                 "following hosts [{}] contains one or more of this failure domains [{}]",
                 failure_domain_hosts
                     .iter()
@@ -450,7 +446,7 @@ impl HostV2 {
             .unwrap();
 
         if self.instances.is_empty() {
-            trace!(
+            debug!(
                 "Spreading instances for {} skipped. Width {}. Current level {} vector lenght {}",
                 self.name,
                 self.width(),
@@ -464,7 +460,7 @@ impl HostV2 {
                 .iter()
                 .for_each(|host| host.form_structure(depth + 1, collector));
         } else {
-            trace!(
+            debug!(
                 "Spreading instances for {} -> {:?}",
                 self.name,
                 self.instances
@@ -478,7 +474,7 @@ impl HostV2 {
                 .map(|level| level.push(DomainMember::from(self.name.to_string())))
                 .unwrap();
             let remainder = collector.borrow().len() - depth - 1;
-            (0..remainder).into_iter().for_each(|index| {
+            (0..remainder).for_each(|index| {
                 collector
                     .borrow_mut()
                     .get_mut(depth + index + 1)

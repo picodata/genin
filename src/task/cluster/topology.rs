@@ -1,7 +1,7 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet};
 
 use indexmap::IndexMap;
-use log::trace;
+use log::{debug, trace};
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Number, Value};
 use tabled::Alignment;
@@ -21,9 +21,20 @@ use super::{
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Topology(Vec<TopologySet>);
 
-impl From<Instances> for Topology {
-    fn from(instances: Instances) -> Self {
-        Self(
+impl TryFrom<Instances> for Topology {
+    type Error = String;
+
+    fn try_from(instances: Instances) -> Result<Self, Self::Error> {
+        let unique = instances
+            .iter()
+            .map(|ins| &ins.name)
+            .collect::<HashSet<&Name>>();
+
+        if unique.len() < instances.len() {
+            return Err("Replicaset names must be unique".into());
+        }
+
+        Ok(Self(
             instances
                 .iter()
                 .fold(
@@ -39,7 +50,7 @@ impl From<Instances> for Topology {
                          vars,
                          ..
                      }| {
-                        trace!(
+                        debug!(
                             "Instance {} will be mapped to {}",
                             name,
                             name.get_parent_str()
@@ -86,7 +97,7 @@ impl From<Instances> for Topology {
                             ..
                         },
                     )| {
-                        trace!(
+                        debug!(
                             "Replicaset {} will be mapped to {}",
                             name,
                             name.get_ancestor_str()
@@ -130,7 +141,7 @@ impl From<Instances> for Topology {
                     topology_set
                 })
                 .collect(),
-        )
+        ))
     }
 }
 
@@ -198,6 +209,22 @@ impl<'a> From<&'a Topology> for Instances {
                 )
                 .collect::<Vec<InstanceV2>>(),
         )
+    }
+}
+
+impl Topology {
+    pub fn check_unique(self) -> Result<Self, String> {
+        let unique = self
+            .0
+            .iter()
+            .map(|topology_set| &topology_set.name)
+            .collect::<HashSet<&Name>>();
+
+        if unique.len() < self.0.len() {
+            return Err("Replicaset names must be unique".into());
+        }
+
+        Ok(self)
     }
 }
 

@@ -74,6 +74,7 @@ jobs:
       - run: ls -la
       - name: Upload archive with binary
         run: |
+          chmod 755 genin
           tar -czvf genin-${{ env.VERSION }}-x86_64-musl.tar.gz genin
           curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}-x86_64-musl.tar.gz ${{ env.RAW_REGISTRY }}/genin/bin/genin-${{ env.VERSION }}-x86_64-musl.tar.gz
 
@@ -182,7 +183,7 @@ jobs:
         run: |
           apt update ; apt install -y curl
           mkdir -p genin-${{ env.VERSION }}.amd64/DEBIAN
-          chmod +x genin-${{ env.VERSION }}.amd64/usr/bin/genin
+          chmod 755 genin-${{ env.VERSION }}.amd64/usr/bin/genin
           sed -ie "s/\${VERSION}/${{ env.VERSION }}/g" build/control
           cp build/control genin-${{ env.VERSION }}.amd64/DEBIAN/ ; dpkg-deb --build --root-owner-group genin-${{ env.VERSION }}.amd64
           curl -v -f -H "Authorization: Basic ${{ secrets.RAW_AUTH_RW }}" --upload-file genin-${{ env.VERSION }}.amd64.deb ${{ env.RAW_REGISTRY }}/genin/deb/genin-${{ env.VERSION }}.amd64.deb

@@ -6,7 +6,7 @@ pub mod topology;
 
 use clap::ArgMatches;
 use indexmap::IndexMap;
-use log::{debug, trace};
+use log::debug;
 use regex::{Captures, RegexBuilder};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize};
@@ -183,7 +183,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
     type Error = GeninError;
 
     fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
-        trace!("Сluster file will be constructed based on default values and Genin call arguments");
+        debug!("Сluster file will be constructed based on default values and Genin call arguments");
         let failover = Failover::try_from(args)?;
         Ok(Cluster {
             vars: Vars::from(&failover),
@@ -199,7 +199,7 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
     fn try_from(inventory: &'a Option<Inventory>) -> Result<Self, Self::Error> {
         if let Some(inventory) = inventory {
             Ok(Cluster {
-                topology: Topology::from(Instances::from(
+                topology: Topology::try_from(Instances::from(
                     inventory
                         .all
                         .hosts
@@ -234,7 +234,8 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                             Ok(instance)
                         })
                         .collect::<Result<Vec<InstanceV2>, GeninError>>()?,
-                )),
+                ))
+                .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?,
                 hosts: HostV2::from("cluster").with_hosts(
                     inventory
                         .all
@@ -273,7 +274,7 @@ impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
                                         .iter()
                                         .filter_map(|(name, instance)| {
                                             let config = HostV2Config::from(&instance.config);
-                                            trace!(
+                                            debug!(
                                                 "ansible_host: {} instance_address: {}",
                                                 ansible_host,
                                                 config.address()
@@ -362,7 +363,8 @@ impl<'de> Deserialize<'de> for Cluster {
                     .with_hosts(hosts)
                     .with_http_port(DEFAULT_HTTP_PORT)
                     .with_binary_port(DEFAULT_BINARY_PORT),
-                topology: Topology::from(instances),
+                topology: Topology::try_from(instances)
+                    .map_err(|err| serde::de::Error::custom(err.to_string()))?,
                 failover,
                 vars,
             }
@@ -377,7 +379,7 @@ impl<'de> Deserialize<'de> for Cluster {
                     .with_hosts(hosts)
                     .with_http_port(DEFAULT_HTTP_PORT)
                     .with_binary_port(DEFAULT_BINARY_PORT),
-                topology,
+                topology: topology.check_unique().map_err(serde::de::Error::custom)?,
                 failover,
                 vars,
             }
@@ -425,7 +427,7 @@ pub fn check_placeholders(slice: &[u8]) -> Result<String, serde_yaml::Error> {
     let reg = RegexBuilder::new(r"(?P<key>^.+:) +(<<.*>>) *(?:# *([^#:]+)$)*")
         .multi_line(true)
         .build()
-        .map_err(|err| serde::de::Error::custom(err))?;
+        .map_err(serde::de::Error::custom)?;
     let captures = reg.captures_iter(&text).collect::<Vec<Captures>>();
 
     if captures.is_empty() {

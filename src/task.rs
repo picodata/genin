@@ -6,7 +6,7 @@ pub mod serde_genin;
 pub mod vars;
 
 use log::info;
-use regex::RegexBuilder;
+use regex::{Captures, RegexBuilder};
 use serde_yaml::{Mapping, Value};
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -46,7 +46,9 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             _ => "trace",
         },
     );
-    env_logger::init();
+    env_logger::builder()
+        .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
+        .init();
 
     info!(
         "Log level {}",
@@ -57,9 +59,14 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
 
     let comments = [
         (
+            "topology".into(),
+            "# List of replicasets as an array".into(),
+        ),
+        (
             "replicasets_count".to_string(),
             "# How many masters we want, by default equal 1".to_string(),
         ),
+        ("roles".into(), "# Array of roles for this instance".into()),
         (
             "replication_factor".to_string(),
             "# Number of replicas in replicaset, default 0".to_string(),
@@ -91,6 +98,10 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             "# Zone parameter for ansible cartridge playbook".to_string(),
         ),
         (
+            "hosts".into(),
+            "# List of regions, datacenters, and servers".into(),
+        ),
+        (
             "config".to_string(),
             "# Config with arbitrary key-values pairs".to_string(),
         ),
@@ -108,8 +119,9 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         ),
         (
             "vars".to_string(),
-            "# Ansible wars to be added to hosts".to_string(),
+            "# Ansible vars to be added to hosts".to_string(),
         ),
+        ("failover".into(), "# Failover management options".into()),
         (
             "mode".to_string(),
             "# Failover mode (stateful, eventual, disabled)".to_string(),
@@ -128,6 +140,10 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         ),
         ("password".to_string(), "# Stateboard password".to_string()),
         (
+            "vars".into(),
+            "# Vars similar to those configured in the cartridge inventory".into(),
+        ),
+        (
             "ansible_user".to_string(),
             "# Username under which the ansible will connect to the servers".to_string(),
         ),
@@ -135,6 +151,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             "ansible_password".to_string(),
             "# Ansible user password".to_string(),
         ),
+        ("cartridge_app_name".into(), "# Application name".into()),
         (
             "cartridge_cluster_cookie".to_string(),
             "# Cookie for connecting to the administrative console of the instances".to_string(),
@@ -142,6 +159,10 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         (
             "cartridge_package_path".to_string(),
             "# Path to the application package".to_string(),
+        ),
+        (
+            "cartridge_bootstrap_vshard".into(),
+            "# Indicates if vshard must be bootstrapped on the cluster".into(),
         ),
     ]
     .into_iter()
@@ -167,7 +188,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output,
                     })
                 })?
-                .print_input()
+                .print_input(args.get_flag("quiet"))
                 .try_map(|io| {
                     if let IO {
                         input: Some(cluster),
@@ -177,16 +198,25 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         let mut text = serde_yaml::to_string(&cluster)
                             .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
 
-                        println!("{}", &text);
-
-                        for (k, v) in comments {
-                            let comment =
-                                RegexBuilder::new(&format!(r"(?P<key>^.+{}:[ ]*[^#<> ]+)$", k))
-                                    .multi_line(true)
-                                    .build()
-                                    .unwrap();
+                        for (key, value) in comments {
+                            let comment = RegexBuilder::new(&format!(
+                                "^(?P<spaces>[ /t-]*)(?P<key>{key}:( .*)*)"
+                            ))
+                            .multi_line(true)
+                            .build()
+                            .unwrap();
                             text = comment
-                                .replace_all(&text, &format!("$key {}", v))
+                                .replace_all(&text, |caps: &Captures| {
+                                    //println!("caps 0: {}", &caps[0]);
+                                    //println!("caps 0: {}", &caps[0]);
+                                    format!(
+                                        "{whitespaces}{value}\n{any_symbols}{key}",
+                                        whitespaces = caps[1].replace('-', " "),
+                                        any_symbols = &caps[1],
+                                        key = &caps[2],
+                                    )
+                                })
+                                //.replace_all(&text, &format!("$key {value}"))
                                 .to_string();
                         }
                         file.write(text.as_bytes())
@@ -208,7 +238,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     args.get_flag("force"),
                 )?
                 .deserialize_input::<Cluster>()?
-                .print_input()
+                .print_input(args.get_flag("quiet"))
                 .try_map(|IO { mut input, output }| {
                     if args.get_flag("fd-as-zone") {
                         input
@@ -226,7 +256,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             IO::from(args)
                 .try_into_files(Some(CLUSTER_YAML), None, args.get_flag("force"))?
                 .deserialize_input::<Cluster>()?
-                .print_input()
+                .print_input(true)
                 .consume_output();
         }
         Some(("reverse", args)) => {
@@ -239,7 +269,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output,
                     })
                 })?
-                .print_input()
+                .print_input(args.get_flag("quiet"))
                 .serialize_input()?;
         }
         Some(("upgrade", args)) => {
@@ -289,7 +319,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                     output,
                 })
             })?
-            .print_input()
+            .print_input(args.get_flag("quiet"))
             .try_map(|IO { input, output }| {
                 Inventory::try_from(&input).map(|inventory| IO {
                     input: Some(inventory),
@@ -432,7 +462,7 @@ impl<'a> std::fmt::Debug for ErrConfMapping<'a> {
                     formatter.write_fmt(format_args!(
                         "{}  - {}",
                         &self.offset,
-                        "Errorneous field".as_error(),
+                        "Erroneous field".as_error(),
                     ))
                 }
             })?;

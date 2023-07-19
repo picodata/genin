@@ -23,8 +23,7 @@ node_modules
 /tmp/*
 !/tmp/.keep
 .roles
-!/test/outputs/test-*
-/test/outputs/*
+.tmp*
 /.gitlab-ci.yml
 /deploy/.terraform.lock.hcl
 /deploy/.terraform/
@@ -34,5 +33,3 @@ node_modules
 ./*.genin.yml
 ./*.genin.yaml
 !/docs/examples/*
-inventory.yml
-inventory.yaml
