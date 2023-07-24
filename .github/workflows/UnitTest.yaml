@@ -23,10 +23,10 @@ jobs:
     needs: [version]
     runs-on: [self-hosted, genin]
     container:
-      image: docker.binary.picodata.io/rust-builder-nightly:latest
+      image: docker.binary.picodata.io/rust-builder-stable:latest
     steps:
       - name: Run tests
-        run: cargo +nightly test
+        run: cargo test
       - name: Clean workspace
         run: rm -rf ..?* .[!.]* *
         if: always()

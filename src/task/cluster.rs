@@ -34,6 +34,7 @@ use crate::{DEFAULT_BINARY_PORT, DEFAULT_HTTP_PORT};
 use self::hst::v2::InvalidHostV2;
 
 use super::flv::InvalidFailover;
+use super::vars::InvalidVars;
 
 #[derive(Debug, PartialEq, Eq)]
 /// Cluster is a `genin` specific configuration file
@@ -385,7 +386,7 @@ impl<'de> Deserialize<'de> for Cluster {
             }
             .spread()),
             ClusterHelper::InvalidCluster(_) => Err(serde::de::Error::custom(
-                "Data did not match any variant of cluster configuration",
+                "Cluster configuration contains errors",
             )),
         })
     }
@@ -662,8 +663,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
 #[allow(unused)]
 #[derive(Deserialize, Default)]
 pub struct InvalidCluster {
-    #[serde(skip)]
-    offset: String,
     #[serde(default)]
     topology: Value,
     #[serde(default)]
@@ -681,27 +680,19 @@ impl std::fmt::Debug for InvalidCluster {
         match &self.topology {
             Value::Null => {
                 formatter.write_str("Missing field 'topology'".as_error().as_str())?;
-                formatter.write_str("\n")?;
             }
             Value::Sequence(sequence) => {
                 sequence
                     .iter()
                     .try_for_each(|value| -> Result<(), std::fmt::Error> {
                         formatter.write_fmt(format_args!(
-                            "{}  {:?}",
-                            &self.offset,
-                            serde_yaml::from_value::<InvalidTopologySet>(value.clone())
-                                .map(|mut topology_set| {
-                                    topology_set.offset = format!("{}  ", &self.offset);
-                                    topology_set
-                                })
-                                .unwrap()
+                            "{:?}",
+                            serde_yaml::from_value::<InvalidTopologySet>(value.clone()).unwrap()
                         ))
                     })?;
             }
             _ => {
                 formatter.write_str("Topology must be a list".as_error().as_str())?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -709,67 +700,65 @@ impl std::fmt::Debug for InvalidCluster {
         match &self.hosts {
             Value::Null => {
                 formatter.write_fmt(format_args!(
-                    "{}hosts: {}",
-                    &self.offset,
+                    "\nhosts: {}",
                     "Missing field 'hosts'".as_error().as_str()
                 ))?;
-                formatter.write_str("\n")?;
             }
             Value::Sequence(sequence) => {
-                formatter.write_fmt(format_args!("{}hosts:\n", &self.offset))?;
+                formatter.write_str("\nhosts:")?;
                 sequence
                     .iter()
                     .try_for_each(|host| -> Result<(), std::fmt::Error> {
                         formatter.write_fmt(format_args!(
-                            "{}{:?}",
-                            &self.offset,
+                            "{:?}",
                             serde_yaml::from_value::<InvalidHostV2>(host.clone())
                                 .map(|mut host| {
-                                    host.offset = format!("{}  ", &self.offset);
+                                    host.offset = "\n  ".into();
                                     host
                                 })
                                 .unwrap()
                         ))
                     })?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
-                    "{}hosts: {}",
-                    &self.offset,
+                    "\nhosts: {}",
                     "Hosts must be a list".as_error().as_str()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
         // failover: Failover
         match &self.failover {
             Value::Null => {}
-            mapping @ Value::Mapping(_) => {
+            failover @ Value::Mapping(_) => {
                 formatter.write_str("\nfailover: ")?;
                 formatter.write_fmt(format_args!(
-                    "{} {:?}",
-                    &self.offset,
-                    serde_yaml::from_value::<InvalidFailover>(mapping.clone()).unwrap()
+                    "{:?}",
+                    serde_yaml::from_value::<InvalidFailover>(failover.clone()).unwrap()
                 ))?;
             }
             _ => {
                 formatter.write_str("Failover must be a mapping".as_error().as_str())?;
-                formatter.write_str("\n")?;
             }
         }
 
         // vars: Vars
         match &self.vars {
-            Value::Null => {}
-            Value::Mapping(_) => {}
+            vars @ Value::Mapping(_) => {
+                formatter.write_str("\nvars: ")?;
+                formatter.write_fmt(format_args!(
+                    "{:?}",
+                    serde_yaml::from_value::<InvalidVars>(vars.clone()).unwrap()
+                ))?;
+            }
             _ => {
                 formatter.write_str("\nvars: ")?;
                 formatter.write_str("Vars must be a mapping".as_error().as_str())?;
-                formatter.write_str("\n")?;
             }
         }
+
+        formatter.write_str("\n")?;
 
         Ok(())
     }

@@ -1,0 +1,7 @@
+---
+source: src/task/flv/test.rs
+expression: uncolorize(invalid_v1)
+---
+
+  mode: disabled
+  state_provider: "The value cannot be set because the mode is 'disabled'"

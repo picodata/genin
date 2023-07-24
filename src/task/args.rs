@@ -61,11 +61,13 @@ pub(super) fn read() -> ArgMatches {
                         .long("failover-mode")
                         .short('m')
                         .action(ArgAction::Set)
+                        .default_value("stateful")
                         .help("(string): failover mode (statefull, eventual, disabled)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')
                         .action(ArgAction::Set)
+                        .default_value("stateboard")
                         .help("(string): failover state provider"),
                     Arg::new("fd-as-zone")
                         .long("fd-as-zone")

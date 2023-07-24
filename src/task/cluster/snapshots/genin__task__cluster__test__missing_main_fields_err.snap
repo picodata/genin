@@ -1,0 +1,10 @@
+---
+source: src/task/cluster/test.rs
+expression: uncolorize(result)
+---
+Err(Cluster configuration contains errors(Ok(
+---
+topology: "Missing field 'topology'"
+hosts: "Missing field 'hosts'"
+vars: "Vars must be a mapping"
+)))

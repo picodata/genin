@@ -1,5 +1,7 @@
 use clap::{Arg, ArgAction, Command};
 
+use crate::task::utils::uncolorize;
+
 use super::*;
 
 #[test]
@@ -388,4 +390,153 @@ stateboard_params:
     };
 
     assert_eq!(flv, flv_model);
+}
+
+#[test]
+fn invalid_failover() {
+    let err1_str = r#"
+state_provider: etcd2
+etcd2_params:
+  prefix: /cartridge
+  lock_delay: 30
+  endpoints:
+    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.13:2379"
+    - "http://172.20.73.14:2379"
+  username: 111   
+  password: 111
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err1_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err2_str = r#"
+mode: disabled
+state_provider: etcd2
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err2_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err3_str = r#"
+mode: eventual
+state_provider: etcd2
+etcd2_params:
+  prefix: /cartridge
+  lock_delay: 30
+  endpoints:
+    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.13:2379"
+    - "http://172.20.73.14:2379"
+  username: 111   
+  password: 111
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err3_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err4_str = r#"
+mode: picomod
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err4_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err5_str = r#"
+mode: stateful
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err5_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err6_str = r#"
+mode: stateful
+state_provider: etcd2
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err6_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err7_str = r#"
+mode: stateful
+state_provider: etcd2
+etcd2_params:
+  prefix: /cartridge
+  lock_delay: 30
+  endpoints:
+    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.13:2379"
+    - "http://172.20.73.14:2379"
+  username: 111   
+  password: 111
+stateboard_params:
+  uri: "192.168.16.11:4401"
+  password: password
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err7_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err8_str = r#"
+mode: stateful
+state_provider: etcd2
+etcd2_params:
+  prefix: /cartridge
+  lock_delay: hudred
+  endpoints:
+    - "http://172.20.73.12:2379" 
+    - 100000
+  username: 111   
+  password: 111
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err8_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
+
+    let err9_str = r#"
+mode: stateful
+state_provider: stateboard
+stateboard_params:
+  uri: "192.168.16.11:4401"
+  password: 123
+"#;
+
+    let invalid_v1 = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidFailover>(err9_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(invalid_v1));
 }

@@ -1,0 +1,11 @@
+---
+source: src/task/vars/test.rs
+expression: uncolorize(vars)
+---
+
+  ansible_user: "Field 'ansible_user' must be a String"
+  ansible_password: "Field 'ansible_password' must be a String"
+  cartridge_cluster_cookie: "Field 'cartridge_cluster_cookie' must be a String"
+  cartridge_package_path: "Field 'cartridge_package_path' must be a String"
+  cartridge_bootstrap_vshard: "Field 'cartridge_bootstrap_vshard' must be a Bool"
+  cartridge_failover_params: "Field 'cartridge_failover_params' must be a Dict"

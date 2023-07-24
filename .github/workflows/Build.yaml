@@ -31,7 +31,7 @@ jobs:
     name: Build genin binary
     runs-on: [self-hosted, genin]
     container:
-      image: docker.binary.picodata.io/rust-builder-nightly:latest
+      image: docker.binary.picodata.io/rust-builder-stable:latest
     steps:
       - uses: actions/checkout@v3
       - name: Run make build

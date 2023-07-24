@@ -1,8 +1,13 @@
+use std::fmt;
+
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
-use super::flv::{Failover, FailoverVariants, Mode, StateProvider};
+use super::{
+    flv::{Failover, FailoverVariants, Mode, StateProvider},
+    AsError,
+};
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 /// Inventory vars with hardcoded important fields
@@ -72,6 +77,176 @@ impl Vars {
             ..self
         }
     }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct InvalidVars {
+    pub ansible_user: Value,
+    pub ansible_password: Value,
+    pub cartridge_app_name: Value,
+    pub cartridge_cluster_cookie: Value,
+    pub cartridge_package_path: Value,
+    pub cartridge_bootstrap_vshard: Value,
+    pub cartridge_failover_params: Value,
+    #[serde(default, flatten, skip_serializing_if = "IndexMap::is_empty")]
+    pub another_fields: Value,
+}
+
+impl fmt::Debug for InvalidVars {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.ansible_user {
+            Value::Null => {}
+            Value::String(ansible_user) => {
+                formatter.write_str("\n  ansible_user: ")?;
+                formatter.write_str(ansible_user.as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n  ansible_user: ")?;
+                formatter.write_str("Field 'ansible_user' must be a String".as_error().as_str())?;
+            }
+        }
+
+        match &self.ansible_password {
+            Value::Null => {}
+            Value::String(ansible_password) => {
+                formatter.write_str("\n  ansible_password: ")?;
+                formatter.write_str(ansible_password.as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n  ansible_password: ")?;
+                formatter.write_str(
+                    "Field 'ansible_password' must be a String"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        match &self.cartridge_cluster_cookie {
+            Value::Null => {}
+            Value::String(cartridge_cluster_cookie) => {
+                formatter.write_str("\n  cartridge_cluster_cookie: ")?;
+                formatter.write_str(cartridge_cluster_cookie.as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n  cartridge_cluster_cookie: ")?;
+                formatter.write_str(
+                    "Field 'cartridge_cluster_cookie' must be a String"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        match &self.cartridge_package_path {
+            Value::Null => {}
+            Value::String(cartridge_package_path) => {
+                formatter.write_str("\n  cartridge_package_path: ")?;
+                formatter.write_str(cartridge_package_path.as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n  cartridge_package_path: ")?;
+                formatter.write_str(
+                    "Field 'cartridge_package_path' must be a String"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        match &self.cartridge_bootstrap_vshard {
+            Value::Null => {}
+            Value::Bool(cartridge_bootstrap_vshard) => {
+                formatter.write_str("\n  cartridge_bootstrap_vshard: ")?;
+                formatter.write_str(cartridge_bootstrap_vshard.to_string().as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n  cartridge_bootstrap_vshard: ")?;
+                formatter.write_str(
+                    "Field 'cartridge_bootstrap_vshard' must be a Bool"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        match &self.cartridge_failover_params {
+            Value::Null => {}
+            Value::Mapping(cartridge_failover_params) => {
+                formatter.write_str("\n  cartridge_failover_params:")?;
+                for (key, item) in cartridge_failover_params {
+                    formatter
+                        .write_fmt(format_args!("\n  {}: ", key.as_str().unwrap_or_default()))?;
+                    print_value_recursive(formatter, "  ", item)?;
+                }
+            }
+            _ => {
+                formatter.write_str("\n  cartridge_failover_params: ")?;
+                formatter.write_str(
+                    "Field 'cartridge_failover_params' must be a Dict"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        match &self.another_fields {
+            Value::Null => {}
+            another_fields @ Value::Mapping(_) => {
+                print_value_recursive(formatter, "\n    ", another_fields)?;
+            }
+            _ => {
+                formatter.write_str("\n  another_fields: ")?;
+                formatter.write_str(
+                    "Field 'another_fields' must be a Mapping"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub fn print_value_recursive(
+    formatter: &mut fmt::Formatter<'_>,
+    offset: &str,
+    value: &Value,
+) -> fmt::Result {
+    match value {
+        Value::Null => {}
+        Value::Sequence(seq) => {
+            let new_offset = format!("{offset}  ");
+            for item in seq {
+                formatter.write_fmt(format_args!("{offset}- "))?;
+                print_value_recursive(formatter, &new_offset, item)?;
+            }
+        }
+        Value::Mapping(mapping) => {
+            let new_offset = format!("{offset}  ");
+            for (key, item) in mapping {
+                formatter.write_fmt(format_args!(
+                    "{}{}: ",
+                    offset,
+                    key.as_str().unwrap_or_default()
+                ))?;
+                print_value_recursive(formatter, &new_offset, item)?;
+            }
+        }
+        Value::Bool(b) => {
+            formatter.write_str(b.to_string().as_str())?;
+        }
+        Value::Number(n) => {
+            formatter.write_str(n.to_string().as_str())?;
+        }
+        Value::String(s) => {
+            formatter.write_str(s)?;
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
