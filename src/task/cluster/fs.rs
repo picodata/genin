@@ -17,7 +17,6 @@ use crate::{
 
 pub const CLUSTER_YAML: &str = "cluster.genin.yml";
 pub const INVENTORY_YAML: &str = "inventory.yml";
-pub const UPGRADE_YAML: &str = "upgrade.genin.yml";
 
 //TODO: remove it in next commits
 #[allow(unused)]
@@ -337,6 +336,3 @@ where
         }
     }
 }
-
-//#[cfg(test)]
-//mod test;

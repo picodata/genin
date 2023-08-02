@@ -1,0 +1,26 @@
+---
+source: src/task/cluster/hst/test.rs
+expression: hosts_v3
+---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.16.14
+      - name: server-5
+        config:
+          address: 192.168.16.15
+

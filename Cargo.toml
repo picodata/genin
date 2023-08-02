@@ -9,10 +9,13 @@ edition = "2021"
 serde = { version = "^1.0", features = ["derive", "serde_derive"]}
 serde_yaml = "^0.8"
 indexmap = { version = "^1.8", features = ["std","serde"] }
-clap = "4"
+clap = { version = "4", features = ["env"] }
 regex = "^1.5"
 env_logger = "^0.9"
 log = "^0.4.17"
 tabled = { version = "^0.10", features = ["color"]}
 insta =  { version = "1.31.0", features = ["yaml"]}
 strip-ansi-escapes = "0.1.1"
+serde_json = "1.0.103"
+sha256 = "1.2.2"
+thiserror = "1.0.44"

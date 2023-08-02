@@ -44,16 +44,289 @@ hosts:
           http_port: 8081
           binary_port: 3031
           address: 192.168.123.2
+        instances:
+          - name: l-n-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - logger
+              - notifier
+            cartridge_extra_env: {}
+            config:
+              http_port: 8081
+              binary_port: 3031
+            vars: {}
+          - name: op-t-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - output_processor
+              - task_runner
+            cartridge_extra_env: {}
+            config:
+              http_port: 8082
+              binary_port: 3032
+            vars: {}
+          - name: op-t-5
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - output_processor
+              - task_runner
+            cartridge_extra_env: {}
+            config:
+              http_port: 8083
+              binary_port: 3033
+            vars: {}
+          - name: c-ip-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - connector
+              - input_processor
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8084
+              binary_port: 3034
+            vars: {}
+          - name: sch-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - scheduler
+            cartridge_extra_env: {}
+            config:
+              http_port: 8085
+              binary_port: 3035
+            vars: {}
+          - name: storage-1-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8086
+              binary_port: 3036
+            vars: {}
+          - name: storage-2-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8087
+              binary_port: 3037
+            vars: {}
+          - name: storage-3-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8088
+              binary_port: 3038
+            vars: {}
       - name: tdg-2
         config:
           http_port: 8081
           binary_port: 3031
           address: 192.168.123.3
+        instances:
+          - name: l-n-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - logger
+              - notifier
+            cartridge_extra_env: {}
+            config:
+              http_port: 8081
+              binary_port: 3031
+            vars: {}
+          - name: op-t-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - output_processor
+              - task_runner
+            cartridge_extra_env: {}
+            config:
+              http_port: 8082
+              binary_port: 3032
+            vars: {}
+          - name: c-ip-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - connector
+              - input_processor
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8083
+              binary_port: 3033
+            vars: {}
+          - name: c-ip-4
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - connector
+              - input_processor
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8084
+              binary_port: 3034
+            vars: {}
+          - name: sch-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - scheduler
+            cartridge_extra_env: {}
+            config:
+              http_port: 8085
+              binary_port: 3035
+            vars: {}
+          - name: storage-1-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8086
+              binary_port: 3036
+            vars: {}
+          - name: storage-2-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8087
+              binary_port: 3037
+            vars: {}
+          - name: storage-3-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8088
+              binary_port: 3038
+            vars: {}
       - name: tdg-3
         config:
           http_port: 8081
           binary_port: 3031
           address: 192.168.123.4
+        instances:
+          - name: op-t-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - output_processor
+              - task_runner
+            cartridge_extra_env: {}
+            config:
+              http_port: 8081
+              binary_port: 3031
+            vars: {}
+          - name: op-t-4
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - output_processor
+              - task_runner
+            cartridge_extra_env: {}
+            config:
+              http_port: 8082
+              binary_port: 3032
+            vars: {}
+          - name: c-ip-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - connector
+              - input_processor
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8083
+              binary_port: 3033
+            vars: {}
+          - name: c-ip-5
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - connector
+              - input_processor
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8084
+              binary_port: 3034
+            vars: {}
+          - name: storage-1-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8085
+              binary_port: 3035
+            vars: {}
+          - name: storage-2-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8086
+              binary_port: 3036
+            vars: {}
+          - name: storage-3-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8087
+              binary_port: 3037
+            vars: {}
 failover:
   mode: stateful
   state_provider: etcd2

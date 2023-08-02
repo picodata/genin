@@ -1,4 +1,7 @@
 ---
+source: src/task/state/test.rs
+expression: inventory
+---
 all:
   vars:
     ansible_user: ansible
@@ -39,6 +42,14 @@ all:
       config:
         advertise_uri: "192.168.16.12:3032"
         http_port: 8082
+    storage-1-3:
+      config:
+        advertise_uri: "192.168.16.13:3031"
+        http_port: 8081
+    storage-2-3:
+      config:
+        advertise_uri: "192.168.16.13:3032"
+        http_port: 8082
   children:
     router-1-replicaset:
       vars:
@@ -56,22 +67,26 @@ all:
         failover_priority:
           - storage-1-1
           - storage-1-2
+          - storage-1-3
         roles:
           - storage
       hosts:
         storage-1-2: ~
         storage-1-1: ~
+        storage-1-3: ~
     storage-2-replicaset:
       vars:
         replicaset_alias: storage-2
         failover_priority:
           - storage-2-1
           - storage-2-2
+          - storage-2-3
         roles:
           - storage
       hosts:
         storage-2-2: ~
         storage-2-1: ~
+        storage-2-3: ~
     server-1:
       vars:
         ansible_host: 192.168.16.11
@@ -86,3 +101,10 @@ all:
       hosts:
         storage-1-1: ~
         storage-2-1: ~
+    server-3:
+      vars:
+        ansible_host: 192.168.16.13
+      hosts:
+        storage-1-3: ~
+        storage-2-3: ~
+

@@ -32,3 +32,5 @@ node_modules
 ./*.genin.yml
 ./*.genin.yaml
 !/docs/examples/*
+/tests/.*
+.geninstate

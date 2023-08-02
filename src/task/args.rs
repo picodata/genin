@@ -80,6 +80,10 @@ pub(super) fn read() -> ArgMatches {
                         .short('q')
                         .action(ArgAction::SetTrue)
                         .help("do not print table and cluster yaml"),
+                    Arg::new("export-state")
+                        .long("export-state")
+                        .action(ArgAction::Set)
+                        .help("export the build state"),
                 ]),
             Command::new("init")
                 .about("Init genin and create cluster.genin.yaml configuration")
@@ -209,7 +213,6 @@ pub(super) fn read() -> ArgMatches {
                     Arg::new("old")
                         .long("old")
                         .action(ArgAction::Set)
-                        .required(true)
                         .help(
                             "Absolute or relative path of the file with \
                             the description of the cluster to be generated",
@@ -258,17 +261,32 @@ pub(super) fn read() -> ArgMatches {
                         .long("failover-mode")
                         .short('m')
                         .action(ArgAction::Set)
+                        .default_value("stateful")
                         .help("(string): failover mode (statefull, eventual, disabled)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')
                         .action(ArgAction::Set)
+                        .default_value("stateboard")
                         .help("(string): failover state provider"),
                     Arg::new("quiet")
                         .long("quiet")
                         .short('q')
                         .action(ArgAction::SetTrue)
                         .help("do not print table and cluster yaml"),
+                    Arg::new("export-state")
+                        .long("export-state")
+                        .action(ArgAction::Set)
+                        .help("export the upgrade state with all distribution features"),
+                    Arg::new("state-dir")
+                        .long("state-dir")
+                        .env("GENIN_STATE_DIR")
+                        .action(ArgAction::Set)
+                        .help("override .geninstate directory location"),
+                    Arg::new("from-latest-state")
+                        .long("from-latest-state")
+                        .action(ArgAction::SetTrue)
+                        .help("make upgrade from latest instead of a config file"),
                 ]),
         ])
         .get_matches()

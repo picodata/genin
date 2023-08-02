@@ -9,6 +9,37 @@ use crate::task::{
 use super::*;
 
 #[test]
+fn default_cluster() {
+    let args = Command::new("init")
+        .arg(
+            Arg::new("failover-mode")
+                .long("failover-mode")
+                .short('m')
+                .action(ArgAction::Set)
+                .default_value("stateful")
+                .help("(string): failover mode (statefull, eventual, disabled)"),
+        )
+        .arg(
+            Arg::new("failover-state-provider")
+                .long("failover-state-provider")
+                .short('F')
+                .action(ArgAction::Set)
+                .default_value("stateboard")
+                .help("(string): failover state provider"),
+        )
+        .try_get_matches_from(vec!["init"])
+        .unwrap();
+
+    let cluster = Cluster::try_from(&args)
+        .unwrap()
+        .clear_instances()
+        .as_text_with_comments()
+        .unwrap();
+
+    insta::assert_display_snapshot!(cluster);
+}
+
+#[test]
 /// ClusterV2.hosts string -> HostV2 -> ClusterV2.hosts string
 fn cluster_hosts_v2_serde() {
     let hosts_v2_str: String = r#"---
@@ -214,50 +245,6 @@ vars:
 #[test]
 /// Args(only init) -> Cluster
 fn cluster_v2_from_args() {
-    let target: String = r#"---
-topology:
-  - name: router
-    replicasets_count: 1
-    roles:
-      - router
-      - failover-coordinator
-  - name: storage
-    replicasets_count: 2
-    replication_factor: 2
-    roles:
-      - storage
-hosts:
-  - name: datacenter-1
-    config:
-      http_port: 8081
-      binary_port: 3031
-    hosts:
-      - name: server-1
-        config:
-          http_port: 8081
-          binary_port: 3031
-          address: 192.168.16.11
-      - name: server-2
-        config:
-          http_port: 8081
-          binary_port: 3031
-          address: 192.168.16.12
-failover:
-  mode: stateful
-  state_provider: stateboard
-  stateboard_params:
-    uri: "192.168.16.11:4401"
-    password: password
-vars:
-  ansible_user: ansible
-  ansible_password: ansible
-  cartridge_app_name: myapp
-  cartridge_cluster_cookie: myapp-cookie
-  cartridge_package_path: /tmp/myapp.rpm
-  cartridge_bootstrap_vshard: true
-"#
-    .into();
-
     let cluster = Cluster::try_from(
         &Command::new("genin")
             .arg(
@@ -275,11 +262,10 @@ vars:
             .try_get_matches_from(vec!["genin"])
             .unwrap(),
     )
-    .unwrap();
+    .unwrap()
+    .clear_instances();
 
-    let cluster_str = serde_yaml::to_string(&cluster).unwrap();
-
-    assert_eq!(cluster_str, target);
+    insta::assert_yaml_snapshot!(cluster);
 }
 
 /// read string ClusterV1 -> serialize string ClusterV2 == ClusterV2 model
@@ -505,7 +491,9 @@ all:
 
     let inventory: Inventory = serde_yaml::from_str(&inventory_str).unwrap();
 
-    let cluster_v2 = Cluster::try_from(&Some(inventory)).unwrap();
+    let cluster_v2 = Cluster::try_from(&Some(inventory))
+        .unwrap()
+        .clear_instances();
 
     insta::assert_yaml_snapshot!(cluster_v2);
 }
@@ -607,9 +595,9 @@ vars:
         .into();
 
     let old_cluster: Cluster = serde_yaml::from_str(&old_cluster_str).unwrap();
-    let new_cluster: Cluster = serde_yaml::from_str(&new_cluster_str).unwrap();
+    let mut new_cluster: Cluster = serde_yaml::from_str(&new_cluster_str).unwrap();
 
-    let upgraded = old_cluster.try_upgrade(&new_cluster).unwrap();
+    let upgraded = old_cluster.merge(&mut new_cluster).unwrap();
 
     println!("{}", upgraded);
 
@@ -715,4 +703,3 @@ topology:
 
     insta::assert_display_snapshot!(uncolorize(result));
 }
-

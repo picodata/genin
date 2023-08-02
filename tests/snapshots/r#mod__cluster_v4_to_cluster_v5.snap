@@ -1,0 +1,187 @@
+---
+source: tests/mod.rs
+expression: cluster_v4_to_cluster_v5
+---
++-------------+-------------+
+|          cluster          |
++-------------+-------------+
+|       datacenter-1        |
++-------------+-------------+
+|  server-1   |  server-2   |
++-------------+-------------+
+|  router-1   |  router-2   |
+|  8081/3031  |  8081/3031  |
++-------------+-------------+
+| storage-1-1 | storage-1-2 |
+| 8082/3032   | 8082/3032   |
++-------------+-------------+
+| storage-2-1 | storage-2-2 |
+| 8083/3033   | 8083/3033   |
++-------------+-------------+
+| storage-3-1 | storage-3-2 |
+| 8084/3034   | 8084/3034   |
++-------------+-------------+
+| storage-4-1 | storage-4-2 |
+| 8085/3035   | 8085/3035   |
++-------------+-------------+
+
+---
+all:
+  vars:
+    ansible_user: vagrant
+    ansible_password: vagrant
+    cartridge_app_name: new-app
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: etcd2
+      etcd2_params:
+        prefix: some/prefix
+        lock_delay: 30
+        endpoints:
+          - "http://192.168.16.11:2379"
+          - "http://192.168.16.12:2379"
+          - "http://192.168.16.11:2379"
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+    storage-1-1:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: 8082
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-2-1:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: 8083
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-3-1:
+      config:
+        advertise_uri: "192.168.16.11:3034"
+        http_port: 8084
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-4-1:
+      config:
+        advertise_uri: "192.168.16.11:3035"
+        http_port: 8085
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    router-2:
+      config:
+        advertise_uri: "192.168.16.12:3031"
+        http_port: 8081
+    storage-1-2:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: 8082
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-2-2:
+      config:
+        advertise_uri: "192.168.16.12:3033"
+        http_port: 8083
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-3-2:
+      config:
+        advertise_uri: "192.168.16.12:3034"
+        http_port: 8084
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+    storage-4-2:
+      config:
+        advertise_uri: "192.168.16.12:3035"
+        http_port: 8085
+        METRICS_PATH: /health/metrics
+        PROMETHEUS_PORT: "9999"
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        failover_priority:
+          - storage-1-1
+          - storage-1-2
+        roles:
+          - storage
+      hosts:
+        storage-1-1: ~
+        storage-1-2: ~
+    storage-2-replicaset:
+      vars:
+        replicaset_alias: storage-2
+        failover_priority:
+          - storage-2-1
+          - storage-2-2
+        roles:
+          - storage
+      hosts:
+        storage-2-1: ~
+        storage-2-2: ~
+    storage-3-replicaset:
+      vars:
+        replicaset_alias: storage-3
+        failover_priority:
+          - storage-3-1
+          - storage-3-2
+        roles:
+          - storage
+      hosts:
+        storage-3-1: ~
+        storage-3-2: ~
+    storage-4-replicaset:
+      vars:
+        replicaset_alias: storage-4
+        failover_priority:
+          - storage-4-1
+          - storage-4-2
+        roles:
+          - storage
+      hosts:
+        storage-4-1: ~
+        storage-4-2: ~
+    router-2-replicaset:
+      vars:
+        replicaset_alias: router-2
+        failover_priority:
+          - router-2
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-2: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        storage-1-1: ~
+        storage-2-1: ~
+        storage-3-1: ~
+        storage-4-1: ~
+    server-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        router-2: ~
+        storage-1-2: ~
+        storage-2-2: ~
+        storage-3-2: ~
+        storage-4-2: ~
+

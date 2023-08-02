@@ -1,9 +1,13 @@
 ---
+source: tests/mod.rs
+expression: generated
+---
+---
 # List of replicasets as an array
 topology:
   - name: router
     # How many masters we want, by default equal 1
-    replicasets_count: 2
+    replicasets_count: 1
     # Array of roles for this instance
     roles:
       - router
@@ -71,3 +75,4 @@ vars:
   cartridge_package_path: /tmp/myapp.rpm
   # Indicates if vshard must be bootstrapped on the cluster
   cartridge_bootstrap_vshard: true
+

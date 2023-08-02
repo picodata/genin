@@ -4,6 +4,7 @@ use log::{debug, error, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 use serde_yaml::Value;
 use std::{fmt::Display, net::SocketAddr};
+use thiserror::Error;
 
 use crate::{
     error::{GeninError, GeninErrorKind},
@@ -41,7 +42,7 @@ impl Default for Failover {
 }
 
 impl<'a> TryFrom<&'a ArgMatches> for Failover {
-    type Error = GeninError;
+    type Error = FailoverError;
 
     fn try_from(args: &ArgMatches) -> Result<Self, Self::Error> {
         match (
@@ -76,11 +77,22 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
                 state_provider: StateProvider::try_from(arg)?,
                 failover_variants: FailoverVariants::try_from(arg)?,
             }),
-            _ => Err(GeninError::new(
-                GeninErrorKind::ArgsError,
-                "Unknown failover options",
+            _ => Err(FailoverError::InvalidParams(
+                "Unknown failover options".into(),
             )),
         }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum FailoverError {
+    #[error("invalid parameters {0}")]
+    InvalidParams(String),
+}
+
+impl From<String> for FailoverError {
+    fn from(value: String) -> Self {
+        Self::InvalidParams(value)
     }
 }
 
@@ -210,15 +222,15 @@ impl Default for StateProvider {
 }
 
 impl<'s> TryFrom<&'s str> for StateProvider {
-    type Error = GeninError;
+    type Error = String;
 
     fn try_from(s: &'s str) -> Result<Self, Self::Error> {
         match s.to_lowercase().as_str() {
             "etcd2" => Ok(Self::ETCD2),
             "stateboard" => Ok(Self::Stateboard),
-            invalid => Err(GeninError::new(
-                GeninErrorKind::ArgsError,
-                format!("Unknown failover-state-provider argument {}", invalid).as_str(),
+            invalid => Err(format!(
+                "Unknown failover-state-provider argument {}",
+                invalid
             )),
         }
     }
@@ -246,7 +258,7 @@ impl Default for FailoverVariants {
 }
 
 impl<'a> TryFrom<&'a str> for FailoverVariants {
-    type Error = GeninError;
+    type Error = String;
 
     fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         match s.to_lowercase().as_str() {
@@ -254,9 +266,9 @@ impl<'a> TryFrom<&'a str> for FailoverVariants {
                 StateboardParams::default(),
             )),
             "etcd2" => Ok(FailoverVariants::ETCD2Variant(ETCD2Params::default())),
-            invalid => Err(GeninError::new(
-                GeninErrorKind::ArgsError,
-                format!("invalid value `failover-state-provider` `{}`", invalid).as_str(),
+            invalid => Err(format!(
+                "invalid value `failover-state-provider` `{}`",
+                invalid
             )),
         }
     }
