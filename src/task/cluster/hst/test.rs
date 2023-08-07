@@ -9,10 +9,7 @@ use crate::task::{
             v2::{Address, HostV2, HostV2Config, WithHosts},
             view::{View, FG_BLUE, FG_CYAN, FG_GREEN, FG_WHITE},
         },
-        ins::{
-            v2::{InstanceV2, InstanceV2Config, Instances},
-            Role,
-        },
+        ins::v2::{InstanceV2, InstanceV2Config, Instances},
         name::Name,
         topology::Topology,
         HostV2Helper,
@@ -304,7 +301,7 @@ hosts:
 
     assert_eq!(hosts_v2.size(), 0);
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     assert_eq!(hosts_v2.size(), 10);
 }
@@ -549,7 +546,9 @@ hosts:
         },
     ]);
 
-    host.spread()
+    host.spread();
+
+    host
 }
 
 #[test]
@@ -643,112 +642,27 @@ fn hosts_v2_spreading() {
                 .with_http_port(25000)
                 .with_binary_port(26000),
         ])
+        .with_add_queue(
+            instances
+                .iter()
+                .map(|instance| (instance.name.clone(), instance.clone()))
+                .collect(),
+        )
+        .with_delete_queue(
+            instances
+                .iter()
+                .map(|instance| (instance.name.clone(), instance.clone()))
+                .collect(),
+        )
         .with_instances(instances)
         .with_config(HostV2Config::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     println!("{}", &hosts_v2);
 
-    let mut hosts_v2_model = HostV2::from("Cluster")
-        .with_hosts(vec![
-            HostV2::from("Server-1").with_instances(Instances::from(vec![
-                InstanceV2 {
-                    name: Name::from("router").with_index(1),
-                    stateboard: None,
-                    weight: None,
-                    roles: vec![Role::router(), Role::failover_coordinator()],
-                    failure_domains: Vec::new(),
-                    cartridge_extra_env: IndexMap::new(),
-                    config: InstanceV2Config {
-                        http_port: Some(8081),
-                        binary_port: Some(3031),
-                        ..InstanceV2Config::default()
-                    },
-                    vars: IndexMap::default(),
-                    view: View {
-                        color: FG_WHITE,
-                        alignment: Alignment::left(),
-                    },
-                },
-                InstanceV2 {
-                    name: Name::from("storage").with_index(1).with_index(2),
-                    stateboard: None,
-                    weight: None,
-                    roles: vec![Role::storage()],
-                    failure_domains: Vec::new(),
-                    cartridge_extra_env: IndexMap::new(),
-                    config: InstanceV2Config {
-                        http_port: Some(8082),
-                        binary_port: Some(3032),
-                        ..InstanceV2Config::default()
-                    },
-                    vars: IndexMap::default(),
-                    view: View {
-                        color: FG_BLUE,
-                        alignment: Alignment::left(),
-                    },
-                },
-                InstanceV2 {
-                    name: Name::from("storage").with_index(2).with_index(2),
-                    stateboard: None,
-                    weight: None,
-                    roles: vec![Role::storage()],
-                    failure_domains: Vec::new(),
-                    cartridge_extra_env: IndexMap::new(),
-                    config: InstanceV2Config {
-                        http_port: Some(8083),
-                        binary_port: Some(3033),
-                        ..InstanceV2Config::default()
-                    },
-                    vars: IndexMap::default(),
-                    view: View {
-                        color: FG_CYAN,
-                        alignment: Alignment::left(),
-                    },
-                },
-            ])),
-            HostV2::from("Server-2")
-                .with_http_port(25000)
-                .with_binary_port(26000)
-                .with_instances(Instances::from(vec![
-                    InstanceV2 {
-                        name: Name::from("storage").with_index(1).with_index(1),
-                        stateboard: None,
-                        weight: None,
-                        roles: vec![Role::storage()],
-                        failure_domains: Vec::new(),
-                        cartridge_extra_env: IndexMap::new(),
-                        config: InstanceV2Config::default(),
-                        vars: IndexMap::default(),
-                        view: View {
-                            color: FG_BLUE,
-                            alignment: Alignment::left(),
-                        },
-                    },
-                    InstanceV2 {
-                        name: Name::from("storage").with_index(2).with_index(1),
-                        stateboard: None,
-                        weight: None,
-                        roles: vec![Role::storage()],
-                        failure_domains: Vec::new(),
-                        cartridge_extra_env: IndexMap::new(),
-                        config: InstanceV2Config::default(),
-                        vars: IndexMap::default(),
-                        view: View {
-                            color: FG_CYAN,
-                            alignment: Alignment::left(),
-                        },
-                    },
-                ])),
-        ])
-        .with_config(HostV2Config::from((8081, 3031)))
-        .with_address(Address::from([192, 168, 123, 11]));
-
-    hosts_v2_model = hosts_v2_model.spread();
-
-    assert_eq!(hosts_v2, hosts_v2_model);
+    insta::assert_debug_snapshot!(hosts_v2);
 }
 
 #[test]
@@ -793,7 +707,7 @@ fn hosts_v2_print_table() {
         .with_config(HostV2Config::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     println!("{}", hosts_v2);
 
@@ -852,7 +766,7 @@ fn hosts_v2_spread_stateboard() {
         view: View::default(),
     });
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     assert_eq!(
         hosts_v2
@@ -871,4 +785,156 @@ fn hosts_v2_spread_stateboard() {
             .name,
         Name::from("stateboard")
     )
+}
+
+#[test]
+fn merge_with_increasig_hosts() {
+    let hosts_old_str = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.32.101
+      - name: server-2
+        config:
+          address: 192.168.32.102
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.64.101
+      - name: server-5
+        config:
+          address: 192.168.64.102
+"#;
+
+    let mut hosts_old = serde_yaml::from_str::<HostV2>(hosts_old_str).unwrap();
+
+    let hosts_new_str = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+      - name: server-3
+        config:
+          address: 192.168.16.13
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.16.14
+      - name: server-5
+        config:
+          address: 192.168.16.15
+      - name: server-6
+        config:
+          address: 192.168.16.16
+  - name: dc-3
+    hosts:
+      - name: server-7
+        config:
+          address: 192.168.16.17
+      - name: server-8
+        config:
+          address: 192.168.16.18
+      - name: server-9
+        config:
+          address: 192.168.16.19
+"#;
+
+    let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
+
+    HostV2::merge(&mut hosts_old, &mut hosts_new);
+
+    insta::assert_yaml_snapshot!(hosts_old);
+}
+
+#[test]
+fn merge_with_decreasing_hosts() {
+    let hosts_old_str = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+      - name: server-3
+        config:
+          address: 192.168.16.13
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.16.14
+      - name: server-5
+        config:
+          address: 192.168.16.15
+      - name: server-6
+        config:
+          address: 192.168.16.16
+  - name: dc-3
+    hosts:
+      - name: server-7
+        config:
+          address: 192.168.16.17
+      - name: server-8
+        config:
+          address: 192.168.16.18
+      - name: server-9
+        config:
+          address: 192.168.16.19
+"#;
+
+    let mut hosts_old = serde_yaml::from_str::<HostV2>(hosts_old_str).unwrap();
+
+    let hosts_new_str = r#"---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.32.101
+      - name: server-2
+        config:
+          address: 192.168.32.102
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.64.101
+      - name: server-5
+        config:
+          address: 192.168.64.102
+"#;
+
+    let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
+
+    HostV2::merge(&mut hosts_old, &mut hosts_new);
+
+    insta::assert_yaml_snapshot!(hosts_old);
 }

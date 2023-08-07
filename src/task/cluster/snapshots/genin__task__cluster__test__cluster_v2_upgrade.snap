@@ -1,6 +1,6 @@
 ---
 source: src/task/cluster/test.rs
-expression: "String::from_utf8(strip_ansi_escapes::strip(upgraded.to_string()).unwrap()).unwrap()"
+expression: uncolorize(upgraded)
 ---
 +-------------+-------------+
 |          cluster          |

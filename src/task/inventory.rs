@@ -1,9 +1,13 @@
 use std::convert::TryFrom;
+use std::io;
+use std::path::PathBuf;
 
+use clap::ArgMatches;
 use indexmap::{IndexMap, IndexSet};
 use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+use thiserror::Error;
 
 use crate::task::cluster::hst::v2::Address;
 use crate::task::cluster::hst::v2::HostV2;
@@ -17,6 +21,8 @@ use crate::{
     error::{GeninError, GeninErrorKind},
     task::cluster::ins::Role,
 };
+
+use super::utils::create_file_or_copy;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Inventory {
@@ -32,6 +38,103 @@ impl<'a> TryFrom<&'a [u8]> for Inventory {
                 GeninErrorKind::Deserialization,
                 format!("Deserizalization error {}", error).as_str(),
             )
+        })
+    }
+}
+
+impl<'a> TryFrom<&'a Cluster> for Inventory {
+    type Error = InventoryError;
+
+    fn try_from(cluster: &'a Cluster) -> Result<Self, Self::Error> {
+        let cl_hosts = cluster.hosts.lower_level_hosts();
+
+        let vars = cluster.vars.clone().with_failover(cluster.failover.clone());
+
+        Ok(Self {
+            all: InventoryParts {
+                vars,
+                // 1. iterate over instances in each host
+                // 2. collect all instances as inventory hosts
+                hosts: cl_hosts
+                    .iter()
+                    .flat_map(|host| {
+                        debug!(
+                            "inserting values from {} to final inventory",
+                            host.name.to_string()
+                        );
+                        // Iterate over all instances
+                        host.instances.iter().map(|instance| {
+                            (
+                                instance.name.clone(),
+                                InventoryHost {
+                                    stateboard: instance.stateboard.unwrap_or(false),
+                                    zone: instance.config.zone.clone(),
+                                    cartridge_extra_env: instance.cartridge_extra_env.clone(),
+                                    config: InvHostConfig::from((instance, *host)),
+                                    vars: instance.vars.clone(),
+                                },
+                            )
+                        })
+                    })
+                    .collect(),
+                children: cl_hosts
+                    .iter()
+                    .try_fold(IndexMap::new(), |mut accum, host| {
+                        host.instances
+                            .iter()
+                            .filter(|instance| !instance.is_stateboard())
+                            .try_for_each(|instance| {
+                                let entry = accum
+                                    .entry(instance.name.as_replicaset_name())
+                                    .or_insert(Child::Replicaset {
+                                        vars: ReplicasetVars {
+                                            replicaset_alias: instance
+                                                .name
+                                                .as_replicaset_alias()
+                                                .to_string(),
+                                            failover_priority: vec![instance.name.to_string()]
+                                                .into_iter()
+                                                .collect(),
+                                            roles: instance.roles.clone(),
+                                            all_rw: instance.config.all_rw,
+                                            weight: instance.weight,
+                                            vshard_group: instance.config.vshard_group.clone(),
+                                        },
+                                        hosts: vec![(instance.name.to_string(), Value::Null)]
+                                            .into_iter()
+                                            .collect(),
+                                    });
+                                entry.extend_failover_priority(instance.name.to_string())?;
+                                entry.insert_host(instance.name.to_string(), Value::Null);
+                                Ok::<(), InventoryError>(())
+                            })?;
+                        Ok::<_, InventoryError>(accum)
+                    })?
+                    .into_iter()
+                    .chain(cl_hosts.iter().fold(IndexMap::new(), |mut accum, host| {
+                        accum
+                            .entry(host.name.clone())
+                            .or_insert(Child::Host {
+                                vars: HostVars {
+                                    ansible_host: host.config.address(),
+                                    additional_config: host.config.additional_config.clone(),
+                                },
+                                hosts: host
+                                    .instances
+                                    .iter()
+                                    .map(|instance| (instance.name.to_string(), Value::Null))
+                                    .collect(),
+                            })
+                            .extend_hosts(
+                                host.instances
+                                    .iter()
+                                    .map(|instance| (instance.name.to_string(), Value::Null))
+                                    .collect(),
+                            );
+                        accum
+                    }))
+                    .collect(),
+            },
         })
     }
 }
@@ -139,6 +242,33 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
             },
         })
     }
+}
+
+impl Inventory {
+    pub fn write(&self, args: &ArgMatches) -> Result<(), InventoryError> {
+        let path = PathBuf::from(
+            args.try_get_one::<String>("output")
+                .unwrap_or_default()
+                .unwrap_or(&"inventory.yml".into())
+                .to_owned(),
+        );
+
+        let file = create_file_or_copy(path, args.get_flag("force"))?;
+
+        serde_yaml::to_writer(file, &self)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum InventoryError {
+    #[error("unexpected io error")]
+    Io(#[from] io::Error),
+    #[error("serde error")]
+    Serde(#[from] serde_yaml::Error),
+    #[error("genin error")]
+    Genin(#[from] GeninError),
 }
 
 impl Validate for Inventory {

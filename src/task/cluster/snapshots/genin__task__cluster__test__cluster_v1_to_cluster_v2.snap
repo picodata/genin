@@ -26,11 +26,105 @@ hosts:
           http_port: 8081
           binary_port: 3031
           address: 192.168.16.11
+        instances:
+          - name: router-1
+            stateboard: ~
+            weight: ~
+            failure_domains: []
+            roles:
+              - router
+              - api
+              - failover-coordinator
+            cartridge_extra_env: {}
+            config:
+              http_port: 8081
+              binary_port: 3031
+            vars: {}
+          - name: storage-1-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8082
+              binary_port: 3032
+            vars: {}
+          - name: storage-2-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8083
+              binary_port: 3033
+            vars: {}
+          - name: storage-2-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8084
+              binary_port: 3034
+            vars: {}
+          - name: stateboard
+            stateboard: true
+            weight: ~
+            failure_domains:
+              - server-1
+            roles: []
+            cartridge_extra_env: {}
+            config:
+              http_port: 8085
+              binary_port: 3035
+              listen: "192.168.16.11:4401"
+              password: password
+            vars: {}
       - name: server-2
         config:
           http_port: 8081
           binary_port: 3031
           address: 192.168.16.12
+        instances:
+          - name: storage-1-1
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8081
+              binary_port: 3031
+            vars: {}
+          - name: storage-1-3
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8082
+              binary_port: 3032
+            vars: {}
+          - name: storage-2-2
+            stateboard: ~
+            weight: 10
+            failure_domains: []
+            roles:
+              - storage
+            cartridge_extra_env: {}
+            config:
+              http_port: 8083
+              binary_port: 3033
+            vars: {}
 failover:
   mode: stateful
   state_provider: stateboard

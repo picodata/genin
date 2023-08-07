@@ -14,7 +14,7 @@ use crate::task::cluster::ins::Role;
 use crate::task::cluster::name::Name;
 use crate::task::inventory::{InvHostConfig, InventoryHost};
 
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Instances(Vec<InstanceV2>);
 
 impl From<Vec<InstanceV2>> for Instances {
@@ -82,6 +82,24 @@ impl Instances {
     {
         self.0.retain(f)
     }
+
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+
+    pub fn extend<I: IntoIterator<Item = InstanceV2>>(&mut self, iter: I) {
+        self.0.extend(iter)
+    }
+}
+
+impl IntoIterator for Instances {
+    type Item = InstanceV2;
+
+    type IntoIter = std::vec::IntoIter<InstanceV2>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -105,7 +123,6 @@ pub struct Replicaset {
     pub view: View,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
 /// Single view, replicaset member, host in final inventory
 ///
 /// For example, such a topology unit will have two instances:
@@ -150,6 +167,7 @@ pub struct Replicaset {
 ///     }
 /// ]
 /// ```
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InstanceV2 {
     /// Instance name with replicaset number and the index of the instance in the replicaset
     pub name: Name,
@@ -163,6 +181,7 @@ pub struct InstanceV2 {
     pub cartridge_extra_env: IndexMap<String, Value>,
     pub config: InstanceV2Config,
     pub vars: IndexMap<String, Value>,
+    #[serde(skip)]
     pub view: View,
 }
 

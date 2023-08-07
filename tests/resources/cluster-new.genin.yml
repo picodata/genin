@@ -3,7 +3,7 @@
 topology:
   - name: router
     # How many masters we want, by default equal 1
-    replicasets_count: 2
+    replicasets_count: 3
     # Array of roles for this instance
     roles:
       - router
@@ -12,10 +12,13 @@ topology:
     # How many masters we want, by default equal 1
     replicasets_count: 2
     # Number of replicas in replicaset, default 0
-    replication_factor: 2
+    replication_factor: 3
     # Array of roles for this instance
     roles:
       - storage
+    config:
+      DISABLE_METRICS: "true"
+
 # List of regions, datacenters, and servers
 hosts:
   - name: datacenter-1
@@ -45,26 +48,37 @@ hosts:
           binary_port: 3031
           # Host or instance address (maybe IP or URI)
           address: 192.168.16.12
+      - name: server-3
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.13
 # Failover management options
 failover:
   # Failover mode (stateful, eventual, disabled)
   mode: stateful
   # What is serve failover (stateboard, stateful)
-  state_provider: stateboard
+  state_provider: etcd2
   # Params for chosen in state_provider failover type
-  stateboard_params:
-    # Uri on which the stateboard will be available
-    uri: "192.168.16.11:4401"
-    # Stateboard password
-    password: password
+  etcd2_params:
+    prefix: some/prefix
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.16.11:2379"
+      - "http://192.168.16.12:2379"
+      - "http://192.168.16.13:2379"
 # Vars similar to those configured in the cartridge inventory
 vars:
   # Username under which the ansible will connect to the servers
-  ansible_user: ansible
+  ansible_user: vagrant
   # Ansible user password
-  ansible_password: ansible
+  ansible_password: vagrant
   # Application name
-  cartridge_app_name: myapp
+  cartridge_app_name: new-app
   # Cookie for connecting to the administrative console of the instances
   cartridge_cluster_cookie: myapp-cookie
   # Path to the application package

@@ -1,5 +1,5 @@
-use std::fmt::Display;
 use std::error::Error as StdError;
+use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GeninErrorKind {
@@ -10,7 +10,6 @@ pub enum GeninErrorKind {
     Serialization,
     UnknownFailureDomain,
     NotApplicable,
-    IO,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,4 +34,3 @@ impl GeninError {
         }
     }
 }
-
