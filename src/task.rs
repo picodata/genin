@@ -105,7 +105,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 State::from_latest(args)?.into()
             } else {
                 match args.get_one::<String>("old") {
-                    Some(old_path) if old_path.ends_with(".json") => {
+                    Some(old_path) if old_path.ends_with(".tgz") => {
                         State::try_from(&PathBuf::from(old_path))?.into()
                     }
                     Some(old_path) => Cluster::try_from(&PathBuf::from(old_path))?,

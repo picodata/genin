@@ -1,11 +1,12 @@
 use std::{
     fmt::Display,
     fs::{create_dir_all, File},
-    io,
+    io::{self, Read, Write},
     path::PathBuf,
 };
 
 use clap::ArgMatches;
+use flate2::{read, write::GzEncoder, Compression};
 use serde::{Deserialize, Serialize};
 use sha256::{digest, try_digest, TrySha256Digest};
 use thiserror::Error;
@@ -54,7 +55,12 @@ impl<'a> TryFrom<&'a PathBuf> for State {
 
     fn try_from(path: &'a PathBuf) -> Result<Self, Self::Error> {
         let file = File::open(path)?;
-        Ok(serde_json::from_reader(file)?)
+
+        let mut buffer = Vec::new();
+        let mut decoder = read::GzDecoder::new(file);
+        decoder.read_to_end(&mut buffer)?;
+
+        Ok(serde_json::from_slice(&buffer)?)
     }
 }
 
@@ -83,26 +89,30 @@ impl State {
         }
 
         self.path = path.to_string();
-
-        serde_json::to_writer(File::create(path)?, self).unwrap();
+        let mut encoder = GzEncoder::new(File::create(path)?, Compression::default());
+        encoder.write_all(&serde_json::to_vec(self)?)?;
 
         Ok(())
     }
 
     pub fn dump_by_uid(&mut self, state_dir: &str) -> Result<(), io::Error> {
-        self.dump_by_path(&format!("{state_dir}/{}.json", &self.uid))
+        self.dump_by_path(&format!("{state_dir}/{}.tgz", &self.uid))
     }
 
     pub fn from_latest(args: &ArgMatches) -> Result<Self, StateError> {
         let path = format!(
-            "{}/latest.json",
+            "{}/latest.tgz",
             args.get_one::<String>("state-dir")
                 .cloned()
                 .unwrap_or(".geninstate".into())
         );
         let file = File::open(&path)?;
 
-        let mut state = serde_json::from_reader::<_, State>(file).map_err(StateError::from)?;
+        let mut buffer = Vec::new();
+        let mut decoder = read::GzDecoder::new(file);
+        decoder.read_to_end(&mut buffer)?;
+
+        let mut state: State = serde_json::from_slice(&buffer)?;
         state.path = path;
 
         Ok(state)
