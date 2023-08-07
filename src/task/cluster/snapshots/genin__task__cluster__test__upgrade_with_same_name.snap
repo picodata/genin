@@ -1,0 +1,126 @@
+---
+source: src/task/cluster/test.rs
+expression: upgrade_with_same_name
+---
++----------------+----------------+
+|             cluster             |
++----------------+----------------+
+|          datacenter-1           |
++----------------+----------------+
+|    server-1    |    server-2    |
++----------------+----------------+
+|   router-1     |   router-2     |
+|   8081/3031    |   8081/3031    |
++----------------+----------------+
+|  cfgfetcher-1  |  cfgfetcher-2  |
+|  8082/3032     |  8082/3032     |
++----------------+----------------+
+| cfgfetcher-1-2 | cfgfetcher-2-2 |
+| 8083/3033      | 8083/3033      |
++----------------+----------------+
+|   stateboard   |                |
++----------------+----------------+
+---
+all:
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:4401"
+        password: password
+  hosts:
+    router-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+    cfgfetcher-1:
+      config:
+        advertise_uri: "192.168.16.11:3032"
+        http_port: 8082
+    cfgfetcher-1-2:
+      config:
+        advertise_uri: "192.168.16.11:3033"
+        http_port: 8083
+    stateboard:
+      stateboard: true
+      config:
+        listen: "192.168.16.11:4401"
+        password: password
+    router-2:
+      config:
+        advertise_uri: "192.168.16.12:3031"
+        http_port: 8081
+    cfgfetcher-2:
+      config:
+        advertise_uri: "192.168.16.12:3032"
+        http_port: 8082
+    cfgfetcher-2-2:
+      config:
+        advertise_uri: "192.168.16.12:3033"
+        http_port: 8083
+  children:
+    router-1-replicaset:
+      vars:
+        replicaset_alias: router-1
+        failover_priority:
+          - router-1
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-1: ~
+    cfgfetcher-1-replicaset:
+      vars:
+        replicaset_alias: cfgfetcher-1
+        failover_priority:
+          - cfgfetcher-1
+          - cfgfetcher-1-2
+        roles:
+          - cfgfetcher
+      hosts:
+        cfgfetcher-1: ~
+        cfgfetcher-1-2: ~
+    router-2-replicaset:
+      vars:
+        replicaset_alias: router-2
+        failover_priority:
+          - router-2
+        roles:
+          - router
+          - failover-coordinator
+      hosts:
+        router-2: ~
+    cfgfetcher-2-replicaset:
+      vars:
+        replicaset_alias: cfgfetcher-2
+        failover_priority:
+          - cfgfetcher-2
+          - cfgfetcher-2-2
+        roles:
+          - cfgfetcher
+      hosts:
+        cfgfetcher-2: ~
+        cfgfetcher-2-2: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        router-1: ~
+        cfgfetcher-1: ~
+        cfgfetcher-1-2: ~
+        stateboard: ~
+    server-2:
+      vars:
+        ansible_host: 192.168.16.12
+      hosts:
+        router-2: ~
+        cfgfetcher-2: ~
+        cfgfetcher-2-2: ~
+

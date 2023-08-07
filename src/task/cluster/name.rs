@@ -279,6 +279,7 @@ impl Name {
             .last()
             .map(|index| index.parse::<usize>().unwrap())
     }
+
 }
 
 #[cfg(test)]

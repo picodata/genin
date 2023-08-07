@@ -287,6 +287,11 @@ pub(super) fn read() -> ArgMatches {
                         .long("from-latest-state")
                         .action(ArgAction::SetTrue)
                         .help("make upgrade from latest instead of a config file"),
+                    Arg::new("idiomatic-merge")
+                        .long("idiomatic-merge")
+                        .short('I')
+                        .action(ArgAction::SetTrue)
+                        .help("merge replicasets with similar names like router-1 and router-1-1"),
                 ]),
             Command::new("list-state")
                 .about(

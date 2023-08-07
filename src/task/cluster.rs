@@ -584,13 +584,13 @@ impl Cluster {
         Self { hosts, ..self }
     }
 
-    pub fn merge(&mut self, new: &mut Cluster) -> Result<Vec<Change>, ClusterError> {
+    pub fn merge(&mut self, new: &mut Cluster, idiomatic: bool) -> Result<Vec<Change>, ClusterError> {
         self.hosts.delete_stateboard();
 
         std::mem::swap(&mut self.failover, &mut new.failover);
         std::mem::swap(&mut self.vars, &mut new.vars);
 
-        let hosts_diff = HostV2::merge(&mut self.hosts, &mut new.hosts);
+        let hosts_diff = HostV2::merge(&mut self.hosts, &mut new.hosts, idiomatic);
 
         debug!(
             "Instances to Add: {}",
