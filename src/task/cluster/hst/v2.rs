@@ -677,7 +677,7 @@ impl HostV2 {
     /// left [server-1, server-2, server-3]
     /// right [server-1, server-2]
     /// -> left [server-1, server-2]
-    pub fn merge(left: &mut HostV2, right: &mut HostV2) -> Vec<Change> {
+    pub fn merge(left: &mut HostV2, right: &mut HostV2, idiomatic: bool) -> Vec<Change> {
         std::mem::swap(&mut left.config.distance, &mut right.config.distance);
         std::mem::swap(
             &mut left.config.additional_config,
@@ -726,14 +726,24 @@ impl HostV2 {
             });
         }
 
-        right
-            .add_queue
-            .retain(|name, _| !left.add_queue.contains_key(name));
+        let mut similar_instances = left.add_queue.clone();
+        similar_instances
+            .retain(|name, _| right.add_queue.contains_key(&name.clone().with_index(1)));
+
+        right.add_queue.retain(|name, _| {
+            if !idiomatic && name.len() == 3 && name.get_parent_name().with_index(1).eq(name) {
+                !left.add_queue.contains_key(name)
+                    && !left.add_queue.contains_key(&name.get_parent_name())
+            } else {
+                !left.add_queue.contains_key(name)
+            }
+        });
 
         std::mem::swap(&mut left.add_queue, &mut right.add_queue);
 
-        left.delete_queue
-            .retain(|name, _| !right.delete_queue.contains_key(name));
+        left.delete_queue.retain(|name, _| {
+            !right.delete_queue.contains_key(name) && !similar_instances.contains_key(name)
+        });
 
         right.hosts.iter_mut().for_each(|right_host| {
             if let Some(left_host) = left
@@ -741,7 +751,7 @@ impl HostV2 {
                 .iter_mut()
                 .find(|left_host| left_host.name.eq(&right_host.name))
             {
-                hosts_diff.extend(HostV2::merge(left_host, right_host));
+                hosts_diff.extend(HostV2::merge(left_host, right_host, idiomatic));
             } else {
                 right_host.clear_instances();
                 left.hosts.push(right_host.clone());

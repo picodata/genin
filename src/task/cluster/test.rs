@@ -597,7 +597,7 @@ vars:
     let mut old_cluster: Cluster = serde_yaml::from_str(&old_cluster_str).unwrap();
     let mut new_cluster: Cluster = serde_yaml::from_str(&new_cluster_str).unwrap();
 
-    old_cluster.merge(&mut new_cluster).unwrap();
+    old_cluster.merge(&mut new_cluster, true).unwrap();
 
     println!("{}", old_cluster);
 
@@ -619,6 +619,101 @@ topology:
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
     insta::assert_display_snapshot!(uncolorize(result));
+}
+
+#[test]
+fn upgrade_with_same_name() {
+    let old_cluster_str = r#"---
+topology:
+  - name: router
+    replicasets_count: 2
+    roles:
+      - router
+      - failover-coordinator
+  - name: cfgfetcher
+    replicasets_count: 2
+    roles:
+      - cfgfetcher
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true"#;
+
+    let new_cluster_str = r#"---
+topology:
+  - name: router
+    replicasets_count: 2
+    roles:
+      - router
+      - failover-coordinator
+  - name: cfgfetcher
+    replicasets_count: 2
+    replication_factor: 2
+    roles:
+      - cfgfetcher
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true"#;
+
+    let mut cluster_old: Cluster = serde_yaml::from_str(old_cluster_str).unwrap();
+    let mut cluster_new: Cluster = serde_yaml::from_str(new_cluster_str).unwrap();
+
+    cluster_old.merge(&mut cluster_new, false).unwrap();
+    cluster_old.hosts.spread();
+
+    let mut upgrade_with_same_name = uncolorize(&cluster_old);
+
+    let inventory = Inventory::try_from(&cluster_old).unwrap();
+
+    upgrade_with_same_name = format!(
+        "{upgrade_with_same_name}\n{}",
+        serde_yaml::to_string(&inventory).unwrap()
+    );
+
+    insta::assert_display_snapshot!("upgrade_with_same_name", upgrade_with_same_name);
 }
 
 #[test]

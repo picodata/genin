@@ -858,7 +858,7 @@ hosts:
 
     let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
 
-    HostV2::merge(&mut hosts_old, &mut hosts_new);
+    HostV2::merge(&mut hosts_old, &mut hosts_new, true);
 
     insta::assert_yaml_snapshot!(hosts_old);
 }
@@ -934,7 +934,7 @@ hosts:
 
     let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
 
-    HostV2::merge(&mut hosts_old, &mut hosts_new);
+    HostV2::merge(&mut hosts_old, &mut hosts_new, true);
 
     insta::assert_yaml_snapshot!(hosts_old);
 }

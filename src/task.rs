@@ -125,7 +125,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .into());
             };
 
-            let hosts_diff = old.merge(&mut new)?;
+            let hosts_diff = old.merge(&mut new, args.get_flag("idiomatic-merge"))?;
 
             old.print(args)
                 .write_upgrade_state(args, hosts_diff)?
