@@ -412,6 +412,9 @@ impl From<State> for Cluster {
             hosts,
             vars: state.vars.with_failover(state.failover.clone()),
             failover: state.failover,
+            metadata: ClusterMetadata {
+                paths: vec![PathBuf::from(state.path)],
+            },
             ..Default::default()
         }
     }
@@ -560,36 +563,34 @@ pub fn check_placeholders(slice: &[u8]) -> Result<String, serde_yaml::Error> {
 impl Cluster {
     pub fn spread(self) -> Self {
         let instances = Instances::from(&self.topology);
-        Self {
-            hosts: self
-                .hosts
-                .with_add_queue(
-                    instances
-                        .iter()
-                        .map(|instance| (instance.name.clone(), instance.clone()))
-                        .collect(),
-                )
-                .with_delete_queue(
-                    instances
-                        .iter()
-                        .map(|instance| (instance.name.clone(), instance.clone()))
-                        .collect(),
-                )
-                .with_instances(instances)
-                .spread()
-                .with_stateboard(&self.failover)
-                .spread(),
-            ..self
-        }
+        let mut hosts = self
+            .hosts
+            .with_add_queue(
+                instances
+                    .iter()
+                    .map(|instance| (instance.name.clone(), instance.clone()))
+                    .collect(),
+            )
+            .with_delete_queue(
+                instances
+                    .iter()
+                    .map(|instance| (instance.name.clone(), instance.clone()))
+                    .collect(),
+            )
+            .with_instances(instances);
+        hosts.spread();
+        hosts.with_stateboard(&self.failover);
+        hosts.spread();
+        Self { hosts, ..self }
     }
 
-    pub fn merge(mut self, new: &mut Cluster) -> Result<Self, ClusterError> {
+    pub fn merge(&mut self, new: &mut Cluster) -> Result<Vec<Change>, ClusterError> {
         self.hosts.delete_stateboard();
 
         std::mem::swap(&mut self.failover, &mut new.failover);
         std::mem::swap(&mut self.vars, &mut new.vars);
 
-        HostV2::merge(&mut self.hosts, &mut new.hosts);
+        let hosts_diff = HostV2::merge(&mut self.hosts, &mut new.hosts);
 
         debug!(
             "Instances to Add: {}",
@@ -611,12 +612,13 @@ impl Cluster {
         );
 
         self.hosts.add_diff();
-        self.hosts = self.hosts.with_stateboard(&self.failover).spread();
+        self.hosts.with_stateboard(&self.failover);
+        self.hosts.spread();
 
         self.hosts.remove_diff();
         self.metadata.paths.extend_from_slice(&new.metadata.paths);
 
-        Ok(self)
+        Ok(hosts_diff)
     }
 
     /// It will traverse the cluster, replacing every instance's zone with its `failure_domain`.
@@ -794,6 +796,7 @@ impl Cluster {
             State::builder()
                 .uid(self.metadata.paths.clone())?
                 .make_build_state()
+                .path(path)
                 .hosts(&self.hosts)
                 .vars(&self.vars)
                 .failover(&self.failover)
@@ -803,14 +806,30 @@ impl Cluster {
         Ok(self)
     }
 
-    pub fn write_upgrade_state(self, args: &ArgMatches) -> Result<Self, ClusterError> {
+    pub fn write_upgrade_state(
+        self,
+        args: &ArgMatches,
+        hosts_diff: Vec<Change>,
+    ) -> Result<Self, ClusterError> {
+        let state_dir = args
+            .get_one::<String>("state-dir")
+            .cloned()
+            .unwrap_or(".geninstate".into());
+
+        let path: String = if let Ok(Some(path)) = args.try_get_one::<String>("export-state") {
+            path.into()
+        } else {
+            format!("{state_dir}/latest.json")
+        };
+
         // if args != export-state -> try open latest
         // if .geninstate not exists -> create dir
         // if latest not exists -> create latest
         // if write state
-        let state = State::builder()
+        let mut state = State::builder()
             .uid(self.metadata.paths.clone())?
             .make_upgrade_state()
+            .path(&path)
             .instances_changes(
                 self.hosts
                     .add_queue
@@ -824,24 +843,14 @@ impl Cluster {
                     )
                     .collect(),
             )
+            .hosts_changes(hosts_diff)
             .hosts(&self.hosts)
             .vars(&self.vars)
             .failover(&self.failover)
             .build()?;
 
-        let state_dir = args
-            .get_one::<String>("state-dir")
-            .cloned()
-            .unwrap_or(".geninstate".into());
-
-        let path: String = if let Ok(Some(path)) = args.try_get_one::<String>("export-state") {
-            path.into()
-        } else {
-            format!("{state_dir}/latest.json",)
-        };
-
-        state.dump_by_path(&path)?;
         state.dump_by_uid(&state_dir)?;
+        state.dump_by_path(&path)?;
 
         Ok(self)
     }

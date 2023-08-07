@@ -11,6 +11,7 @@ use crate::task::cluster::hst::view::BG_BLACK;
 use crate::task::cluster::hst::{merge_index_maps, v1::Host, v1::HostsVariants, view::View, IP};
 use crate::task::cluster::ins::v2::Instances;
 use crate::task::flv::{Failover, FailoverVariants};
+use crate::task::state::Change;
 use crate::task::{AsError, ErrConfMapping, TypeError, DICT, LIST, NUMBER, STRING};
 use crate::{
     error::{GeninError, GeninErrorKind},
@@ -21,7 +22,7 @@ use crate::{
     task::{cluster::name::Name, inventory::InvHostConfig},
 };
 
-use super::view::FG_BRIGHT_BLACK;
+use super::view::{FG_BRIGHT_BLACK, FG_WHITE};
 
 /// Host can be Region, Datacenter, Server
 /// ```yaml
@@ -247,9 +248,8 @@ impl HostV2 {
         }
     }
 
-    pub fn spread(mut self) -> Self {
+    pub fn spread(&mut self) {
         self.inner_spread();
-        self
     }
 
     pub fn inner_spread(&mut self) {
@@ -593,7 +593,7 @@ impl HostV2 {
         }
     }
 
-    pub fn with_stateboard(mut self, failover: &Failover) -> Self {
+    pub fn with_stateboard(&mut self, failover: &Failover) {
         if let Failover {
             failover_variants: FailoverVariants::StateboardVariant(stateboard),
             ..
@@ -631,7 +631,6 @@ impl HostV2 {
                 },
             });
         }
-        self
     }
 
     #[allow(unused)]
@@ -678,7 +677,7 @@ impl HostV2 {
     /// left [server-1, server-2, server-3]
     /// right [server-1, server-2]
     /// -> left [server-1, server-2]
-    pub fn merge(left: &mut HostV2, right: &mut HostV2) {
+    pub fn merge(left: &mut HostV2, right: &mut HostV2) -> Vec<Change> {
         std::mem::swap(&mut left.config.distance, &mut right.config.distance);
         std::mem::swap(
             &mut left.config.additional_config,
@@ -711,12 +710,19 @@ impl HostV2 {
             }
         });
 
+        let mut hosts_diff = Vec::new();
+
         if left.hosts.len() > right.hosts.len() {
             left.hosts.retain(|left_host| {
-                right
+                let contains = right
                     .hosts
                     .iter()
-                    .any(|right_host| right_host.name.eq(&left_host.name))
+                    .any(|right_host| right_host.name.eq(&left_host.name));
+
+                if !contains {
+                    hosts_diff.push(Change::Removed(left_host.name.to_string()));
+                }
+                contains
             });
         }
 
@@ -735,12 +741,15 @@ impl HostV2 {
                 .iter_mut()
                 .find(|left_host| left_host.name.eq(&right_host.name))
             {
-                HostV2::merge(left_host, right_host);
+                hosts_diff.extend(HostV2::merge(left_host, right_host));
             } else {
                 right_host.clear_instances();
                 left.hosts.push(right_host.clone());
+                hosts_diff.push(Change::Added(right_host.name.to_string()));
             }
         });
+
+        hosts_diff
     }
 
     /// For every instance that has failure domain available, replace its zone with that domain name.
@@ -791,6 +800,14 @@ impl HostV2 {
                 .for_each(|host| instances.extend(host.collect_instances()));
         }
         instances
+    }
+
+    pub fn clear_view(&mut self) {
+        self.instances.iter_mut().for_each(|instance| {
+            instance.view.color = FG_WHITE;
+        });
+
+        self.hosts.iter_mut().for_each(|host| host.clear_view());
     }
 }
 

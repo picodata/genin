@@ -136,7 +136,7 @@ vars:
         ])])
         .with_config(HostV2Config::from((8081, 3031)));
 
-    hosts_v2_model = hosts_v2_model.with_stateboard(&Failover {
+    hosts_v2_model.with_stateboard(&Failover {
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
         failover_variants: crate::task::flv::FailoverVariants::StateboardVariant(
@@ -150,7 +150,7 @@ vars:
         ),
     });
 
-    hosts_v2_model = hosts_v2_model.spread();
+    hosts_v2_model.spread();
 
     let cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
 
@@ -594,14 +594,14 @@ vars:
   cartridge_bootstrap_vshard: true"#
         .into();
 
-    let old_cluster: Cluster = serde_yaml::from_str(&old_cluster_str).unwrap();
+    let mut old_cluster: Cluster = serde_yaml::from_str(&old_cluster_str).unwrap();
     let mut new_cluster: Cluster = serde_yaml::from_str(&new_cluster_str).unwrap();
 
-    let upgraded = old_cluster.merge(&mut new_cluster).unwrap();
+    old_cluster.merge(&mut new_cluster).unwrap();
 
-    println!("{}", upgraded);
+    println!("{}", old_cluster);
 
-    insta::assert_display_snapshot!(uncolorize(upgraded))
+    insta::assert_display_snapshot!(uncolorize(old_cluster))
 }
 
 #[test]

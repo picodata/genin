@@ -288,6 +288,26 @@ pub(super) fn read() -> ArgMatches {
                         .action(ArgAction::SetTrue)
                         .help("make upgrade from latest instead of a config file"),
                 ]),
+            Command::new("list-state")
+                .about(
+                    "Print last 10 genin states",
+                )
+                .args(&[
+                    Arg::new("export-state")
+                        .long("export-state")
+                        .action(ArgAction::Set)
+                        .help("export the upgrade state with all distribution features"),
+                    Arg::new("state-dir")
+                        .long("state-dir")
+                        .env("GENIN_STATE_DIR")
+                        .action(ArgAction::Set)
+                        .help("override .geninstate directory location"),
+                    Arg::new("number")
+                        .long("number")
+                        .short('n')
+                        .action(ArgAction::Set)
+                        .help("number of last states to show"),
+                ]),
         ])
         .get_matches()
 }

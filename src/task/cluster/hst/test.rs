@@ -301,7 +301,7 @@ hosts:
 
     assert_eq!(hosts_v2.size(), 0);
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     assert_eq!(hosts_v2.size(), 10);
 }
@@ -546,7 +546,9 @@ hosts:
         },
     ]);
 
-    host.spread()
+    host.spread();
+
+    host
 }
 
 #[test]
@@ -656,7 +658,7 @@ fn hosts_v2_spreading() {
         .with_config(HostV2Config::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     println!("{}", &hosts_v2);
 
@@ -705,7 +707,7 @@ fn hosts_v2_print_table() {
         .with_config(HostV2Config::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     println!("{}", hosts_v2);
 
@@ -764,7 +766,7 @@ fn hosts_v2_spread_stateboard() {
         view: View::default(),
     });
 
-    hosts_v2 = hosts_v2.spread();
+    hosts_v2.spread();
 
     assert_eq!(
         hosts_v2

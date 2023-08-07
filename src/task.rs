@@ -101,7 +101,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .serialize_input()?;
         }
         Some(("upgrade", args)) => {
-            let old: Cluster = if args.get_flag("from-latest-state") {
+            let mut old: Cluster = if args.get_flag("from-latest-state") {
                 State::from_latest(args)?.into()
             } else {
                 match args.get_one::<String>("old") {
@@ -113,6 +113,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 }
             };
 
+            old.hosts.clear_view();
+
             let mut new = if let Some(new) = args.get_one::<String>("new") {
                 Cluster::try_from(&PathBuf::from(new))?
             } else {
@@ -123,12 +125,57 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .into());
             };
 
-            let cluster = old.merge(&mut new)?;
-            cluster
-                .print(args)
-                .write_upgrade_state(args)?
+            let hosts_diff = old.merge(&mut new)?;
+
+            old.print(args)
+                .write_upgrade_state(args, hosts_diff)?
                 .to_inventory()?
                 .write(args)?;
+        }
+        Some(("list-state", args)) => {
+            let path = match args.get_one::<String>("state-dir") {
+                Some(dir) => PathBuf::from(dir),
+                None => PathBuf::from(".geninstate"),
+            };
+
+            let dirs = match path.read_dir() {
+                Ok(dirs) => dirs,
+                Err(err) if err.kind() == io::ErrorKind::NotFound => {
+                    panic!("directory containing genin state not found or empty");
+                }
+                Err(e) => {
+                    panic!("{}", e);
+                }
+            };
+
+            let mut entries = dirs
+                .into_iter()
+                .filter_map(
+                    |entry| match entry.as_ref().map(|entry| entry.file_type()) {
+                        Ok(Ok(file_type)) if file_type.is_file() => entry.ok(),
+                        _ => None,
+                    },
+                )
+                .collect::<Vec<std::fs::DirEntry>>();
+
+            entries.sort_by_key(|entry| entry.metadata().unwrap().modified().unwrap());
+            entries.reverse();
+
+            for (id, entry) in entries
+                .into_iter()
+                .take(
+                    args.get_one::<usize>("number")
+                        .map(|num| num + 1)
+                        .unwrap_or(11),
+                )
+                .enumerate()
+            {
+                if id != 1 {
+                    let state = State::try_from(&entry.path())?;
+                    state.print_kind();
+                    state.print_changes();
+                }
+            }
         }
         _ => {
             return Err(GeninError::new(GeninErrorKind::ArgsError, "subcommand missing").into());

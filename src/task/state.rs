@@ -16,11 +16,13 @@ use crate::task::{cluster::hst::v2::HostV2, flv::Failover, vars::Vars};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
     uid: String,
-    kind: StateKind,
+    args_str: String,
+    pub kind: StateKind,
+    pub path: String,
     #[serde(default)]
-    instances_changes: Vec<Change>,
+    pub instances_changes: Vec<Change>,
     #[serde(default)]
-    hosts_changes: Vec<Change>,
+    pub hosts_changes: Vec<Change>,
     pub vars: Vars,
     pub hosts: HostV2,
     pub failover: Failover,
@@ -30,6 +32,15 @@ pub struct State {
 pub enum StateKind {
     Build,
     Upgrade,
+}
+
+impl Display for StateKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StateKind::Build => write!(f, "\u{1b}[1mBuild\u{1b}[0m"),
+            StateKind::Upgrade => write!(f, "\u{1b}[1mUpgrade\u{1b}[0m"),
+        }
+    }
 }
 
 impl PartialEq for State {
@@ -52,6 +63,7 @@ impl State {
         StateBuilder {
             uid: None,
             kind: None,
+            path: None,
             hosts_changes: None,
             instances_changes: None,
             hosts: None,
@@ -60,7 +72,7 @@ impl State {
         }
     }
 
-    pub fn dump_by_path(&self, path: &str) -> Result<(), io::Error> {
+    pub fn dump_by_path(&mut self, path: &str) -> Result<(), io::Error> {
         if let Some(parent) = PathBuf::from(path).parent() {
             match create_dir_all(parent) {
                 Err(err) if err.kind() != io::ErrorKind::AlreadyExists => {
@@ -70,24 +82,51 @@ impl State {
             }
         }
 
+        self.path = path.to_string();
+
         serde_json::to_writer(File::create(path)?, self).unwrap();
 
         Ok(())
     }
 
-    pub fn dump_by_uid(&self, state_dir: &str) -> Result<(), io::Error> {
+    pub fn dump_by_uid(&mut self, state_dir: &str) -> Result<(), io::Error> {
         self.dump_by_path(&format!("{state_dir}/{}.json", &self.uid))
     }
 
     pub fn from_latest(args: &ArgMatches) -> Result<Self, StateError> {
-        let file = File::open(format!(
+        let path = format!(
             "{}/latest.json",
             args.get_one::<String>("state-dir")
                 .cloned()
                 .unwrap_or(".geninstate".into())
-        ))?;
+        );
+        let file = File::open(&path)?;
 
-        serde_json::from_reader(file).map_err(StateError::from)
+        let mut state = serde_json::from_reader::<_, State>(file).map_err(StateError::from)?;
+        state.path = path;
+
+        Ok(state)
+    }
+
+    pub fn print_kind(&self) {
+        println!("---");
+        println!("{}: {}", self.kind, self.args_str);
+        println!("State file: {}", self.path);
+    }
+
+    pub fn print_changes(&self) {
+        if !self.instances_changes.is_empty() {
+            println!("Topology changes:");
+            self.instances_changes
+                .iter()
+                .for_each(|change| println!("{change}"));
+        }
+        if !self.hosts_changes.is_empty() {
+            println!("Hosts changes:");
+            self.hosts_changes
+                .iter()
+                .for_each(|change| println!("{change}"));
+        }
     }
 }
 
@@ -127,6 +166,7 @@ impl Display for Change {
 pub struct StateBuilder {
     uid: Option<String>,
     kind: Option<StateKind>,
+    path: Option<String>,
     instances_changes: Option<Vec<Change>>,
     hosts_changes: Option<Vec<Change>>,
     hosts: Option<HostV2>,
@@ -200,9 +240,18 @@ impl StateBuilder {
         }
     }
 
+    pub fn path(self, path: &str) -> Self {
+        Self {
+            path: Some(path.into()),
+            ..self
+        }
+    }
+
     pub fn build(self) -> Result<State, String> {
         Ok(State {
             uid: self.uid.ok_or::<String>("uid is not set".into())?,
+            args_str: std::env::args().skip(2).collect::<Vec<String>>().join(" "),
+            path: self.path.ok_or::<String>("path is not set".into())?,
             kind: self.kind.ok_or::<String>("kind is not set".into())?,
             instances_changes: self.instances_changes.unwrap_or_default(),
             hosts_changes: self.hosts_changes.unwrap_or_default(),
