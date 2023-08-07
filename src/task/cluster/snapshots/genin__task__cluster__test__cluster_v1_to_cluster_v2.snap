@@ -1,0 +1,47 @@
+---
+source: src/task/cluster/test.rs
+expression: cluster_v2
+---
+topology:
+  - name: router
+    replicasets_count: 1
+    roles:
+      - router
+      - api
+      - failover-coordinator
+  - name: storage
+    replicasets_count: 2
+    replication_factor: 3
+    weight: 10
+    roles:
+      - storage
+hosts:
+  - name: selectel
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.16.12
+failover:
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params:
+    uri: "192.168.16.11:4401"
+    password: password
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true
+

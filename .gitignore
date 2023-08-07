@@ -15,7 +15,6 @@ __pycache__
 .vagrant
 .DS_Store
 *.xlog
-*.snap
 *.rpm
 *.deb
 *.tar.gz

@@ -3,6 +3,7 @@ pub mod cluster;
 mod flv;
 pub mod inventory;
 pub mod serde_genin;
+pub mod utils;
 pub mod vars;
 
 use log::info;
@@ -55,119 +56,6 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
         std::env::var("RUST_LOG").unwrap_or_else(|_| "warn".into())
     );
 
-    // Cluster init comments
-
-    let comments = [
-        (
-            "topology".into(),
-            "# List of replicasets as an array".into(),
-        ),
-        (
-            "replicasets_count".to_string(),
-            "# How many masters we want, by default equal 1".to_string(),
-        ),
-        ("roles".into(), "# Array of roles for this instance".into()),
-        (
-            "replication_factor".to_string(),
-            "# Number of replicas in replicaset, default 0".to_string(),
-        ),
-        (
-            "address".to_string(),
-            "# Host or instance address (maybe IP or URI)".to_string(),
-        ),
-        (
-            "http_port".to_string(),
-            "# Specify http port to start counting from".to_string(),
-        ),
-        (
-            "binary_port".to_string(),
-            "# Specify binary port to start counting from".to_string(),
-        ),
-        (
-            "weight".to_string(),
-            "# Vshard replicaset weight (matters only if `vshard-storage` role is enabled)"
-                .to_string(),
-        ),
-        (
-            "all_rw".to_string(),
-            "# A flag indicating that all servers in the replicaset should be read-write"
-                .to_string(),
-        ),
-        (
-            "zone".to_string(),
-            "# Zone parameter for ansible cartridge playbook".to_string(),
-        ),
-        (
-            "hosts".into(),
-            "# List of regions, datacenters, and servers".into(),
-        ),
-        (
-            "config".to_string(),
-            "# Config with arbitrary key-values pairs".to_string(),
-        ),
-        (
-            "vshard_group".to_string(),
-            "# Vshard group for vshard-storage".to_string(),
-        ),
-        (
-            "additional_config".to_string(),
-            "# Additional parameters to be added to the host config".to_string(),
-        ),
-        (
-            "cartridge_extra_env".to_string(),
-            "# Environment variables for instance service (systemd service)".to_string(),
-        ),
-        (
-            "vars".to_string(),
-            "# Ansible vars to be added to hosts".to_string(),
-        ),
-        ("failover".into(), "# Failover management options".into()),
-        (
-            "mode".to_string(),
-            "# Failover mode (stateful, eventual, disabled)".to_string(),
-        ),
-        (
-            "state_provider".to_string(),
-            "# What is serve failover (stateboard, stateful)".to_string(),
-        ),
-        (
-            "stateboard_params".to_string(),
-            "# Params for chosen in state_provider failover type".to_string(),
-        ),
-        (
-            "uri".to_string(),
-            "# Uri on which the stateboard will be available".to_string(),
-        ),
-        ("password".to_string(), "# Stateboard password".to_string()),
-        (
-            "vars".into(),
-            "# Vars similar to those configured in the cartridge inventory".into(),
-        ),
-        (
-            "ansible_user".to_string(),
-            "# Username under which the ansible will connect to the servers".to_string(),
-        ),
-        (
-            "ansible_password".to_string(),
-            "# Ansible user password".to_string(),
-        ),
-        ("cartridge_app_name".into(), "# Application name".into()),
-        (
-            "cartridge_cluster_cookie".to_string(),
-            "# Cookie for connecting to the administrative console of the instances".to_string(),
-        ),
-        (
-            "cartridge_package_path".to_string(),
-            "# Path to the application package".to_string(),
-        ),
-        (
-            "cartridge_bootstrap_vshard".into(),
-            "# Indicates if vshard must be bootstrapped on the cluster".into(),
-        ),
-    ]
-    .into_iter()
-    .collect::<HashMap<String, String>>();
-
     // The idea of the first step of creating a task:
     //      - create FsInteraction
     //      - map FsInteraction as:
@@ -195,31 +83,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                         output: Some(mut file),
                     } = io
                     {
-                        let mut text = serde_yaml::to_string(&cluster)
-                            .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
-
-                        for (key, value) in comments {
-                            let comment = RegexBuilder::new(&format!(
-                                "^(?P<spaces>[ /t-]*)(?P<key>{key}:( .*)*)"
-                            ))
-                            .multi_line(true)
-                            .build()
-                            .unwrap();
-                            text = comment
-                                .replace_all(&text, |caps: &Captures| {
-                                    //println!("caps 0: {}", &caps[0]);
-                                    //println!("caps 0: {}", &caps[0]);
-                                    format!(
-                                        "{whitespaces}{value}\n{any_symbols}{key}",
-                                        whitespaces = caps[1].replace('-', " "),
-                                        any_symbols = &caps[1],
-                                        key = &caps[2],
-                                    )
-                                })
-                                //.replace_all(&text, &format!("$key {value}"))
-                                .to_string();
-                        }
-                        file.write(text.as_bytes())
+                        file.write(insert_comments(&cluster)?.as_bytes())
                             .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
 
                         return Ok(IO {
@@ -336,6 +200,146 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+pub fn insert_comments(cluster: &Cluster) -> Result<String, GeninError> {
+    // Cluster init comments
+
+    let comments = [
+        (
+            "topology".into(),
+            "# List of replicasets as an array".into(),
+        ),
+        (
+            "replicasets_count".to_string(),
+            "# How many masters we want, by default equal 1".to_string(),
+        ),
+        ("roles".into(), "# Array of roles for this instance".into()),
+        (
+            "replication_factor".to_string(),
+            "# Number of replicas in replicaset, default 0".to_string(),
+        ),
+        (
+            "address".to_string(),
+            "# Host or instance address (maybe IP or URI)".to_string(),
+        ),
+        (
+            "http_port".to_string(),
+            "# Specify http port to start counting from".to_string(),
+        ),
+        (
+            "binary_port".to_string(),
+            "# Specify binary port to start counting from".to_string(),
+        ),
+        (
+            "weight".to_string(),
+            "# Vshard replicaset weight (matters only if `vshard-storage` role is enabled)"
+                .to_string(),
+        ),
+        (
+            "all_rw".to_string(),
+            "# A flag indicating that all servers in the replicaset should be read-write"
+                .to_string(),
+        ),
+        (
+            "zone".to_string(),
+            "# Zone parameter for ansible cartridge playbook".to_string(),
+        ),
+        (
+            "hosts".into(),
+            "# List of regions, datacenters, and servers".into(),
+        ),
+        (
+            "config".to_string(),
+            "# Config with arbitrary key-values pairs".to_string(),
+        ),
+        (
+            "vshard_group".to_string(),
+            "# Vshard group for vshard-storage".to_string(),
+        ),
+        (
+            "additional_config".to_string(),
+            "# Additional parameters to be added to the host config".to_string(),
+        ),
+        (
+            "cartridge_extra_env".to_string(),
+            "# Environment variables for instance service (systemd service)".to_string(),
+        ),
+        (
+            "vars".to_string(),
+            "# Ansible vars to be added to hosts".to_string(),
+        ),
+        ("failover".into(), "# Failover management options".into()),
+        (
+            "mode".to_string(),
+            "# Failover mode (stateful, eventual, disabled)".to_string(),
+        ),
+        (
+            "state_provider".to_string(),
+            "# What is serve failover (stateboard, stateful)".to_string(),
+        ),
+        (
+            "stateboard_params".to_string(),
+            "# Params for chosen in state_provider failover type".to_string(),
+        ),
+        (
+            "uri".to_string(),
+            "# Uri on which the stateboard will be available".to_string(),
+        ),
+        ("password".to_string(), "# Stateboard password".to_string()),
+        (
+            "vars".into(),
+            "# Vars similar to those configured in the cartridge inventory".into(),
+        ),
+        (
+            "ansible_user".to_string(),
+            "# Username under which the ansible will connect to the servers".to_string(),
+        ),
+        (
+            "ansible_password".to_string(),
+            "# Ansible user password".to_string(),
+        ),
+        ("cartridge_app_name".into(), "# Application name".into()),
+        (
+            "cartridge_cluster_cookie".to_string(),
+            "# Cookie for connecting to the administrative console of the instances".to_string(),
+        ),
+        (
+            "cartridge_package_path".to_string(),
+            "# Path to the application package".to_string(),
+        ),
+        (
+            "cartridge_bootstrap_vshard".into(),
+            "# Indicates if vshard must be bootstrapped on the cluster".into(),
+        ),
+    ]
+    .into_iter()
+    .collect::<HashMap<String, String>>();
+
+    let mut text = serde_yaml::to_string(cluster)
+        .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?;
+
+    for (key, value) in comments {
+        let comment = RegexBuilder::new(&format!("^(?P<spaces>[ /t-]*)(?P<key>{key}:( .*)*)"))
+            .multi_line(true)
+            .build()
+            .unwrap();
+        text = comment
+            .replace_all(&text, |caps: &Captures| {
+                //println!("caps 0: {}", &caps[0]);
+                //println!("caps 0: {}", &caps[0]);
+                format!(
+                    "{whitespaces}{value}\n{any_symbols}{key}",
+                    whitespaces = caps[1].replace('-', " "),
+                    any_symbols = &caps[1],
+                    key = &caps[2],
+                )
+            })
+            //.replace_all(&text, &format!("$key {value}"))
+            .to_string();
+    }
+
+    Ok(text)
+}
+
 pub trait Validate {
     type Type: fmt::Debug + Default + 'static;
     type Error: fmt::Debug + ToString;
@@ -351,7 +355,7 @@ trait AsError {
 
 impl<T: std::fmt::Debug> AsError for T {
     fn as_error(&self) -> String {
-        format!("\u{1b}[93m\u{1b}4{:?}\u{1b}[0m", self)
+        format!("\u{1b}[31m\u{1b}4{:?}\u{1b}[0m", self)
     }
 }
 

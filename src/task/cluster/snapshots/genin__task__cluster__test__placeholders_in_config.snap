@@ -1,0 +1,19 @@
+---
+source: src/task/cluster/test.rs
+expression: uncolorize(result)
+---
+Err(Cluster configuration contains errors(Err(
+
+---
+topology:
+  - name: router
+    replicasets_count: Err("The placeholder <<replicasets_count>> was not replaced! указываем здесь количество репликасетов хранилищ из сайзинга")
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    replicasets_count: Err("The placeholder <<replicasets_count>> was not replaced! Please replace or remove!")
+    replication_factor: Err("The placeholder <<replication_factor>> was not replaced! для инсталляции в одном ЦОД это число должно быть 2, для инсталяции в двух ЦОД - 4")
+    roles:
+      - storage
+)))

@@ -1,0 +1,6 @@
+---
+source: src/task/flv/test.rs
+expression: uncolorize(invalid_v1)
+---
+
+  mode: "Missing field 'mode'"

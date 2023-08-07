@@ -2,7 +2,10 @@ use std::{fs::File, io::Read, path::PathBuf};
 
 use clap::{Arg, ArgAction, Command};
 
-use crate::error::{GeninError, GeninErrorKind};
+use crate::{
+    error::{GeninError, GeninErrorKind},
+    task::{cluster::fs::INVENTORY_YAML, insert_comments},
+};
 
 use super::{
     cluster::{
@@ -11,6 +14,49 @@ use super::{
     },
     inventory::Inventory,
 };
+
+#[test]
+fn default_cluster() {
+    let args = Command::new("init")
+        .arg(
+            Arg::new("failover-mode")
+                .long("failover-mode")
+                .short('m')
+                .action(ArgAction::Set)
+                .default_value("stateful")
+                .help("(string): failover mode (statefull, eventual, disabled)"),
+        )
+        .arg(
+            Arg::new("failover-state-provider")
+                .long("failover-state-provider")
+                .short('F')
+                .action(ArgAction::Set)
+                .default_value("stateboard")
+                .help("(string): failover state provider"),
+        )
+        .try_get_matches_from(vec!["init"])
+        .unwrap();
+
+    let cluster = IO::from(&args)
+        .try_into_files(None, Some(INVENTORY_YAML), false)
+        .unwrap()
+        .try_map(|_| {
+            Ok(IO {
+                input: Some(()),
+                output: Some(
+                    Cluster::try_from(&args)
+                        .map(|cluster| insert_comments(&cluster))
+                        .unwrap()
+                        .unwrap(),
+                ),
+            })
+        })
+        .unwrap()
+        .output
+        .unwrap();
+
+    insta::assert_display_snapshot!(cluster);
+}
 
 #[test]
 fn build_consistency_100_times() {

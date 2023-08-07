@@ -1,0 +1,5 @@
+---
+source: src/task/cluster/test.rs
+expression: result
+---
+Err(while parsing a block mapping, did not find expected key at line 6 column 5(Err(while parsing a block mapping, did not find expected key at line 6 column 5)))

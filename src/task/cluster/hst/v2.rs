@@ -954,11 +954,9 @@ impl fmt::Debug for InvalidHostV2 {
                     &self.offset,
                     "Missing field 'name'".as_error().as_str()
                 ))?;
-                formatter.write_str("\n")?;
             }
             Value::String(name) => {
                 formatter.write_fmt(format_args!("{}- name: {}", &self.offset, name))?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
@@ -966,7 +964,6 @@ impl fmt::Debug for InvalidHostV2 {
                     &self.offset,
                     self.name.type_error(STRING).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -989,7 +986,6 @@ impl fmt::Debug for InvalidHostV2 {
                     &self.offset,
                     self.config.type_error(DICT).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -997,7 +993,7 @@ impl fmt::Debug for InvalidHostV2 {
         match &self.hosts {
             Value::Null => {}
             Value::Sequence(hosts) => {
-                formatter.write_fmt(format_args!("{}  hosts:\n", &self.offset))?;
+                formatter.write_fmt(format_args!("{}  hosts: ", &self.offset))?;
                 hosts
                     .iter()
                     .try_for_each(|host| -> Result<(), std::fmt::Error> {
@@ -1011,7 +1007,6 @@ impl fmt::Debug for InvalidHostV2 {
                                 .unwrap()
                         ))
                     })?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
@@ -1019,7 +1014,6 @@ impl fmt::Debug for InvalidHostV2 {
                     &self.offset,
                     self.hosts.type_error(LIST).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -1045,21 +1039,18 @@ pub struct InvalidHostV2Config {
 
 impl fmt::Debug for InvalidHostV2Config {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("\n")?;
         // http_port: u16
         match &self.http_port {
             Value::Null => {}
             Value::Number(http_port) => {
                 if http_port > &Number::from(0) && http_port < &Number::from(u16::MAX) {
                     formatter.write_fmt(format_args!("{}http_port: {}", self.offset, http_port))?;
-                    formatter.write_str("\n")?;
                 } else {
                     formatter.write_fmt(format_args!(
                         "{}http_port: {}",
                         &self.offset,
                         "Not in range 0..65535".as_error()
                     ))?;
-                    formatter.write_str("\n")?;
                 }
             }
             _ => {
@@ -1068,7 +1059,6 @@ impl fmt::Debug for InvalidHostV2Config {
                     &self.offset,
                     self.http_port.type_error(NUMBER).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -1079,14 +1069,12 @@ impl fmt::Debug for InvalidHostV2Config {
                 if binary_port > &Number::from(0) && binary_port < &Number::from(u16::MAX) {
                     formatter
                         .write_fmt(format_args!("{}binary_port: {}", self.offset, binary_port))?;
-                    formatter.write_str("\n")?;
                 } else {
                     formatter.write_fmt(format_args!(
                         "{}binary_port: {}",
                         &self.offset,
                         "Not in range 0..65535".as_error()
                     ))?;
-                    formatter.write_str("\n")?;
                 }
             }
             _ => {
@@ -1095,7 +1083,6 @@ impl fmt::Debug for InvalidHostV2Config {
                     &self.offset,
                     self.binary_port.type_error(NUMBER).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -1104,7 +1091,6 @@ impl fmt::Debug for InvalidHostV2Config {
             Value::Null => {}
             Value::String(address) => {
                 formatter.write_fmt(format_args!("{}address: {}", self.offset, address))?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
@@ -1112,7 +1098,6 @@ impl fmt::Debug for InvalidHostV2Config {
                     &self.offset,
                     self.address.type_error(STRING).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -1121,11 +1106,9 @@ impl fmt::Debug for InvalidHostV2Config {
             Value::Null => {}
             Value::Number(distance) if distance >= &Number::from(0) => {
                 formatter.write_fmt(format_args!("{}distance: {}", self.offset, distance))?;
-                formatter.write_str("\n")?;
             }
             Value::Number(distance) if distance < &Number::from(0) => {
                 formatter.write_fmt(format_args!("{}distance: {}", self.offset, distance))?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
@@ -1133,7 +1116,6 @@ impl fmt::Debug for InvalidHostV2Config {
                     &self.offset,
                     self.distance.type_error(NUMBER).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 
@@ -1149,7 +1131,6 @@ impl fmt::Debug for InvalidHostV2Config {
                         value: additional_config,
                     }
                 ))?;
-                formatter.write_str("\n")?;
             }
             _ => {
                 formatter.write_fmt(format_args!(
@@ -1157,7 +1138,6 @@ impl fmt::Debug for InvalidHostV2Config {
                     &self.offset,
                     self.additional_config.type_error(DICT).as_error()
                 ))?;
-                formatter.write_str("\n")?;
             }
         }
 

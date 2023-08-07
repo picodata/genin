@@ -1,0 +1,18 @@
+---
+source: src/task/cluster/test.rs
+expression: uncolorize(result)
+---
+Err(Cluster configuration contains errors(Ok(
+---
+topology: "Missing field 'topology'"
+hosts:
+  - name: server-1
+    config: "Expected type Dict got List"
+  - name: "Missing field 'name'"
+    config: 
+      distance: 1000
+    hosts: 
+      - name: server-10
+      - name: server-11
+vars: "Vars must be a mapping"
+)))

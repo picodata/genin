@@ -4,10 +4,13 @@ use crate::{
     task::{
         cluster::hst::v2::Address,
         flv::{Failover, FailoverVariants, Mode, StateProvider, StateboardParams, Uri},
+        utils::uncolorize,
         vars::Vars,
     },
     DEFAULT_STATEBOARD_PORT,
 };
+
+use super::InvalidVars;
 
 #[test]
 fn vars_serialization() {
@@ -87,4 +90,27 @@ fn vars_failover() {
     };
 
     assert_eq!(vars, vars_model);
+}
+
+#[test]
+fn invalid_vars() {
+    let vars_str = "
+ansible_user: 111
+ansible_password: true
+cartridge_app_name: 123
+cartridge_cluster_cookie: 999
+cartridge_package_path:
+  foo: baz
+cartridge_bootstrap_vshard: 0
+cartridge_failover_params:
+  - one
+  - two
+";
+
+    let vars = format!(
+        "{:?}",
+        serde_yaml::from_str::<InvalidVars>(vars_str).unwrap()
+    );
+
+    insta::assert_display_snapshot!(uncolorize(vars));
 }

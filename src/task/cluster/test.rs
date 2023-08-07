@@ -2,7 +2,9 @@ use std::convert::TryFrom;
 
 use clap::{Arg, ArgAction, Command};
 
-use crate::task::{cluster::hst::v2::Address, flv::StateboardParams, serde_genin};
+use crate::task::{
+    cluster::hst::v2::Address, flv::StateboardParams, serde_genin, utils::uncolorize,
+};
 
 use super::*;
 
@@ -325,57 +327,10 @@ vars:
   cartridge_bootstrap_vshard: true
 "#
     .into();
-    let cluster_v2_model_str: String = r#"---
-topology:
-  - name: router
-    replicasets_count: 1
-    roles:
-      - router
-      - api
-      - failover-coordinator
-  - name: storage
-    replicasets_count: 2
-    replication_factor: 3
-    weight: 10
-    roles:
-      - storage
-hosts:
-  - name: selectel
-    config:
-      http_port: 8081
-      binary_port: 3031
-    hosts:
-      - name: server-1
-        config:
-          http_port: 8081
-          binary_port: 3031
-          address: 192.168.16.11
-      - name: server-2
-        config:
-          http_port: 8081
-          binary_port: 3031
-          address: 192.168.16.12
-failover:
-  mode: stateful
-  state_provider: stateboard
-  stateboard_params:
-    uri: "192.168.16.11:4401"
-    password: password
-vars:
-  ansible_user: ansible
-  ansible_password: ansible
-  cartridge_app_name: myapp
-  cartridge_cluster_cookie: myapp-cookie
-  cartridge_package_path: /tmp/myapp.rpm
-  cartridge_bootstrap_vshard: true
-"#
-    .into();
 
     let cluster_v2: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
 
-    let cluster_v2_str: String = serde_yaml::to_string(&cluster_v2).unwrap();
-
-    assert_eq!(cluster_v2_str, cluster_v2_model_str);
+    insta::assert_yaml_snapshot!(cluster_v2);
 }
 
 #[test]
@@ -451,75 +406,9 @@ vars:
 "#
     .into();
 
-    let cluster_v2_model_str: String = r#"---
-topology:
-  - name: l-n
-    replicasets_count: 2
-    weight: 10
-    roles:
-      - logger
-      - notifier
-  - name: op-t
-    replicasets_count: 5
-    weight: 10
-    roles:
-      - output_processor
-      - task_runner
-  - name: c-ip
-    replicasets_count: 5
-    weight: 10
-    roles:
-      - connector
-      - input_processor
-      - failover-coordinator
-  - name: sch
-    replicasets_count: 2
-    weight: 10
-    roles:
-      - scheduler
-  - name: storage
-    replicasets_count: 3
-    replication_factor: 3
-    weight: 10
-    roles:
-      - storage
-hosts:
-  - name: vagr_tdg
-    config:
-      http_port: 8081
-      binary_port: 3031
-    hosts:
-      - name: tdg-1
-        config:
-          address: 192.168.123.2
-      - name: tdg-2
-        config:
-          address: 192.168.123.3
-      - name: tdg-3
-        config:
-          address: 192.168.123.4
-failover:
-  mode: stateful
-  state_provider: etcd2
-  etcd2_params:
-    prefix: cartridge/tdg
-    lock_delay: 30
-    endpoints:
-      - "http://192.168.123.2:2379"
-vars:
-  ansible_user: vagrant
-  ansible_password: vagrant
-  cartridge_app_name: tdg
-  cartridge_cluster_cookie: myapp-cookie
-  cartridge_package_path: ./tdg-1.7.17-0-g2a5b4bd18.rpm
-"#
-    .into();
-
     let cluster_v2: Cluster = serde_yaml::from_str(&cluster_v1_tdg_str).unwrap();
 
-    let cluster_v2_model: Cluster = serde_yaml::from_str(&cluster_v2_model_str).unwrap();
-
-    assert_eq!(cluster_v2, cluster_v2_model);
+    insta::assert_yaml_snapshot!(cluster_v2);
 }
 
 #[test]
@@ -618,48 +507,7 @@ all:
 
     let cluster_v2 = Cluster::try_from(&Some(inventory)).unwrap();
 
-    let cluster_v2_str = serde_yaml::to_string(&cluster_v2).unwrap();
-
-    let cluster_v2_model_str: String = r#"---
-topology:
-  - name: router
-    replicasets_count: 1
-    roles:
-      - router
-      - failover-coordinator
-  - name: storage
-    replicasets_count: 2
-    replication_factor: 2
-    roles:
-      - storage
-hosts:
-  - name: server-1
-    config:
-      http_port: 8081
-      binary_port: 3031
-      address: 192.168.16.11
-  - name: server-2
-    config:
-      http_port: 8081
-      binary_port: 3031
-      address: 192.168.16.12
-failover:
-  mode: stateful
-  state_provider: stateboard
-  stateboard_params:
-    uri: "192.168.16.11:4401"
-    password: password
-vars:
-  ansible_user: ansible
-  ansible_password: ansible
-  cartridge_app_name: myapp
-  cartridge_cluster_cookie: myapp-cookie
-  cartridge_package_path: /tmp/myapp.rpm
-  cartridge_bootstrap_vshard: true
-"#
-    .into();
-
-    assert_eq!(cluster_v2_str, cluster_v2_model_str);
+    insta::assert_yaml_snapshot!(cluster_v2);
 }
 
 #[test]
@@ -765,33 +613,7 @@ vars:
 
     println!("{}", upgraded);
 
-    let result_table: String = "+-------------+-------------+\n\
-|          cluster          |\n\
-+-------------+-------------+\n\
-|       datacenter-1        |\n\
-+-------------+-------------+\n\
-|  server-1   |  server-2   |\n\
-+-------------+-------------+\n\
-|  \u{1b}[37mrouter-1\u{1b}[39m   | \u{1b}[34mstorage-1-1\u{1b}[39m |\n\
-|  \u{1b}[90m8081/3031\u{1b}[39m  | \u{1b}[90m8081/3031\u{1b}[39m   |\n\
-+-------------+-------------+\n\
-| \u{1b}[34mstorage-1-2\u{1b}[39m | \u{1b}[36mstorage-2-1\u{1b}[39m |\n\
-| \u{1b}[90m8082/3032\u{1b}[39m   | \u{1b}[90m8082/3032\u{1b}[39m   |\n\
-+-------------+-------------+\n\
-| \u{1b}[36mstorage-2-2\u{1b}[39m |  \u{1b}[32mapi-1\u{1b}[39m      |\n\
-| \u{1b}[90m8083/3033\u{1b}[39m   |  \u{1b}[90m8083/3033\u{1b}[39m  |\n\
-+-------------+-------------+\n\
-|  \u{1b}[100mrouter-2\u{1b}[49m   |  \u{1b}[100mrouter-3\u{1b}[49m   |\n\
-|  \u{1b}[90m8084/3034\u{1b}[39m  |  \u{1b}[90m8084/3034\u{1b}[39m  |\n\
-+-------------+-------------+\n\
-|  \u{1b}[100mrouter-4\u{1b}[49m   |             |\n\
-|  \u{1b}[90m8085/3035\u{1b}[39m  |             |\n\
-+-------------+-------------+\n\
-| stateboard  |             |\n\
-+-------------+-------------+"
-        .into();
-
-    assert_eq!(upgraded.to_string(), result_table);
+    insta::assert_display_snapshot!(uncolorize(upgraded))
 }
 
 #[test]
@@ -808,11 +630,7 @@ topology:
 
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    let error_str = "Err(while parsing a block mapping, did not find expected key at \
-    line 6 column 5(Err(while parsing a block mapping, did not find expected key at \
-    line 6 column 5)))";
-
-    assert_eq!(result, error_str)
+    insta::assert_display_snapshot!(uncolorize(result));
 }
 
 #[test]
@@ -825,11 +643,7 @@ complex:
 
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    let error_str = "Err(Data did not match any variant of cluster configuration(Ok(\n---\
-        \ntopology: \u{1b}[93m\u{1b}4\"Missing field 'topology'\"\u{1b}[0m\nhosts: \
-        \u{1b}[93m\u{1b}4\"Missing field 'hosts'\"\u{1b}[0m\n)))";
-
-    assert_eq!(result, error_str)
+    insta::assert_display_snapshot!(uncolorize(result));
 }
 
 #[test]
@@ -857,18 +671,7 @@ topology:
 
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    let error_str = "Err(Data did not match any variant of cluster configuration(Ok(\n---\
-        \ntopology:   \n  - name: \u{1b}[93m\u{1b}4\"Missing field 'name'\"\u{1b}[0m\n    \
-        replicasets_count: 3\n    replication_factor: 10\n    roles: \n      - calculator\n    \
-        cartridge_extra_env: \n      FOO: bar\n      BIZ: \n      - \u{1b}[93m\u{1b}4\
-        \"Expected type Dict got Number\"\u{1b}[0m\n      - two\n\n    config: \n      \
-        http_port: \u{1b}[93m\u{1b}4\"Not in range 0..65535\"\u{1b}[0m\n    vars: \n      \
-        - ENV_1: \u{1b}[93m\u{1b}4\"Expected type Dict got Number\"\u{1b}[0m\n      - ENV_2: \
-        \u{1b}[93m\u{1b}4\"Expected type Dict got Number\"\u{1b}[0m\n  \n  - name: \u{1b}[93m\
-        \u{1b}4\"Missing field 'name'\"\u{1b}[0m\n    replication_factor: 1\n    roles: \n      \
-        - value\nhosts: \u{1b}[93m\u{1b}4\"Missing field 'hosts'\"\u{1b}[0m\n)))";
-
-    assert_eq!(result, error_str)
+    insta::assert_display_snapshot!(uncolorize(result));
 }
 
 #[test]
@@ -886,11 +689,9 @@ hosts:
 "
     .as_bytes();
 
-    println!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
-
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    println!("{:?}", result);
+    insta::assert_display_snapshot!(uncolorize(result));
 }
 
 #[test]
@@ -912,16 +713,6 @@ topology:
 
     let result = format!("{:?}", serde_genin::from_slice::<Cluster>(bytes));
 
-    let error_str = "Err(Data did not match any variant of cluster configuration\
-    (Err(\n\n---\ntopology:\n  - name: router\n    replicasets_count: \
-    Err(\u{1b}[93m\u{1b}4\"The placeholder <<replicasets_count>> was not replaced! \
-    указываем здесь количество репликасетов хранилищ из сайзинга\"\u{1b}[0m)\n    \
-    roles:\n      - router\n      - failover-coordinator\n  - name: storage\n    \
-    replicasets_count: Err(\u{1b}[93m\u{1b}4\"The placeholder <<replicasets_count>> \
-    was not replaced! Please replace or remove!\"\u{1b}[0m)\n    replication_factor: \
-    Err(\u{1b}[93m\u{1b}4\"The placeholder <<replication_factor>> was not replaced! \
-    для инсталляции в одном ЦОД это число должно быть 2, для инсталяции в двух \
-    ЦОД - 4\"\u{1b}[0m)\n    roles:\n      - storage\n)))";
-
-    assert_eq!(result, error_str)
+    insta::assert_display_snapshot!(uncolorize(result));
 }
+

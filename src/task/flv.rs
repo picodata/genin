@@ -2,6 +2,7 @@ use clap::ArgMatches;
 use core::fmt;
 use log::{debug, error, warn};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
+use serde_yaml::Value;
 use std::{fmt::Display, net::SocketAddr};
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
     DEFAULT_STATEBOARD_PORT,
 };
 
-use super::cluster::hst::v2::Address;
+use super::{cluster::hst::v2::Address, AsError};
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 /// Failover enum
@@ -441,6 +442,12 @@ impl<'a> TryFrom<&'a str> for UriWithProtocol {
     }
 }
 
+impl Display for UriWithProtocol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}://{}", self.protocol, self.url)
+    }
+}
+
 struct UriWithProtocolVisior;
 
 impl<'de> Visitor<'de> for UriWithProtocolVisior {
@@ -496,12 +503,307 @@ impl Display for Protocol {
     }
 }
 
-#[derive(Deserialize)]
-pub struct InvalidFailover {}
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct InvalidFailover {
+    mode: Value,
+    state_provider: Value,
+    etcd2_params: Value,
+    stateboard_params: Value,
+}
 
 impl fmt::Debug for InvalidFailover {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("InvalidFailover").finish()
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("\n  mode: ")?;
+        match self {
+            InvalidFailover {
+                mode: Value::Null, ..
+            } => {
+                formatter.write_str("Missing field 'mode'".as_error().as_str())?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider,
+                etcd2_params,
+                stateboard_params,
+            } if mode.eq("disabled") || mode.eq("eventual") => {
+                formatter.write_str(mode)?;
+                if !state_provider.is_null() {
+                    formatter.write_str("\n  state_provider: ")?;
+                    formatter.write_str(
+                        format!("The value cannot be set because the mode is '{mode}'")
+                            .as_error()
+                            .as_str(),
+                    )?;
+                }
+
+                if !etcd2_params.is_null() {
+                    formatter.write_str("\n  etcd2_params: ")?;
+                    formatter.write_str(
+                        format!("The value cannot be set because the mode is '{mode}'")
+                            .as_error()
+                            .as_str(),
+                    )?;
+                }
+
+                if !stateboard_params.is_null() {
+                    formatter.write_str("\n  stateboard_params: ")?;
+                    formatter.write_str(
+                        format!("The value cannot be set because the mode is '{mode}'")
+                            .as_error()
+                            .as_str(),
+                    )?;
+                }
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                ..
+            } if !mode.eq("stateful") => {
+                formatter.write_str(
+                    format!("Unknown failover mode '{}'", mode)
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::Null,
+                ..
+            } => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: ")?;
+                formatter.write_str(
+                    "The value cannot be null because mode is stateful"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                etcd2_params: Value::Null,
+                stateboard_params: Value::Null,
+                ..
+            } => {
+                formatter.write_str(
+                    format!(
+                        "The Mode cannot be '{mode}' because no \
+                    parameters are set for any of the failover providers"
+                    )
+                    .as_error()
+                    .as_str(),
+                )?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                etcd2_params,
+                stateboard_params,
+            } if !etcd2_params.is_null() && !stateboard_params.is_null() => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: ")?;
+                formatter.write_str(state_provider)?;
+                formatter.write_str("\n  etcd2_params: ")?;
+                formatter.write_str(
+                    "It is forbidden to specify both types of stateful failovers at the same time"
+                        .as_error()
+                        .as_str(),
+                )?;
+                formatter.write_str("\n  stateboard_params: ")?;
+                formatter.write_str(
+                    "It is forbidden to specify both types of stateful failovers at the same time"
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                etcd2_params: Value::Null,
+                stateboard_params,
+            } if state_provider.eq("stateboard") => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: stateboard")?;
+                formatter.write_str("\n  stateboard_params: ")?;
+                formatter.write_fmt(format_args!(
+                    "{:?}",
+                    serde_yaml::from_value::<InvalidStateboardParams>(stateboard_params.clone())
+                        .unwrap()
+                ))?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                ..
+            } if state_provider.eq("stateboard") => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: stateboard")?;
+                formatter.write_str("\n  stateboard_params: ")?;
+                formatter.write_str("Missing field 'stateboard_params'".as_error().as_str())?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                etcd2_params,
+                stateboard_params: Value::Null,
+            } if state_provider.eq("etcd2") => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: etcd2")?;
+                formatter.write_str("\n  etcd2_params: ")?;
+                formatter.write_fmt(format_args!(
+                    "{:?}",
+                    serde_yaml::from_value::<InvalidETCD2>(etcd2_params.clone()).unwrap()
+                ))?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                ..
+            } if state_provider.eq("etcd2") => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: stateboard")?;
+                formatter.write_str("\n  etcd2_params: ")?;
+                formatter.write_str("Missing field 'etcd2_params'".as_error().as_str())?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                state_provider: Value::String(state_provider),
+                ..
+            } => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n state_provider: ")?;
+                formatter.write_str(
+                    format!("Unknown state provider '{}'", state_provider)
+                        .as_error()
+                        .as_str(),
+                )?;
+            }
+            InvalidFailover {
+                mode: Value::String(mode),
+                ..
+            } => {
+                formatter.write_str(mode)?;
+                formatter.write_str("\n  state_provider: ")?;
+                formatter.write_str("Value must be a String".as_error().as_str())?;
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct InvalidETCD2 {
+    prefix: Value,
+    lock_delay: Value,
+    endpoints: Value,
+    username: Value,
+    password: Value,
+}
+
+impl fmt::Debug for InvalidETCD2 {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("\n    prefix: ")?;
+        match &self.prefix {
+            Value::Null => {
+                formatter.write_str("Missing field 'prefix'".as_error().as_str())?;
+            }
+            Value::String(prefix) => {
+                formatter.write_str(prefix)?;
+            }
+            _ => {
+                formatter.write_str("Field 'prefix' must be a String".as_error().as_str())?;
+            }
+        }
+
+        match &self.lock_delay {
+            Value::Number(lock_delay) => {
+                formatter.write_str("\n    lock_delay: ")?;
+                formatter.write_str(lock_delay.to_string().as_str())?;
+            }
+            _ => {
+                formatter.write_str("\n    lock_delay: ")?;
+                formatter.write_str("Field 'lock_delay' must be a Number".as_error().as_str())?;
+            }
+        }
+
+        formatter.write_str("\n    endpoints:")?;
+        match &self.endpoints {
+            Value::Null => {
+                formatter.write_str("Missing field 'endpoints'".as_error().as_str())?;
+            }
+            Value::Sequence(seq) => {
+                for endpoint in seq {
+                    if let Ok(uri) = serde_yaml::from_value::<UriWithProtocol>(endpoint.clone()) {
+                        formatter.write_str(format!("\n      - {uri}").as_str())?;
+                    } else {
+                        formatter
+                            .write_str(format!("\n      - {}", "InvalidUri".as_error()).as_str())?;
+                    }
+                }
+            }
+            _ => {
+                formatter.write_str("Field 'lock_delay' must be a Sequence".as_error().as_str())?;
+            }
+        }
+
+        match &self.username {
+            Value::String(username) => {
+                formatter.write_str("\n    username: ")?;
+                formatter.write_str(username)?;
+            }
+            _ => {
+                formatter.write_str("\n    username: ")?;
+                formatter.write_str("Field 'username' must be a String".as_error().as_str())?;
+            }
+        }
+
+        match &self.username {
+            Value::String(password) => {
+                formatter.write_str("\n    password: ")?;
+                formatter.write_str(password)?;
+            }
+            _ => {
+                formatter.write_str("\n    password: ")?;
+                formatter.write_str("Field 'password' must be a String".as_error().as_str())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize, Default)]
+pub struct InvalidStateboardParams {
+    uri: Value,
+    password: Value,
+}
+
+impl fmt::Debug for InvalidStateboardParams {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("\n      uri: ")?;
+        if let Ok(uri) = serde_yaml::from_value::<Uri>(self.uri.clone()) {
+            formatter.write_str(uri.to_string().as_str())?;
+        } else {
+            formatter.write_str("Invalid Uri".as_error().as_str())?;
+        }
+
+        formatter.write_str("\n      password: ")?;
+        match &self.password {
+            Value::Null => {
+                formatter.write_str("Missing field 'password'".as_error().as_str())?;
+            }
+            Value::String(password) => {
+                formatter.write_str(password)?;
+            }
+            _ => {
+                formatter.write_str("Field 'password' must be a String".as_error().as_str())?;
+            }
+        }
+
+        Ok(())
     }
 }
 

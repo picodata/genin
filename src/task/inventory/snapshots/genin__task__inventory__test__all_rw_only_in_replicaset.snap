@@ -1,0 +1,46 @@
+---
+source: src/task/inventory/test.rs
+expression: inventory
+---
+all:
+  vars:
+    ansible_user: ansible
+    ansible_password: ansible
+    cartridge_app_name: myapp
+    cartridge_cluster_cookie: myapp-cookie
+    cartridge_package_path: /tmp/myapp.rpm
+    cartridge_bootstrap_vshard: true
+    cartridge_failover_params:
+      mode: stateful
+      state_provider: stateboard
+      stateboard_params:
+        uri: "192.168.16.11:4401"
+        password: password
+  hosts:
+    storage-1:
+      config:
+        advertise_uri: "192.168.16.11:3031"
+        http_port: 8081
+    stateboard:
+      stateboard: true
+      config:
+        listen: "192.168.16.11:4401"
+        password: password
+  children:
+    storage-1-replicaset:
+      vars:
+        replicaset_alias: storage-1
+        failover_priority:
+          - storage-1
+        roles:
+          - storage
+        all_rw: true
+      hosts:
+        storage-1: ~
+    server-1:
+      vars:
+        ansible_host: 192.168.16.11
+      hosts:
+        storage-1: ~
+        stateboard: ~
+

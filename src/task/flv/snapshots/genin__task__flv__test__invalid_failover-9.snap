@@ -1,0 +1,10 @@
+---
+source: src/task/flv/test.rs
+expression: uncolorize(invalid_v1)
+---
+
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params: 
+      uri: 192.168.16.11:4401
+      password: "Field 'password' must be a String"

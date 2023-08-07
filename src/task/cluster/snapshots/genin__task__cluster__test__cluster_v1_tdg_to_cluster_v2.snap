@@ -1,0 +1,71 @@
+---
+source: src/task/cluster/test.rs
+expression: cluster_v2
+---
+topology:
+  - name: l-n
+    replicasets_count: 2
+    weight: 10
+    roles:
+      - logger
+      - notifier
+  - name: op-t
+    replicasets_count: 5
+    weight: 10
+    roles:
+      - output_processor
+      - task_runner
+  - name: c-ip
+    replicasets_count: 5
+    weight: 10
+    roles:
+      - connector
+      - input_processor
+      - failover-coordinator
+  - name: sch
+    replicasets_count: 2
+    weight: 10
+    roles:
+      - scheduler
+  - name: storage
+    replicasets_count: 3
+    replication_factor: 3
+    weight: 10
+    roles:
+      - storage
+hosts:
+  - name: vagr_tdg
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: tdg-1
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.123.2
+      - name: tdg-2
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.123.3
+      - name: tdg-3
+        config:
+          http_port: 8081
+          binary_port: 3031
+          address: 192.168.123.4
+failover:
+  mode: stateful
+  state_provider: etcd2
+  etcd2_params:
+    prefix: cartridge/tdg
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.123.2:2379"
+vars:
+  ansible_user: vagrant
+  ansible_password: vagrant
+  cartridge_app_name: tdg
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: "./tdg-1.7.17-0-g2a5b4bd18.rpm"
+

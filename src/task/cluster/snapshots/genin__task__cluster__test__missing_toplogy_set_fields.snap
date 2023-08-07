@@ -1,0 +1,32 @@
+---
+source: src/task/cluster/test.rs
+expression: uncolorize(result)
+---
+Err(Cluster configuration contains errors(Ok(
+---
+topology: 
+  - name: "Missing field 'name'"
+    replicasets_count: 3
+    replication_factor: 10
+    roles: 
+      - calculator
+    cartridge_extra_env: 
+      FOO: bar
+      BIZ: 
+      - "Expected type Dict got Number"
+      - two
+
+    config: 
+      http_port: "Not in range 0..65535"
+    vars: 
+
+      - ENV_1: "Expected type Dict got Number"
+
+      - ENV_2: "Expected type Dict got Number"
+  - name: "Missing field 'name'"
+    replication_factor: 1
+    roles: 
+      - value
+hosts: "Missing field 'hosts'"
+vars: "Vars must be a mapping"
+)))
