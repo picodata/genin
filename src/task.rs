@@ -319,6 +319,3 @@ impl<'a> std::fmt::Debug for ErrConfMapping<'a> {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod test;

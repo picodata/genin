@@ -330,3 +330,36 @@ fn sequential_upgrade_with_decreasing() {
 
     insta::assert_display_snapshot!("cluster_v4_to_cluster_v5", cluster_v4_to_cluster_v5);
 }
+
+#[test]
+fn upgrade_consistency_100_times() {
+    cleanup_test_dir("tests/.upgrade_consistency_100_times");
+
+    for _ in 1..=100 {
+        let output = Command::new(format!(
+            "{}/target/debug/genin",
+            std::env::var("CARGO_MANIFEST_DIR").unwrap()
+        ))
+        .arg("upgrade")
+        .arg("--old")
+        .arg("tests/resources/cluster.genin.yml")
+        .arg("--new")
+        .arg("tests/resources/cluster-new.genin.yml")
+        .arg("--output")
+        .arg("tests/.upgrade_consistency_100_times/inventory.yml")
+        .arg("-f")
+        .arg("--state-dir")
+        .arg("tests/.upgrade_consistency_100_times/.geninstate")
+        .output()
+        .expect("Failed to execute command");
+
+        let consistency_100_times = build_result_from_output(output);
+
+        let consistency_100_times = format!(
+            "{consistency_100_times}\n{}",
+            read_to_string("tests/.upgrade_consistency_100_times/inventory.yml").unwrap()
+        );
+
+        insta::assert_display_snapshot!("consistency_100_times", consistency_100_times);
+    }
+}
