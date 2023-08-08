@@ -7,7 +7,6 @@ pub enum GeninErrorKind {
     EmptyField,
     SpreadingError,
     Deserialization,
-    Serialization,
     UnknownFailureDomain,
     NotApplicable,
 }

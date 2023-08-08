@@ -1,4 +1,5 @@
 use std::convert::TryFrom;
+use std::fs::File;
 use std::io;
 use std::path::PathBuf;
 
@@ -22,11 +23,25 @@ use crate::{
     task::cluster::ins::Role,
 };
 
+use super::cluster::ClusterError;
 use super::utils::create_file_or_copy;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Inventory {
     pub all: InventoryParts,
+}
+
+impl<'a> TryFrom<&'a ArgMatches> for Inventory {
+    type Error = InventoryError;
+
+    fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
+        let path = match args.get_one::<String>("output") {
+            Some(path) => path,
+            None => "inventory.yml",
+        };
+
+        Ok(serde_yaml::from_reader(File::open(path)?)?)
+    }
 }
 
 impl<'a> TryFrom<&'a [u8]> for Inventory {
@@ -259,6 +274,10 @@ impl Inventory {
 
         Ok(())
     }
+
+    pub fn try_into_cluster(&self) -> Result<Cluster, InventoryError> {
+        Ok(Cluster::try_from(self)?)
+    }
 }
 
 #[derive(Error, Debug)]
@@ -269,6 +288,8 @@ pub enum InventoryError {
     Serde(#[from] serde_yaml::Error),
     #[error("genin error")]
     Genin(#[from] GeninError),
+    #[error("cluster error")]
+    Cluster(#[from] ClusterError),
 }
 
 impl Validate for Inventory {

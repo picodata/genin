@@ -1,7 +1,8 @@
-use serde::de;
 use std::error;
 use std::fmt;
 use std::fmt::Display;
+
+use serde::de::DeserializeOwned;
 
 use crate::task;
 
@@ -41,14 +42,13 @@ impl fmt::Debug for MallformedContent {
     }
 }
 
+#[allow(unused)]
 pub fn from_slice<T>(slice: &[u8]) -> Result<T, Error<impl fmt::Debug>>
 where
-    T: de::DeserializeOwned + fmt::Debug + task::Validate,
+    T: DeserializeOwned + fmt::Debug + task::Validate,
 {
     serde_yaml::from_slice::<T>(slice).map_err(|err| Error {
         message: err.to_string(),
-        inner: T::validate(slice).map_err(|err| {
-            MallformedContent(err.to_string())
-        }),
+        inner: T::validate(slice).map_err(|err| MallformedContent(err.to_string())),
     })
 }

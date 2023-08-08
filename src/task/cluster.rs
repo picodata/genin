@@ -19,7 +19,6 @@ use std::net::IpAddr;
 use std::path::PathBuf;
 use thiserror::Error;
 
-use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::hst::v1::Host;
 use crate::task::cluster::hst::v2::{HostV2, HostV2Config, WithHosts};
 use crate::task::cluster::hst::view::View;
@@ -260,142 +259,130 @@ impl<'a> TryFrom<&'a PathBuf> for Cluster {
     }
 }
 
-impl<'a> TryFrom<&'a Option<Inventory>> for Cluster {
-    type Error = GeninError;
+impl<'a> TryFrom<&'a Inventory> for Cluster {
+    type Error = ClusterError;
 
-    fn try_from(inventory: &'a Option<Inventory>) -> Result<Self, Self::Error> {
-        if let Some(inventory) = inventory {
-            Ok(Cluster {
-                topology: Topology::try_from(Instances::from(
-                    inventory
-                        .all
-                        .hosts
-                        .iter()
-                        .filter(|(_, host)| !host.stateboard)
-                        .map(|(name, inventory_host)| {
-                            let replicaset_name =
-                                name.get_parent_name().clone_with_index("replicaset");
-                            let mut instance = InstanceV2::from((name, inventory_host)).with_roles(
-                                inventory
-                                    .all
-                                    .children
-                                    .get(&replicaset_name)
-                                    .map(|replicaset| match replicaset {
-                                        Child::Replicaset { vars, .. } => vars.roles.clone(),
-                                        _ => unreachable!(),
-                                    })
-                                    .ok_or_else(|| {
-                                        GeninError::new(
-                                            GeninErrorKind::Serialization,
-                                            format!(
-                                                "failed to get replicaset with name {}",
-                                                &replicaset_name
-                                            ),
-                                        )
-                                    })?,
-                            );
+    fn try_from(inventory: &'a Inventory) -> Result<Self, Self::Error> {
+        Ok(Cluster {
+            topology: Topology::try_from(Instances::from(
+                inventory
+                    .all
+                    .hosts
+                    .iter()
+                    .filter(|(_, host)| !host.stateboard)
+                    .map(|(name, inventory_host)| {
+                        let replicaset_name = if name.len() == 2 {
+                            name.clone_with_index("replicaset")
+                        } else {
+                            name.get_parent_name().clone_with_index("replicaset")
+                        };
+                        let mut instance = InstanceV2::from((name, inventory_host)).with_roles(
+                            inventory
+                                .all
+                                .children
+                                .get(&replicaset_name)
+                                .map(|replicaset| match replicaset {
+                                    Child::Replicaset { vars, .. } => vars.roles.clone(),
+                                    _ => unreachable!(),
+                                })
+                                .ok_or_else(|| {
+                                    ClusterError::Other(format!(
+                                        "failed to get replicaset with name {}",
+                                        &replicaset_name
+                                    ))
+                                })?,
+                        );
 
-                            instance.config.http_port = None;
-                            instance.config.binary_port = None;
+                        instance.config.http_port = None;
+                        instance.config.binary_port = None;
 
-                            Ok(instance)
-                        })
-                        .collect::<Result<Vec<InstanceV2>, GeninError>>()?,
-                ))
-                .map_err(|err| GeninError::new(GeninErrorKind::Deserialization, err))?,
-                hosts: HostV2::from("cluster").with_hosts(
-                    inventory
-                        .all
-                        .children
-                        .iter()
-                        .filter_map(|(name, replicaset)| match replicaset {
-                            Child::Host {
-                                vars:
-                                    HostVars {
-                                        ansible_host,
-                                        additional_config,
-                                    },
-                                ..
-                            } => Some(HostV2 {
-                                name: name.clone(),
-                                config: HostV2Config::from(ansible_host.clone())
-                                    .with_additional_config(additional_config.clone())
-                                    .with_ports(
-                                        inventory
-                                            .all
-                                            .hosts
-                                            .iter()
-                                            .filter(|(_, instance)| !instance.stateboard)
-                                            .fold((u16::MAX, u16::MAX), |accum, (_, instance)| {
-                                                (
-                                                    accum.0.min(instance.config.http_port()),
-                                                    accum.1.min(instance.config.binary_port()),
-                                                )
-                                            }),
-                                    ),
-                                hosts: Vec::new(),
-                                add_queue: IndexMap::default(),
-                                delete_queue: IndexMap::default(),
-                                instances: Instances::from(
+                        Ok(instance)
+                    })
+                    .collect::<Result<Vec<InstanceV2>, ClusterError>>()?,
+            ))?,
+            hosts: HostV2::from("cluster").with_hosts(
+                inventory
+                    .all
+                    .children
+                    .iter()
+                    .filter_map(|(name, replicaset)| match replicaset {
+                        Child::Host {
+                            vars:
+                                HostVars {
+                                    ansible_host,
+                                    additional_config,
+                                },
+                            ..
+                        } => Some(HostV2 {
+                            name: name.clone(),
+                            config: HostV2Config::from(ansible_host.clone())
+                                .with_additional_config(additional_config.clone())
+                                .with_ports(
                                     inventory
                                         .all
                                         .hosts
                                         .iter()
-                                        .filter_map(|(name, instance)| {
-                                            let config = HostV2Config::from(&instance.config);
-                                            debug!(
-                                                "ansible_host: {} instance_address: {}",
-                                                ansible_host,
-                                                config.address()
-                                            );
-                                            if ansible_host.eq(&config.address()) {
-                                                Some(InstanceV2 {
-                                                    name: name.clone(),
-                                                    stateboard: instance.stateboard.then_some(true),
-                                                    weight: None,
-                                                    failure_domains: Vec::new(),
-                                                    roles: Vec::new(),
-                                                    cartridge_extra_env: instance.vars.clone(),
-                                                    config: InstanceV2Config::from(
-                                                        &instance.config,
-                                                    ),
-                                                    vars: instance.vars.clone(),
-                                                    view: View::default(),
-                                                })
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .collect::<Vec<InstanceV2>>(),
+                                        .filter(|(_, instance)| !instance.stateboard)
+                                        .fold((u16::MAX, u16::MAX), |accum, (_, instance)| {
+                                            (
+                                                accum.0.min(instance.config.http_port()),
+                                                accum.1.min(instance.config.binary_port()),
+                                            )
+                                        }),
                                 ),
-                            }),
-                            Child::Replicaset { .. } => None,
-                        })
-                        .collect::<Vec<HostV2>>(),
-                ),
-                failover: inventory
-                    .all
-                    .vars
-                    .cartridge_failover_params
-                    .clone()
-                    .ok_or_else(|| {
-                        GeninError::new(
-                            GeninErrorKind::EmptyField,
-                            "inventory vars does not have cartridge_failover_params field",
-                        )
-                    })?,
-                vars: inventory.all.vars.clone(),
-                metadata: ClusterMetadata {
-                    paths: Default::default(),
-                },
-            })
-        } else {
-            Err(GeninError::new(
-                GeninErrorKind::EmptyField,
-                "the cluster cannot be built from the inventory \
-                because the inventory field is empty",
-            ))
-        }
+                            hosts: Vec::new(),
+                            add_queue: IndexMap::default(),
+                            delete_queue: IndexMap::default(),
+                            instances: Instances::from(
+                                inventory
+                                    .all
+                                    .hosts
+                                    .iter()
+                                    .filter_map(|(name, instance)| {
+                                        let config = HostV2Config::from(&instance.config);
+                                        debug!(
+                                            "ansible_host: {} instance_address: {}",
+                                            ansible_host,
+                                            config.address()
+                                        );
+                                        if ansible_host.eq(&config.address()) {
+                                            Some(InstanceV2 {
+                                                name: name.clone(),
+                                                stateboard: instance.stateboard.then_some(true),
+                                                weight: None,
+                                                failure_domains: Vec::new(),
+                                                roles: Vec::new(),
+                                                cartridge_extra_env: instance.vars.clone(),
+                                                config: InstanceV2Config::from(&instance.config),
+                                                vars: instance.vars.clone(),
+                                                view: View::default(),
+                                            })
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .collect::<Vec<InstanceV2>>(),
+                            ),
+                        }),
+                        Child::Replicaset { .. } => None,
+                    })
+                    .collect::<Vec<HostV2>>(),
+            ),
+            failover: inventory
+                .all
+                .vars
+                .cartridge_failover_params
+                .clone()
+                .ok_or_else(|| {
+                    ClusterError::Other(
+                        "inventory vars does not have cartridge_failover_params field".into(),
+                    )
+                })?,
+            vars: inventory.all.vars.clone(),
+            metadata: ClusterMetadata {
+                paths: Default::default(),
+            },
+        })
     }
 }
 
