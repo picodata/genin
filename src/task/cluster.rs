@@ -584,7 +584,11 @@ impl Cluster {
         Self { hosts, ..self }
     }
 
-    pub fn merge(&mut self, new: &mut Cluster, idiomatic: bool) -> Result<Vec<Change>, ClusterError> {
+    pub fn merge(
+        &mut self,
+        new: &mut Cluster,
+        idiomatic: bool,
+    ) -> Result<Vec<Change>, ClusterError> {
         self.hosts.delete_stateboard();
 
         std::mem::swap(&mut self.failover, &mut new.failover);
@@ -642,9 +646,9 @@ impl Cluster {
 
     pub fn write(self, args: &ArgMatches) -> Result<(), ClusterError> {
         let path = PathBuf::from(
-            args.try_get_one::<&str>("output")
-                .unwrap_or_default()
-                .unwrap_or(&"cluster.genin.yml")
+            args.get_one::<String>("output")
+                .cloned()
+                .unwrap_or("cluster.genin.yml".into())
                 .to_owned(),
         );
 

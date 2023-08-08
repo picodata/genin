@@ -86,7 +86,7 @@ pub(super) fn read() -> ArgMatches {
                         .help("export the build state"),
                 ]),
             Command::new("init")
-                .about("Init genin and create cluster.genin.yaml configuration")
+                .about("Init genin and create cluster.genin.yml configuration")
                 .args(&[
                     Arg::new("output")
                         .long("output")

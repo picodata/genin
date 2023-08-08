@@ -67,7 +67,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     //      - return tuple
     match args.subcommand() {
         Some(("init", args)) => {
-            Cluster::try_from(args)?
+            Cluster::default()
                 .print(args)
                 .clear_instances()
                 .write(args)?;

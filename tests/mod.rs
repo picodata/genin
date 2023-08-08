@@ -32,6 +32,29 @@ pub fn build_result_from_output(output: Output) -> String {
 }
 
 #[test]
+fn genin_init() {
+    cleanup_test_dir("tests/.genin_init");
+
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("init")
+    .arg("--output")
+    .arg("tests/.genin_init/cluster.genin.yml")
+    .output()
+    .expect("Failed to execute command");
+
+    let genin_init = build_result_from_output(output);
+    let genin_init = format!(
+        "{genin_init}\n{}",
+        read_to_string("tests/.genin_init/cluster.genin.yml").unwrap()
+    );
+
+    insta::assert_display_snapshot!("genin_init", genin_init);
+}
+
+#[test]
 fn warning_message_on_init_output() {
     cleanup_test_dir("tests/.warning_message_on_init_output");
     create_file("tests/.warning_message_on_init_output/cluster.genin.yml");
