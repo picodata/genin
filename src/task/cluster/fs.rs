@@ -15,7 +15,6 @@ use crate::{
     task::{serde_genin, Validate},
 };
 
-pub const CLUSTER_YAML: &str = "cluster.genin.yml";
 pub const INVENTORY_YAML: &str = "inventory.yml";
 
 //TODO: remove it in next commits
@@ -300,15 +299,6 @@ impl<I: Serialize, O: Write> IO<I, O> {
                 "failed to serialize input because output file is None",
             )
             .into())
-        }
-    }
-}
-
-impl<I, O> IO<I, O> {
-    pub fn consume_output(self) -> IO<I, String> {
-        IO {
-            input: self.input,
-            output: Option::<String>::None,
         }
     }
 }
