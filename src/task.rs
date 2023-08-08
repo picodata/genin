@@ -16,14 +16,9 @@ use std::path::PathBuf;
 use std::{fmt, io};
 
 use crate::error::{GeninError, GeninErrorKind};
-use crate::task::cluster::fs::{TryMap, IO};
 use crate::task::cluster::ClusterError;
 use crate::task::state::State;
-use crate::task::{
-    cluster::fs::{CLUSTER_YAML, INVENTORY_YAML},
-    cluster::Cluster,
-    inventory::Inventory,
-};
+use crate::task::{cluster::Cluster, inventory::Inventory};
 
 const BOOL: &str = "Bool";
 const NUMBER: &str = "Number";
@@ -67,7 +62,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     //      - return tuple
     match args.subcommand() {
         Some(("init", args)) => {
-            Cluster::try_from(args)?
+            Cluster::default()
                 .print(args)
                 .clear_instances()
                 .write(args)?;
@@ -81,24 +76,13 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .write(args)?;
         }
         Some(("inspect", args)) => {
-            IO::from(args)
-                .try_into_files(Some(CLUSTER_YAML), None, args.get_flag("force"))?
-                .deserialize_input::<Cluster>()?
-                .print_input(true)
-                .consume_output();
+            println!("{}", Cluster::try_from(args)?);
         }
         Some(("reverse", args)) => {
-            IO::from(args)
-                .try_into_files(Some(INVENTORY_YAML), None, args.get_flag("force"))?
-                .deserialize_input::<Inventory>()?
-                .try_map(|IO { input, output }| {
-                    Cluster::try_from(&input).map(|cluster| IO {
-                        input: Some(cluster),
-                        output,
-                    })
-                })?
-                .print_input(args.get_flag("quiet"))
-                .serialize_input()?;
+            Inventory::try_from(args)?
+                .try_into_cluster()?
+                .print(args)
+                .write(args)?;
         }
         Some(("upgrade", args)) => {
             let mut old: Cluster = if args.get_flag("from-latest-state") {

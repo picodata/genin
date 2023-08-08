@@ -441,7 +441,7 @@ all:
         advertise_uri: "192.168.16.12:3032"
         http_port: 8082
   children:
-    router-replicaset:
+    router-1-replicaset:
       vars:
         replicaset_alias: router
         failover_priority:
@@ -491,9 +491,7 @@ all:
 
     let inventory: Inventory = serde_yaml::from_str(&inventory_str).unwrap();
 
-    let cluster_v2 = Cluster::try_from(&Some(inventory))
-        .unwrap()
-        .clear_instances();
+    let cluster_v2 = Cluster::try_from(&inventory).unwrap().clear_instances();
 
     insta::assert_yaml_snapshot!(cluster_v2);
 }
