@@ -2,7 +2,7 @@
 source: src/task/cluster/test.rs
 expression: uncolorize(result)
 ---
-Err(Cluster configuration contains errors(Err(
+Err(Invalid cluster configuration(Err(
 
 ---
 topology:
