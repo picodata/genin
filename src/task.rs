@@ -148,8 +148,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
             for (id, entry) in entries
                 .into_iter()
                 .take(
-                    args.get_one::<usize>("number")
-                        .map(|num| num + 1)
+                    args.get_one::<String>("number")
+                        .map(|num| num.parse::<usize>().unwrap_or(10) + 1)
                         .unwrap_or(11),
                 )
                 .enumerate()
