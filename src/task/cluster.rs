@@ -43,6 +43,7 @@ use crate::task::utils::create_file_or_copy;
 use crate::task::vars::InvalidVars;
 
 use super::state::Change;
+use super::{TypeError, DICT};
 
 /// Cluster is a `genin` specific configuration file
 /// ```rust
@@ -470,9 +471,14 @@ impl<'de> Deserialize<'de> for Cluster {
                 },
             }
             .spread()),
-            ClusterHelper::InvalidCluster(_) => Err(serde::de::Error::custom(
-                "Cluster configuration contains errors",
-            )),
+            ClusterHelper::InvalidCluster(value) => {
+                println!(
+                    "Cluster configuration contains errors: {:?}",
+                    serde_yaml::from_value::<InvalidCluster>(value)
+                        .expect("can't fail because the value is parsed and not validated")
+                );
+                Err(serde::de::Error::custom("Invalid cluster configuration"))
+            }
         })
     }
 }
@@ -923,7 +929,6 @@ impl HostV2Helper {
     }
 }
 
-#[allow(unused)]
 struct TopologyMemberV1 {
     name: Name,
     count: usize,
@@ -979,16 +984,12 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
     }
 }
 
-#[allow(unused)]
 #[derive(Deserialize, Default)]
+#[serde(default)]
 pub struct InvalidCluster {
-    #[serde(default)]
     topology: Value,
-    #[serde(default)]
     hosts: Value,
-    #[serde(default)]
     failover: Value,
-    #[serde(default)]
     vars: Value,
 }
 
@@ -1058,7 +1059,10 @@ impl std::fmt::Debug for InvalidCluster {
                 ))?;
             }
             _ => {
-                formatter.write_str("Failover must be a mapping".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\nfailover: {}",
+                    self.failover.type_error(DICT).as_error()
+                ))?;
             }
         }
 
@@ -1072,8 +1076,10 @@ impl std::fmt::Debug for InvalidCluster {
                 ))?;
             }
             _ => {
-                formatter.write_str("\nvars: ")?;
-                formatter.write_str("Vars must be a mapping".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\nvars: {}",
+                    self.vars.type_error(DICT).as_error()
+                ))?;
             }
         }
 
