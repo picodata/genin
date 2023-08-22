@@ -184,7 +184,7 @@ fn build_from_state() {
     .arg("-o")
     .arg("tests/.build_from_state/inventory.yml")
     .arg("--export-state")
-    .arg("tests/.build_from_state/state.tgz")
+    .arg("tests/.build_from_state/state.gz")
     .output()
     .expect("Failed to execute command");
 
@@ -194,7 +194,7 @@ fn build_from_state() {
     ))
     .arg("build")
     .arg("-s")
-    .arg("tests/.build_from_state/state.tgz")
+    .arg("tests/.build_from_state/state.gz")
     .arg("-o")
     .arg("tests/.build_from_state/inventory.yml")
     .arg("-f")
@@ -215,7 +215,7 @@ fn build_from_state() {
     .arg("-o")
     .arg("tests/.build_from_state/inventory_new.yml")
     .arg("--export-state")
-    .arg("tests/.build_from_state/state.tgz")
+    .arg("tests/.build_from_state/state.gz")
     .output()
     .expect("Failed to execute command");
 
@@ -225,7 +225,7 @@ fn build_from_state() {
     ))
     .arg("build")
     .arg("-s")
-    .arg("tests/.build_from_state/state.tgz")
+    .arg("tests/.build_from_state/state.gz")
     .arg("-o")
     .arg("tests/.build_from_state/inventory_new.yml")
     .arg("-f")
@@ -253,7 +253,7 @@ fn sequential_upgrade_from_state() {
     .arg("--output")
     .arg("tests/.sequential_upgrade_from_state/v1_inventory.yml")
     .arg("--export-state")
-    .arg("tests/.sequential_upgrade_from_state/v1_state.tgz")
+    .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
     .arg("--state-dir")
     .arg("tests/.sequential_upgrade_from_state/.geninstate")
     .output()
@@ -278,7 +278,7 @@ fn sequential_upgrade_from_state() {
     ))
     .arg("upgrade")
     .arg("--old")
-    .arg("tests/.sequential_upgrade_from_state/v1_state.tgz")
+    .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
     .arg("--new")
     .arg("tests/resources/cluster-new-v2.genin.yml")
     .arg("--output")

@@ -203,7 +203,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
 
     fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
         match args.try_get_one::<String>("source") {
-            Ok(Some(path)) if path.ends_with(".tgz") => {
+            Ok(Some(path)) if path.ends_with(".gz") => {
                 debug!("Restoring the cluster distribution from the state file {path}");
                 Ok(Cluster {
                     metadata: ClusterMetadata {
@@ -816,7 +816,7 @@ impl Cluster {
         let path: String = if let Ok(Some(path)) = args.try_get_one::<String>("export-state") {
             path.into()
         } else {
-            format!("{state_dir}/latest.tgz")
+            format!("{state_dir}/latest.gz")
         };
 
         // if args != export-state -> try open latest
