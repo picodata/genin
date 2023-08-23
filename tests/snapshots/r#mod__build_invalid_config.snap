@@ -1,0 +1,52 @@
+---
+source: tests/mod.rs
+expression: build_invalid_config
+---
+Cluster configuration contains errors: 
+---
+topology: 
+  - name: "Missing field 'name'"
+    replicasets_count: "Expected type Number got String"
+    roles: 
+      - router
+      - failover-coordinator
+  - name: "Expected type String got List"
+    replicasets_count: 2
+    replication_factor: "Expected type Number got String"
+    roles: "Expected type List got Dict"
+hosts:
+  - name: datacenter-1
+    config: 
+      http_port: "Not in range 0..65535"
+      binary_port: "Expected type Number got String"
+    hosts: 
+      - name: server-1
+        config: 
+          http_port: "Expected type Number got List"
+          binary_port: 3031
+          address: 192.168.16.11
+      - name: server-2
+        config: 
+          http_port: 8081
+          binary_port: 3031
+      - name: "Missing field 'name'"
+        config: 
+          http_port: 8081
+          binary_port: 3031
+          address: "Expected type String got Number"
+          additional_config: "Expected type Dict got List"
+failover: 
+  mode: stateful
+  state_provider: stateboard
+  stateboard_params: 
+      uri: "Invalid Uri"
+      password: "Expected type String got Number"
+vars: 
+  ansible_user: ansible
+  ansible_password: "Expected type String got Number"
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: "Expected type Bool got String"
+
+Error: Serde(Message("Invalid cluster configuration", None))
+

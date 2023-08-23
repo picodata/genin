@@ -7,4 +7,4 @@ expression: uncolorize(invalid_v1)
   state_provider: stateboard
   stateboard_params: 
       uri: 192.168.16.11:4401
-      password: "Field 'password' must be a String"
+      password: "Expected type String got Number"

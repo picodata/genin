@@ -11,11 +11,19 @@
         - [RHEL, Fedora, Rockylinux](#rhel-centos-rockylinux-fedora)
         - [Ubuntu](#ubuntu)
         - [Debian](#debian)
-        - [macOS](#macosx)
+        - [macOS](#macos)
         - [Windows](#windows)
     * [Usage guide](#usage-guide)
         + [Inventory generation](#inventory-generation)
+        + [Editing-the-cluster-configuration](#Editing-the-cluster-configuration)
+            + [Minimal configuration](#Minimal-configuration)
+            + [Changing the Topology](#Changing-the-Topology)
+            + [Redefining failover](#Redefining-failover)
+            + [Balancing and distribution control](#Balancing-and-distribution-control)
+        + [Reverse parsing config](#Reverse-parsing-config)
         + [Flags and options](#flags-and-options)
+        + [Genin upgrade](#Genin-upgrade)
+        + [Genin state](#Genin-state)
     * [Building from sources](#building-from-sources)
     * [Contributing](#contributing)
     * [Versioning](#versioning)
@@ -46,8 +54,8 @@ Download and unzip the archive for the desired architecture.
 
 Universal executable:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.5.3-x86_64-musl.tar.gz
-tar -xvf genin-0.5.3-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.5.4-x86_64-musl.tar.gz
+tar -xvf genin-0.5.4-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
 ```
 
 ---
@@ -84,11 +92,11 @@ sudo yum install -y genin
 2. If you want to install `rpm` packages directly without
 adding our repository.
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.5.3-1.el8.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.5.4-1.el8.x86_64.rpm
 ```
 RHEL 7.x, CentOS 7.x
 ```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.5.3-1.el7.x86_64.rpm
+sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.5.4-1.el7.x86_64.rpm
 ```
 
 ---
@@ -116,7 +124,7 @@ sudo apt install -y genin
 
 2. Downloading and installing the package directly:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.3.amd64.deb && sudo dpkg -i genin-0.5.3.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.4.amd64.deb && sudo dpkg -i genin-0.5.4.amd64.deb
 ```
 
 ---
@@ -142,14 +150,14 @@ sudo apt install -y genin
 
 2. Downloading and installing the package directly:
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.3.amd64.deb && sudo dpkg -i genin-0.5.3.amd64.deb
+curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.4.amd64.deb && sudo dpkg -i genin-0.5.4.amd64.deb
 ```
 
 ---
 
-#### MacOSX
+#### macOS
 Installing with the `homebrew` package manager is the easiest way to
-install Genin on MacOSX family (10.10+). If this is the first product of
+install Genin on macOS family (10.10+). If this is the first product of
 `picodata` which you pay to use then you first need to add our `Tap`.
 ```shell
 brew tap picodata/homebrew-tap
@@ -162,8 +170,8 @@ brew install genin
 Use the following command to grab and install Genin in macOS (10.10+) wihtout
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.5.3-darwin-amd64.zip -o genin-0.5.3-darwin-amd64.zip
-unzip genin-0.5.3-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.5.4-darwin-amd64.zip -o genin-0.5.4-darwin-amd64.zip
+unzip genin-0.5.4-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory.
 > Make sure the directory is in your `$PATH`.
@@ -181,8 +189,8 @@ brew install genin@0.3.8
 #### Windows
 Use the following command to grab and install Genin in Windows 7 64 bit or newer:
 ```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.5.3-darwin-amd64.zip -o genin-0.5.3-windows-amd64.zip
-unzip.exe genin-0.5.3-windows-amd64.zip -d %HOME%/.cargo/bin/
+curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.5.4-darwin-amd64.zip -o genin-0.5.4-windows-amd64.zip
+unzip.exe genin-0.5.4-windows-amd64.zip -d %HOME%/.cargo/bin/
 ```
 > **Note:** The application can then be found under the `.cargo/bin` folder inside
 > your user profile folder. Make sure it is in your `%PATH%`.
@@ -717,6 +725,339 @@ overwrite the target file, there is a `--force` flag (or short `-f`).
 genin build -o my-cluster.yml
 genin build -o my-cluster.yml --force
 ```
+
+The `--export-state` argument can be useful to export [state](#Genin-state) into a 
+separate file.
+```shell
+genin build -s cluster.genin.yml --export-state my-state.gz
+```
+
+The `quiet` option can be useful if you want to disable the display of the cluster in 
+the console.
+```shell
+genin init --quiet
+genin build --quiet -s cluster.genin.yml
+genin upgrade --quiet --old cluster.genin.yml --new cluster-new.genin.yml
+```
+
+Especially for cases when an idiomatic distribution is needed, the
+`--idiomatic-merge` option has been added. Without it, `genin` considers
+replicasets with the same name are equivalent. For example `api-1` and
+`api-1-1` will be considered replicas of the same replicaset. With the
+addition of the option without an exact match of the replica name, the
+replicas will never be merged to the replicaset.
+```shell
+genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+| api-1       | api-1-1     | api-1-2     | api-1-3     |
+| 8083/3033   | 8083/3033   | 8083/3033   | 8083/3033   |
++-------------+-------------+-------------+-------------+
+```
+
+```shell
+genin upgrade --idiomatic-merge --old cluster-old.genin.yml --new cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+| api-1       | api-1-1     | api-1-2     | api-1-3     |
+| 8083/3033   | 8083/3033   | 8083/3033   | 8083/3033   |
++-------------+-------------+-------------+-------------+
+| api-1-4     |                                         |
+| 8083/3033   |                                         |
++-------------+-------------+-------------+-------------+
+```
+
+---
+
+### Genin upgrade
+
+Almost from the first versions of `Genin` it supports the `upgrade` command which allows
+generating inventories based on two different cluster configurations. She has several
+significant differences from the `build` command. For example, if we take the initial 
+configuration with 4 servers in 2 data centers, double the number of servers, and add
+several new replicas, `genin build` will generate a standard distribution.
+```shell
+genin build --source cluster-old.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+```
+
+```shell
+genin build --source cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 | storage-2-4 |
+| 8083/3033   | 8083/3033   | 8083/3033   | 8083/3033   |
++-------------+-------------+-------------+-------------+
+```
+
+In this case, any change in the configuration, for example, changing ports, will completely 
+overwrite starting ports of the original cluster. Installation based on such inventory is 
+completely will break an already existing cluster.
+```shell
+genin build --source cluster-old.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+```
+
+```shell
+genin build --source cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  9081/5031  |  9081/5031  |  9081/5031  |  9081/5031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 9082/5032   | 9082/5032   | 9082/5032   | 9082/5032   |
++-------------+-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 | storage-2-4 |
+| 9083/5033   | 9083/5033   | 9083/5033   | 9083/5033   |
++-------------+-------------+-------------+-------------+
+```
+
+Therefore, there is a `genin upgrade` command specifically for **upgrade** cases.
+> **Note:** `upgrade` is a sequential cluster change based on source configuration 
+> `--old` and target configuration `--new`. With which it is guaranteed that 
+> ports/addresses and other unchanging parameters are saved on cluster instances `--old`.
+
+```shell
+genin build --source cluster-old.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+```
+
+```shell
+genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 | storage-2-4 |
+| 9083/5033   | 9083/5033   | 9083/5033   | 9083/5033   |
++-------------+-------------+-------------+-------------+
+```
+
+Such inventory can be safely applied over a cluster installed with using the first inventory, 
+and all new instances will have a new configuration, and all the old ones will receive only 
+those parameters that can be changed without breaking the cluster.
+
+
+---
+
+### Genin state
+
+When using `genin upgrade` we always get consistent changes in the cluster, but only within 
+one single upgrade. This is because the configuration clusters passed in the `--old` and `--new` 
+arguments are distributed in the same way as with `genin build`. That is, we first distribute the 
+configuration passed to `--old` and then over it passed to `--new`. This means that if we want to 
+`upgrade` again but already on top of the configuration passed to `--old` then this will be 
+equivalent to calling `genin build`.
+```shell
+genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  8081/3031  |  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 8082/3032   | 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 | storage-2-4 |
+| 9083/5033   | 9083/5033   | 9083/5033   | 9083/5033   |
++-------------+-------------+-------------+-------------+
+```
+
+```shell
+genin upgrade --old cluster-new.genin.yml --new cluster-new-new.genin.yml
+
++-------------+-------------+-------------+-------------+
+|                        cluster                        |
++-------------+-------------+-------------+-------------+
+|        datacenter-1       |        datacenter-2       |
++-------------+-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |  server-4   |
++-------------+-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |  router-4   |
+|  9081/5031  |  9081/5031  |  9081/5031  |  9081/5031  |
++-------------+-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 | storage-1-4 |
+| 9082/5032   | 9082/5032   | 9082/5032   | 9082/5032   |
++-------------+-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 | storage-2-4 |
+| 9083/5033   | 9083/5033   | 9083/5033   | 9083/5033   |
++-------------+-------------+-------------+-------------+
+| storage-3-1 | storage-3-2 | storage-3-3 | storage-3-4 |
+| 9581/5531   | 9581/5531   | 9581/5531   | 9581/5531   |
++-------------+-------------+-------------+-------------+
+```
+
+Specially to avoid this, `genin` was added to save metadata and tree allocations to a special 
+`geninstate`. In fact, this is just a cast of how `genin` allocated instances when 
+`genin upgrade` is called, allowing `upgrade` to be called as much once and always receive 
+only consistent (safe) inventory changes.
+
+Starting from version `0.5.0` in the startup directory `genin` will create a directory 
+`.geninstate` and save archives with the state in it. For example, a directory might look like 
+this:
+```shell
+.geninstate
+├── 0b94d04e689d2a52048574903de899a36582a968a700095a019dc1097587054a.gz
+├── 14a3a6c82ec93b6a7e87bc09e086e42cdbca97c5ed158624054265e30036cbeb.gz
+├── 165582c99839c0dc3b6d918075128204da11116c5477f2cf839b608f06fddf11.gz
+├── 47e85eb6762cba402308430277a3061cffc39b0b2a6cdabb53ec4d8951d1cd3f.gz
+├── 92fe50ac32b1821d60aa41906500b8772360f005ebebb16efd405c513fd0e4bc.gz
+├── bf8e0e2339e13eff95c7f6acfb1668d15638ca03e1250726aa03f8e356841d37.gz
+└── latest.gz
+```
+
+`state` filenames can be of two types. The first is the `latest` state generated by last 
+successful run of `genin upgrade`. The second one is **sha256** sha sum computed on based 
+on `shasum256(shasum256 --old + shasum256 --new)`.
+
+To view the states (their contents), a new command `genin list-state` has also been added which 
+will display the last 10 runs of the `genin upgrade` command. In the displayed information will be 
+the type of operation, the arguments with which `genin` was called, as well as the list of changes 
+(what has been added and removed).
+
+```shell
+---
+Upgrade: --from-latest-state --new tests/resources/cluster-new-v5.genin.yml -f
+State file: .geninstate/latest.gz
+Topology changes:
+  + storage-3-1
+  + storage-3-2
+  + storage-4-1
+  + storage-4-2
+  - router-3
+  - storage-1-3
+  - storage-2-3
+Hosts changes:
+  - server-3
+---
+Upgrade: --from-latest-state --new tests/resources/cluster-new-v4.genin.yml -f
+State file: .geninstate/14a3a6c82ec93b6a7e87bc09e086e42cdbca97c5ed158624054265e30036cbeb.gz
+Topology changes:
+  - storage-3-1
+  - storage-3-2
+  - storage-3-3
+  - router-4
+  - storage-1-4
+  - storage-2-4
+  - storage-3-4
+Hosts changes:
+  - server-4
+```
+
+To perform an `upgrade` based on `state` (that is, based on a previous `upgrade`), you can:
+- Pass the path to the file with the state to the `--old` argument.
+  ```shell
+  genin upgrade --old .geninstate/14a3a6c82ec93b6a7e87bc09e086e42cdbca97c5ed158624054265e30036cbeb.gz --new cluster-new-new.genin.yml
+  ```
+- Replace `--old` argument with `--from-latest-state`.
+  ```shell
+  genin upgrade --from-latest-state --new cluster-new-new.genin.yml
+  ```
+
+Also, in some cases it may be convenient to save the entire `geninstate` somewhere in one 
+directory. This can be done with the `--state-dir` argument or by setting the `GENIN_STATE_DIR` 
+environment variable.
+
+The `--export-state` argument can be useful for keeping the upgrade state under some by another 
+name.
 
 ## Building from sources
 

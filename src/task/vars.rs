@@ -6,7 +6,7 @@ use serde_yaml::Value;
 
 use super::{
     flv::{Failover, FailoverVariants, Mode, StateProvider},
-    AsError,
+    AsError, TypeError, BOOL, DICT, STRING,
 };
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
@@ -102,8 +102,10 @@ impl fmt::Debug for InvalidVars {
                 formatter.write_str(ansible_user.as_str())?;
             }
             _ => {
-                formatter.write_str("\n  ansible_user: ")?;
-                formatter.write_str("Field 'ansible_user' must be a String".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n  ansible_user: {}",
+                    self.ansible_user.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -114,12 +116,10 @@ impl fmt::Debug for InvalidVars {
                 formatter.write_str(ansible_password.as_str())?;
             }
             _ => {
-                formatter.write_str("\n  ansible_password: ")?;
-                formatter.write_str(
-                    "Field 'ansible_password' must be a String"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  ansible_password: {}",
+                    self.ansible_password.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -130,12 +130,10 @@ impl fmt::Debug for InvalidVars {
                 formatter.write_str(cartridge_cluster_cookie.as_str())?;
             }
             _ => {
-                formatter.write_str("\n  cartridge_cluster_cookie: ")?;
-                formatter.write_str(
-                    "Field 'cartridge_cluster_cookie' must be a String"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  cartridge_cluster_cookie: {}",
+                    self.cartridge_cluster_cookie.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -146,12 +144,10 @@ impl fmt::Debug for InvalidVars {
                 formatter.write_str(cartridge_package_path.as_str())?;
             }
             _ => {
-                formatter.write_str("\n  cartridge_package_path: ")?;
-                formatter.write_str(
-                    "Field 'cartridge_package_path' must be a String"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  cartridge_package_path: {}",
+                    self.cartridge_package_path.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -162,12 +158,10 @@ impl fmt::Debug for InvalidVars {
                 formatter.write_str(cartridge_bootstrap_vshard.to_string().as_str())?;
             }
             _ => {
-                formatter.write_str("\n  cartridge_bootstrap_vshard: ")?;
-                formatter.write_str(
-                    "Field 'cartridge_bootstrap_vshard' must be a Bool"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  cartridge_bootstrap_vshard: {}",
+                    self.cartridge_bootstrap_vshard.type_error(BOOL).as_error()
+                ))?;
             }
         }
 
@@ -182,12 +176,10 @@ impl fmt::Debug for InvalidVars {
                 }
             }
             _ => {
-                formatter.write_str("\n  cartridge_failover_params: ")?;
-                formatter.write_str(
-                    "Field 'cartridge_failover_params' must be a Dict"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  cartridge_failover_params: {}",
+                    self.cartridge_failover_params.type_error(DICT).as_error()
+                ))?;
             }
         }
 
@@ -197,12 +189,10 @@ impl fmt::Debug for InvalidVars {
                 print_value_recursive(formatter, "\n    ", another_fields)?;
             }
             _ => {
-                formatter.write_str("\n  another_fields: ")?;
-                formatter.write_str(
-                    "Field 'another_fields' must be a Mapping"
-                        .as_error()
-                        .as_str(),
-                )?;
+                formatter.write_fmt(format_args!(
+                    "\n  another_fields: {}",
+                    self.another_fields.type_error(DICT).as_error()
+                ))?;
             }
         }
 

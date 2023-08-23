@@ -1088,15 +1088,12 @@ impl<'a> From<DomainMember> for Cow<'a, str> {
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, Eq)]
 pub struct IPSubnet(Vec<IpAddr>);
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
+#[serde(default)]
 pub struct InvalidHostV2 {
-    #[serde(skip)]
     pub offset: String,
-    #[serde(default)]
     name: Value,
-    #[serde(default)]
     config: Value,
-    #[serde(default)]
     hosts: Value,
 }
 
@@ -1177,19 +1174,15 @@ impl fmt::Debug for InvalidHostV2 {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
+#[serde(default)]
 pub struct InvalidHostV2Config {
     #[serde(skip)]
     offset: String,
-    #[serde(default)]
     pub http_port: Value,
-    #[serde(default)]
     pub binary_port: Value,
-    #[serde(default)]
     pub address: Value,
-    #[serde(default)]
     pub distance: Value,
-    #[serde(default)]
     pub additional_config: Value,
 }
 
@@ -1244,7 +1237,9 @@ impl fmt::Debug for InvalidHostV2Config {
 
         // address: String
         match &self.address {
-            Value::Null => {}
+            Value::Null => {
+                
+            }
             Value::String(address) => {
                 formatter.write_fmt(format_args!("{}address: {}", self.offset, address))?;
             }

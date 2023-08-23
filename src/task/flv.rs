@@ -11,7 +11,7 @@ use crate::{
     DEFAULT_STATEBOARD_PORT,
 };
 
-use super::{cluster::hst::v2::Address, AsError};
+use super::{cluster::hst::v2::Address, AsError, TypeError, LIST, NUMBER, STRING};
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 /// Failover enum
@@ -718,16 +718,22 @@ pub struct InvalidETCD2 {
 
 impl fmt::Debug for InvalidETCD2 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        formatter.write_str("\n    prefix: ")?;
         match &self.prefix {
             Value::Null => {
-                formatter.write_str("Missing field 'prefix'".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    prefix: {}",
+                    "Missing field 'prefix'".as_error()
+                ))?;
             }
             Value::String(prefix) => {
+                formatter.write_str("\n    prefix: ")?;
                 formatter.write_str(prefix)?;
             }
             _ => {
-                formatter.write_str("Field 'prefix' must be a String".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    prefix: {}",
+                    self.prefix.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -737,17 +743,22 @@ impl fmt::Debug for InvalidETCD2 {
                 formatter.write_str(lock_delay.to_string().as_str())?;
             }
             _ => {
-                formatter.write_str("\n    lock_delay: ")?;
-                formatter.write_str("Field 'lock_delay' must be a Number".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    lock_delay: {}",
+                    self.lock_delay.type_error(NUMBER).as_error()
+                ))?;
             }
         }
 
-        formatter.write_str("\n    endpoints:")?;
         match &self.endpoints {
             Value::Null => {
-                formatter.write_str("Missing field 'endpoints'".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    endpoints: {}",
+                    "Missing field 'endpoints'".as_error().as_str()
+                ))?;
             }
             Value::Sequence(seq) => {
+                formatter.write_str("\n    endpoints:")?;
                 for endpoint in seq {
                     if let Ok(uri) = serde_yaml::from_value::<UriWithProtocol>(endpoint.clone()) {
                         formatter.write_str(format!("\n      - {uri}").as_str())?;
@@ -758,7 +769,10 @@ impl fmt::Debug for InvalidETCD2 {
                 }
             }
             _ => {
-                formatter.write_str("Field 'lock_delay' must be a Sequence".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    endpoints: {}",
+                    self.endpoints.type_error(LIST).as_error()
+                ))?;
             }
         }
 
@@ -768,8 +782,10 @@ impl fmt::Debug for InvalidETCD2 {
                 formatter.write_str(username)?;
             }
             _ => {
-                formatter.write_str("\n    username: ")?;
-                formatter.write_str("Field 'username' must be a String".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    username: {}",
+                    self.username.type_error(STRING).as_error()
+                ))?;
             }
         }
 
@@ -779,8 +795,10 @@ impl fmt::Debug for InvalidETCD2 {
                 formatter.write_str(password)?;
             }
             _ => {
-                formatter.write_str("\n    password: ")?;
-                formatter.write_str("Field 'password' must be a String".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n    password: {}",
+                    self.username.type_error(STRING).as_error()
+                ))?;
             }
         }
         Ok(())
@@ -802,16 +820,22 @@ impl fmt::Debug for InvalidStateboardParams {
             formatter.write_str("Invalid Uri".as_error().as_str())?;
         }
 
-        formatter.write_str("\n      password: ")?;
         match &self.password {
             Value::Null => {
-                formatter.write_str("Missing field 'password'".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n      password: {}",
+                    "Missing field 'password'".as_error()
+                ))?;
             }
             Value::String(password) => {
+                formatter.write_str("\n      password: ")?;
                 formatter.write_str(password)?;
             }
             _ => {
-                formatter.write_str("Field 'password' must be a String".as_error().as_str())?;
+                formatter.write_fmt(format_args!(
+                    "\n      password: {}",
+                    self.password.type_error(STRING).as_error()
+                ))?;
             }
         }
 
