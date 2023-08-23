@@ -11,7 +11,7 @@
         - [RHEL, Fedora, Rockylinux](#rhel-centos-rockylinux-fedora)
         - [Ubuntu](#ubuntu)
         - [Debian](#debian)
-        - [macOS](#macosx)
+        - [macOS](#macos)
         - [Windows](#windows)
     * [Usage guide](#usage-guide)
         + [Inventory generation](#inventory-generation)
@@ -155,9 +155,9 @@ curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.4.amd64.
 
 ---
 
-#### MacOSX
+#### macOS
 Installing with the `homebrew` package manager is the easiest way to
-install Genin on MacOSX family (10.10+). If this is the first product of
+install Genin on macOS family (10.10+). If this is the first product of
 `picodata` which you pay to use then you first need to add our `Tap`.
 ```shell
 brew tap picodata/homebrew-tap
@@ -740,11 +740,12 @@ genin build --quiet -s cluster.genin.yml
 genin upgrade --quiet --old cluster.genin.yml --new cluster-new.genin.yml
 ```
 
-Especially for cases when an idiomatic distribution is needed, an option has been added
-`--idiomatic-merge`. Without it, `genin` considers replicasets with the same name are 
-equivalent. For example `api-1` and `api-1-1` will be considered replicas of the same 
-replicaset. With the addition of the option without an exact match of the replica name, 
-the replicas will never be merged to the replicaset.
+Especially for cases when an idiomatic distribution is needed, the
+`--idiomatic-merge` option has been added. Without it, `genin` considers
+replicasets with the same name are equivalent. For example `api-1` and
+`api-1-1` will be considered replicas of the same replicaset. With the
+addition of the option without an exact match of the replica name, the
+replicas will never be merged to the replicaset.
 ```shell
 genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
 
