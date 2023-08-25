@@ -485,7 +485,7 @@ impl std::fmt::Debug for InvalidTopologySet {
             }
             _ => {
                 formatter.write_fmt(format_args!(
-                    "    replication_factor: {}",
+                    "\n    replication_factor: {}",
                     self.replication_factor.type_error(NUMBER).as_error()
                 ))?;
             }

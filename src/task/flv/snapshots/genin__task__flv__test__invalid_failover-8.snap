@@ -7,9 +7,9 @@ expression: uncolorize(invalid_v1)
   state_provider: etcd2
   etcd2_params: 
     prefix: /cartridge
-    lock_delay: "Field 'lock_delay' must be a Number"
+    lock_delay: "Expected type Number got String"
     endpoints:
       - http://172.20.73.12:2379
       - "InvalidUri"
-    username: "Field 'username' must be a String"
-    password: "Field 'password' must be a String"
+    username: "Expected type String got Number"
+    password: "Expected type String got Number"

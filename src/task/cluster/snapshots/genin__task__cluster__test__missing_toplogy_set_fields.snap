@@ -2,7 +2,7 @@
 source: src/task/cluster/test.rs
 expression: uncolorize(result)
 ---
-Err(Cluster configuration contains errors(Ok(
+Err(Invalid cluster configuration(Ok(
 ---
 topology: 
   - name: "Missing field 'name'"
@@ -28,5 +28,5 @@ topology:
     roles: 
       - value
 hosts: "Missing field 'hosts'"
-vars: "Vars must be a mapping"
+vars: "Expected type Dict got Null"
 )))
