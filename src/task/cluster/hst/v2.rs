@@ -2,14 +2,14 @@ use indexmap::IndexMap;
 use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Number, Value};
-use std::fmt;
 use std::{borrow::Cow, cell::RefCell, cmp::Ordering, fmt::Display, net::IpAddr};
+use std::{fmt, mem};
 use tabled::papergrid::AnsiColor;
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
 use crate::task::cluster::hst::view::BG_BLACK;
 use crate::task::cluster::hst::{merge_index_maps, v1::Host, v1::HostsVariants, view::View, IP};
-use crate::task::cluster::ins::v2::Instances;
+use crate::task::cluster::ins::v2::{FailureDomains, Instances};
 use crate::task::flv::{Failover, FailoverVariants};
 use crate::task::state::Change;
 use crate::task::{AsError, ErrConfMapping, TypeError, DICT, LIST, NUMBER, STRING};
@@ -253,35 +253,6 @@ impl HostV2 {
     }
 
     pub fn inner_spread(&mut self) {
-        if self.hosts.is_empty() {
-            debug!(
-                "host {} does not have childrens, spreaded instances {}",
-                self.name,
-                self.instances
-                    .iter()
-                    .map(|instance| instance.name.to_string())
-                    .collect::<Vec<String>>()
-                    .join(" ")
-            );
-            self.instances
-                .iter_mut()
-                .enumerate()
-                .for_each(|(index, instance)| {
-                    *instance = InstanceV2 {
-                        config: instance
-                            .config
-                            .clone()
-                            .merge_and_up_ports(self.config.clone(), index as u16),
-                        ..instance.clone()
-                    };
-                    debug!(
-                        "host: {} instance: {} config: {:?}",
-                        self.name, instance.name, instance.config
-                    );
-                });
-            return;
-        }
-
         self.instances.reverse();
 
         debug!(
@@ -295,17 +266,18 @@ impl HostV2 {
         );
 
         //TODO: error propagation
-        while let Some(instance) = self.instances.pop() {
-            if instance.failure_domains.is_empty() {
-                debug!("instance {} does not have failure_domains", instance.name);
-                self.hosts.sort();
-                self.push(instance).unwrap();
-            } else {
+        let mut instances = mem::take(&mut self.instances);
+        while let Some(instance) = instances.pop() {
+            if instance.failure_domains.in_progress() {
                 debug!(
                     "start pushing instance {} with failure domain",
                     instance.name
                 );
                 self.push_to_failure_domain(instance).unwrap();
+            } else {
+                debug!("instance {} is either finished its failure domains processing, or doesn't have one", instance.name);
+                self.hosts.sort();
+                self.push(instance).unwrap();
             }
         }
 
@@ -314,28 +286,51 @@ impl HostV2 {
             host.config = host.config.clone().merge(self.config.clone());
             host.inner_spread();
         });
+
+        self.finish_host_spread();
+    }
+
+    fn finish_host_spread(&mut self) {
+        if !self.hosts.is_empty() {
+            debug!("host {} has children, therefore it is not a target for host spread finishing", self.name);
+            return;
+        }
+        debug!(
+            "finishing spread for {}, spread instances: {:#?}",
+            self.name,
+            self.instances
+                .iter()
+                .map(|instance| (instance.name.to_string(), instance.failure_domains.clone()))
+                .collect::<Vec<_>>()
+        );
+
+        let mut instances = mem::take(&mut self.instances);
+
+        for (index, mut instance) in instances.iter_mut().enumerate() {
+            instance.config = instance
+                .config
+                .clone()
+                .merge_and_up_ports(self.config.clone(), index as u16);
+            debug!(
+                "host: {} instance: {} config: {:?}",
+                self.name, instance.name, instance.config
+            );
+        }
+
+        self.instances = instances
     }
 
     fn push(&mut self, instance: InstanceV2) -> Result<(), GeninError> {
-        if let Some(host) = self.hosts.first_mut() {
-            host.instances.push(instance.clone());
-            host.add_queue
-                .insert(instance.name.clone(), instance.clone());
-            host.delete_queue.insert(instance.name.clone(), instance);
-            Ok(())
+        let host = if let Some(host) = self.hosts.first_mut() {
+            host
         } else {
-            Err(GeninError::new(
-                GeninErrorKind::SpreadingError,
-                format!(
-                    "failed to get mutable reference to first host in hosts: [{}]",
-                    self.hosts
-                        .iter()
-                        .map(|host| host.name.to_string())
-                        .collect::<Vec<String>>()
-                        .join(" ")
-                ),
-            ))
-        }
+            self
+        };
+        host.instances.push(instance.clone());
+        host.add_queue
+            .insert(instance.name.clone(), instance.clone());
+        host.delete_queue.insert(instance.name.clone(), instance);
+        Ok(())
     }
 
     fn push_to_failure_domain(&mut self, mut instance: InstanceV2) -> Result<(), GeninError> {
@@ -344,41 +339,14 @@ impl HostV2 {
             self.name, instance.name,
         );
 
-        let failure_domain_index = instance
-            .failure_domains
-            .iter()
-            .position(|domain| domain.eq(&self.name.to_string()));
+        self.advertise_as_failure_domain(&mut instance)?;
 
-        // if we found some name equality between host name and failure domain
-        // remove it and push instance
-        if let Some(index) = failure_domain_index {
-            let domain_name = instance.failure_domains.remove(index);
-            debug!(
-                "found failure domain {} for {} instance",
-                domain_name, instance.name
-            );
-            if !self.contains_failure_domains(&instance.failure_domains) {
-                debug!(
-                    "cleaning failure domains for instance {}, as no more needed failure domains can be found",
-                    instance.name
-                );
-                instance.failure_domains = Vec::new();
-            }
-            // if it is the last failure domain binding(in other words, we find the needed place for instance),
-            // keep that failure domain name in the instance and remove others.
-            if instance.failure_domains.is_empty() {
-                instance.failure_domains = vec![self.name.to_string()];
-            }
-
-            debug!(
-                "failure domains for {} is: {}",
-                instance.name,
-                instance.failure_domains.join(" ")
-            );
-
-            self.hosts.sort();
+        // Nothing to do if self became the final destination for instance failure domains trip.
+        if !instance.failure_domains.in_progress() {
             return self.push(instance);
-        };
+        }
+
+        let failure_domains = instance.failure_domains.try_get_queue()?;
 
         // retain only hosts that contains one of failure domain members
         // failure_domains: ["dc-1"] -> vec!["dc-1"]
@@ -386,9 +354,8 @@ impl HostV2 {
             .hosts
             .iter_mut()
             .filter_map(|host| {
-                (instance.failure_domains.contains(&self.name.to_string())
-                    || host.contains_failure_domains(&instance.failure_domains))
-                .then_some(host)
+                host.contains_failure_domains(failure_domains)
+                    .then_some(host)
             })
             .collect();
         if !failure_domain_hosts.is_empty() {
@@ -399,7 +366,7 @@ impl HostV2 {
                     .map(|host| host.name.to_string())
                     .collect::<Vec<String>>()
                     .join(" "),
-                instance.failure_domains.join(" "),
+                failure_domains.join(" "),
             );
             failure_domain_hosts.sort();
             if let Some(host) = failure_domain_hosts.first_mut() {
@@ -420,9 +387,39 @@ impl HostV2 {
                     .map(|host| host.name.to_string())
                     .collect::<Vec<String>>()
                     .join(" "),
-                instance.failure_domains.join(" "),
+                failure_domains.join(" "),
             ),
         ))
+    }
+
+    fn advertise_as_failure_domain(&mut self, instance: &mut InstanceV2) -> Result<(), GeninError> {
+        let failure_domains = instance.failure_domains.try_get_queue()?;
+        let failure_domain_index = failure_domains
+            .iter()
+            .position(|domain| domain.eq(&self.name.to_string()));
+
+        // if we found some name equality between host name and failure domain
+        // remove it and push instance
+        if let Some(index) = failure_domain_index {
+            let domain_name = failure_domains.remove(index);
+            debug!(
+                "found failure domain {} for {} instance",
+                domain_name, instance.name
+            );
+            if !self.contains_failure_domains(failure_domains) {
+                debug!(
+                    "cleaning failure domains for instance {}, as no more needed failure domains can be found",
+                    instance.name
+                );
+                *failure_domains = Vec::new();
+            }
+            // if it is the last failure domain binding(in other words, we find the needed place for instance),
+            // finalize failure domain binding.
+            if failure_domains.is_empty() {
+                instance.failure_domains = FailureDomains::Finished(self.name.to_string());
+            }
+        };
+        Ok(())
     }
 
     #[allow(unused)]
@@ -606,7 +603,8 @@ impl HostV2 {
                 failure_domains: self
                     .get_name_by_address(&stateboard.uri.address)
                     .map(|name| vec![name.to_string()])
-                    .unwrap_or_default(),
+                    .unwrap_or_default()
+                    .into(),
                 roles: Vec::new(),
                 cartridge_extra_env: IndexMap::default(),
                 config: InstanceV2Config {
@@ -762,10 +760,10 @@ impl HostV2 {
         hosts_diff
     }
 
-    /// For every instance that has failure domain available, replace its zone with that domain name.
+    /// For every instance that has finalized failure domain, replace its zone with that domain name.
     pub fn use_failure_domain_as_zone(&mut self) {
         for instance in self.instances.iter_mut() {
-            if let Some(failure_domain) = instance.failure_domains.first() {
+            if let FailureDomains::Finished(failure_domain) = &instance.failure_domains {
                 instance.config.zone = Some(failure_domain.clone());
             }
         }
