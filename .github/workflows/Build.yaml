@@ -165,6 +165,43 @@ jobs:
           name: genin-${{ env.VERSION }}-1.el8.x86_64.rpm
           path: /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.el8.x86_64.rpm
 
+  altlinux10:
+    name: Build altlinux rpm
+    needs: [build]
+    runs-on: [self-hosted, genin]
+    container:
+      image: docker.binary.picodata.io/altlinux-p10:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Download builded binary
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-unknown-linux-musl.zip
+          path: /home/github-actions/tmp/genin-buildroot/usr/bin/
+      - name: Build rpm
+        run: |
+          ls -la /home/github-actions/tmp/genin-buildroot/usr/bin/
+          apt-get update
+          apt-get install -y rpm-build rpm-devel rpmdevtools make openssh-clients alt-rpmkeys-utils util-linux
+          sed -ie "s/\${VERSION}/${VERSION}/g" build/p10/genin.x86_64.spec
+          rpmdev-setuptree
+          sleep 3600
+          su -s /bin/bash -c "rpmbuild -bb build/p10/genin.x86_64.spec" githib-actions
+      - name: Sign rpm package
+        run: |
+          echo -n "${{ secrets.GPG_KEY_KDY }}" | base64 --decode | gpg  --homedir ${GITHUB_WORKSPACE} --import
+          cp build/.rpmmacros ~/.rpmmacros
+          cat /dev/null | setsid rpm --addsign /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.p10.x86_64.rpm
+      - name: Upload rpm to binary.picodata.io
+        run: |
+          curl -v -f -H "Authorization: Basic ${{ secrets.YUM_AUTH_RW }}" --upload-file /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.p10.x86_64.rpm ${{ env.YUM_REGISTRY }}/altlinux/p10/x86_64/RPMS.main/genin-${{ env.VERSION }}-1.ep10.x86_64.rpm
+      - name: Archive rpm
+        uses: actions/upload-artifact@v3
+        with:
+          name: genin-${{ env.VERSION }}-1.p10.x86_64.rpm
+          path: /github/home/rpmbuild/RPMS/x86_64/genin-${{ env.VERSION }}-1.p10.x86_64.rpm
+
   debian:
     name: Build deb package
     needs: [build]
@@ -195,7 +232,7 @@ jobs:
 
   clean_workspace:
     name: Clean Workspace
-    needs: [build, musl-bin, apple, centos7, centos8, debian]
+    needs: [build, musl-bin, apple, centos7, centos8, debian, altlinux10]
     runs-on: [self-hosted, genin]
     container:
       image: docker.binary.picodata.io/rockylinux:8
@@ -206,7 +243,7 @@ jobs:
 
   workflow_call:
     name: Release
-    needs: [build, musl-bin, apple, centos7, centos8, debian]
+    needs: [build, musl-bin, apple, centos7, centos8, debian, altlinux10]
     uses: ./.github/workflows/Release.yaml
     if: ${{ github.ref_name == 'master' }}
     with:
