@@ -351,7 +351,7 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                                 name: name.clone(),
                                                 stateboard: instance.stateboard.then_some(true),
                                                 weight: None,
-                                                failure_domains: Vec::new(),
+                                                failure_domains: Default::default(),
                                                 roles: Vec::new(),
                                                 cartridge_extra_env: instance.vars.clone(),
                                                 config: InstanceV2Config::from(&instance.config),
@@ -641,8 +641,7 @@ impl Cluster {
         let path = PathBuf::from(
             args.get_one::<String>("output")
                 .cloned()
-                .unwrap_or("cluster.genin.yml".into())
-                .to_owned(),
+                .unwrap_or("cluster.genin.yml".into()),
         );
 
         let mut file = create_file_or_copy(path, args.get_flag("force"))?;

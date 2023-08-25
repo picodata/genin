@@ -1,12 +1,13 @@
 use indexmap::IndexMap;
 use log::trace;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_yaml::Value;
 use std::cmp::Ordering;
 use std::slice::{Iter, IterMut};
 use std::vec::IntoIter;
 use tabled::papergrid::AnsiColor;
 
+use crate::error::{GeninError, GeninErrorKind};
 use crate::task::cluster::hst::merge_index_maps;
 use crate::task::cluster::hst::v2::HostV2Config;
 use crate::task::cluster::hst::view::View;
@@ -141,7 +142,7 @@ pub struct Replicaset {
 ///         name: Name::from("catalogue").with_index(1).with_index(1),
 ///         stateboard: None,
 ///         weight: Some(10),
-///         failure_domains: Vec::new(),
+///         failure_domains: Default::default(),
 ///         roles: vec![String::from("catalogue")],
 ///         cartridge_extra_env: IndexMap::default(),
 ///         config: InstanceV2Config::default(),
@@ -155,7 +156,7 @@ pub struct Replicaset {
 ///         name: Name::from("catalogue").with_index(1).with_index(2),
 ///         stateboard: None,
 ///         weight: Some(10),
-///         failure_domains: Vec::new(),
+///         failure_domains: Default::default(),
 ///         roles: vec![String::from("catalogue")],
 ///         cartridge_extra_env: IndexMap::default(),
 ///         config: InstanceV2Config::default(),
@@ -176,7 +177,7 @@ pub struct InstanceV2 {
     //TODO: move to config
     pub weight: Option<usize>,
     //TODO: move to config
-    pub failure_domains: Vec<String>,
+    pub failure_domains: FailureDomains,
     pub roles: Vec<Role>,
     pub cartridge_extra_env: IndexMap<String, Value>,
     pub config: InstanceV2Config,
@@ -206,7 +207,7 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
             name: inventory_host.0.clone(),
             stateboard: inventory_host.1.stateboard.then_some(true),
             weight: None,
-            failure_domains: Vec::default(),
+            failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: inventory_host.1.cartridge_extra_env.clone(),
             config: InstanceV2Config::from(&inventory_host.1.config),
@@ -222,7 +223,7 @@ impl From<Name> for InstanceV2 {
             name,
             stateboard: None,
             weight: None,
-            failure_domains: Vec::default(),
+            failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: IndexMap::default(),
             config: InstanceV2Config::default(),
@@ -252,6 +253,75 @@ impl InstanceV2 {
             view: View { color, ..self.view },
             ..self
         }
+    }
+}
+
+pub type FailureDomain = String;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum FailureDomains {
+    /// In this state, failure domains were not even provided for the instance.
+    NotProvided([FailureDomain; 0]),
+    /// In this state, failure domains were provided, but not yet fully processed for the instance.
+    InProgress(Vec<FailureDomain>),
+    /// In this state, the exact failure domain is found for the instance.
+    #[serde(
+        skip_deserializing,
+        serialize_with = "serialize_finished_failure_domain"
+    )]
+    Finished(FailureDomain),
+}
+
+/// We want to serialize single found failure domain as an array of domains.
+fn serialize_finished_failure_domain<S: Serializer>(
+    domain: &FailureDomain,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    [domain].serialize(serializer)
+}
+
+impl FailureDomains {
+    /// Determines, whether some actions are still needed to be done with these failure domains.
+    pub fn in_progress(&self) -> bool {
+        matches!(self, FailureDomains::InProgress(_))
+    }
+
+    /// Try getting mutable ref to inner domains queue, if it is in progress currently.
+    pub fn try_get_queue(&mut self) -> Result<&mut Vec<FailureDomain>, GeninError> {
+        match self {
+            FailureDomains::InProgress(queue) => Ok(queue),
+            _ => Err(GeninError::new(
+                GeninErrorKind::SpreadingError,
+                format!("failure domains are not in progress: {:?}", self,),
+            )),
+        }
+    }
+}
+
+impl From<Vec<String>> for FailureDomains {
+    fn from(failure_domains: Vec<String>) -> Self {
+        if failure_domains.is_empty() {
+            Self::NotProvided([])
+        } else {
+            Self::InProgress(failure_domains)
+        }
+    }
+}
+
+impl From<FailureDomains> for Vec<String> {
+    fn from(domains: FailureDomains) -> Self {
+        match domains {
+            FailureDomains::NotProvided([]) => vec![],
+            FailureDomains::InProgress(domains) => domains,
+            FailureDomains::Finished(domain) => vec![domain],
+        }
+    }
+}
+
+impl Default for FailureDomains {
+    fn default() -> Self {
+        Self::NotProvided([])
     }
 }
 

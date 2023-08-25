@@ -161,7 +161,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(1),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -175,7 +175,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(2),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -189,7 +189,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(3),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -203,7 +203,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(4),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -217,7 +217,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(5),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -231,7 +231,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(6),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -245,7 +245,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(7),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -259,7 +259,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(8),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -273,7 +273,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(9),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -287,7 +287,7 @@ hosts:
             name: Name::from("storage").with_index(1).with_index(10),
             stateboard: None,
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -422,7 +422,7 @@ hosts:
             name: Name::from("router-1"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -436,7 +436,7 @@ hosts:
             name: Name::from("storage-1-1"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -450,7 +450,7 @@ hosts:
             name: Name::from("storage-1-2"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -464,7 +464,7 @@ hosts:
             name: Name::from("storage-1-3"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -478,7 +478,7 @@ hosts:
             name: Name::from("storage-2-1"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -492,7 +492,7 @@ hosts:
             name: Name::from("storage-2-2"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -506,7 +506,7 @@ hosts:
             name: Name::from("storage-2-3"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: Vec::new(),
+            failure_domains: Default::default(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -520,7 +520,7 @@ hosts:
             name: Name::from("cache-1"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: vec!["dc-2".to_string()],
+            failure_domains: vec!["dc-2".to_string()].into(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -534,7 +534,7 @@ hosts:
             name: Name::from("cache-2"),
             stateboard: Some(false),
             weight: None,
-            failure_domains: vec!["dc-2".to_string()],
+            failure_domains: vec!["dc-2".to_string(), "server-5".to_string()].into(),
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -561,7 +561,7 @@ fn hosts_force_failure_domain() {
             .last()
             .unwrap()
             .hosts
-            // server-1
+            // server-4
             .first()
             .unwrap()
             .instances
@@ -569,7 +569,7 @@ fn hosts_force_failure_domain() {
             .unwrap()
             .name
             .to_string(),
-        "cache-2".to_string()
+        "cache-1".to_string()
     );
     assert_eq!(
         host.hosts
@@ -577,7 +577,7 @@ fn hosts_force_failure_domain() {
             .last()
             .unwrap()
             .hosts
-            // server-2
+            // server-5
             .last()
             .unwrap()
             .instances
@@ -585,7 +585,7 @@ fn hosts_force_failure_domain() {
             .unwrap()
             .name
             .to_string(),
-        "cache-1".to_string()
+        "cache-2".to_string()
     );
 }
 
@@ -612,7 +612,7 @@ fn hosts_use_failure_domain_as_zone() {
 
     host.use_failure_domain_as_zone();
     assert_eq!(failure_domain_instance_zone(&host, 0), Some("dc-2"));
-    assert_eq!(failure_domain_instance_zone(&host, 1), Some("dc-2"));
+    assert_eq!(failure_domain_instance_zone(&host, 1), Some("server-5"));
 }
 
 #[test]
@@ -758,7 +758,7 @@ fn hosts_v2_spread_stateboard() {
         name: Name::from("stateboard"),
         stateboard: Some(true),
         weight: None,
-        failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()],
+        failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()].into(),
         roles: Vec::new(),
         cartridge_extra_env: IndexMap::new(),
         config: InstanceV2Config::default(),
