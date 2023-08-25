@@ -7,8 +7,8 @@ fn build_from_state() {
     "uid": "f5d95f27d5f472aa99b54ef1882317b7839f4b36403a1b4248bec34eb99d43d7",
     "kind": "Upgrade",
     "changes": [],
-    "path": "state.tgz",
-    "args_str": "genin build -s cluster.genin.yml -f --export-state state.tgz",
+    "path": "state.gz",
+    "args_str": "genin build -s cluster.genin.yml -f --export-state state.gz",
     "vars": {
         "ansible_user": "ansible",
         "ansible_password": "ansible",

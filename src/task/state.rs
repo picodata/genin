@@ -96,12 +96,12 @@ impl State {
     }
 
     pub fn dump_by_uid(&mut self, state_dir: &str) -> Result<(), io::Error> {
-        self.dump_by_path(&format!("{state_dir}/{}.tgz", &self.uid))
+        self.dump_by_path(&format!("{state_dir}/{}.gz", &self.uid))
     }
 
     pub fn from_latest(args: &ArgMatches) -> Result<Self, StateError> {
         let path = format!(
-            "{}/latest.tgz",
+            "{}/latest.gz",
             args.get_one::<String>("state-dir")
                 .cloned()
                 .unwrap_or(".geninstate".into())

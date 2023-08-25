@@ -1237,7 +1237,9 @@ impl fmt::Debug for InvalidHostV2Config {
 
         // address: String
         match &self.address {
-            Value::Null => {}
+            Value::Null => {
+                
+            }
             Value::String(address) => {
                 formatter.write_fmt(format_args!("{}address: {}", self.offset, address))?;
             }
