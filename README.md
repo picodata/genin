@@ -244,7 +244,7 @@ topology:
     replication_factor: 0     # (optional) number of replicas in replicaset, default for router 0
     weight: 10                # (optional) replicaset weight
     zone:                     # (optional) zone parameter for ansible cartridge playbook
-    roles:                    # (optional) list of roles    
+    roles:                    # (optional) list of roles
       - router
       - api
       - failover-coordinator
@@ -330,7 +330,7 @@ minimal variant:
 ---
 topology:
   - name: router            # since replicasets_count is not set for this replicaset,
-                            # and also no roles are set, then the genin will automatically determine it by name as
+                            # and also no roles are set, then Genin will automatically determine it by name as
                             # router and set the number of replicas in the replication set to 1 (replication count: 1)
   - name: storage
     replicasets_count: 3
@@ -445,7 +445,7 @@ in the documentation. [Tarantool documentation](https://www.tarantool.io/ru/doc/
 #### Balancing and distribution control
 
 By default, `Genin` always allocates instances based on the current host load.
-For example the following configuration for a genin would be distributed in
+For example the following configuration for Genin would be distributed in
 the following way:
 
 ```yaml
@@ -720,19 +720,19 @@ genin build --cartridge-cluster-cookie R68sJfV4C2hLrWC3
 
 As mentioned earlier, by default, `Genin` will create copies of files if
 The target file already exists in the specified path. In order to force
-overwrite the target file, there is a `--force` flag (or short `-f`).
+overwrite the target file use the `--force` flag (or `-f`).
 ```shell
 genin build -o my-cluster.yml
 genin build -o my-cluster.yml --force
 ```
 
-The `--export-state` argument can be useful to export [state](#Genin-state) into a 
+The `--export-state` argument can be useful to export [state](#Genin-state) into a
 separate file.
 ```shell
 genin build -s cluster.genin.yml --export-state my-state.gz
 ```
 
-The `quiet` option can be useful if you want to disable the display of the cluster in 
+The `quiet` option can be useful if you want to disable the cluster display in
 the console.
 ```shell
 genin init --quiet
@@ -740,12 +740,12 @@ genin build --quiet -s cluster.genin.yml
 genin upgrade --quiet --old cluster.genin.yml --new cluster-new.genin.yml
 ```
 
-Especially for cases when an idiomatic distribution is needed, the
-`--idiomatic-merge` option has been added. Without it, `genin` considers
-replicasets with the same name are equivalent. For example `api-1` and
-`api-1-1` will be considered replicas of the same replicaset. With the
-addition of the option without an exact match of the replica name, the
-replicas will never be merged to the replicaset.
+For specific use cases with idiomatic distribution the dedicated
+`--idiomatic-merge` option can be used. Without it, `genin` considers
+replicasets to be equivalent if they contain the same name. For example,
+`api-1` and `api-1-1` will be considered replicas of the same
+replicaset. The aforementioned option requires the replicas' names to
+match exactly, otherwise they will never be merged in one replicaset.
 ```shell
 genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
 
@@ -795,11 +795,11 @@ genin upgrade --idiomatic-merge --old cluster-old.genin.yml --new cluster-new.ge
 
 ### Genin upgrade
 
-Almost from the first versions of `Genin` it supports the `upgrade` command which allows
-generating inventories based on two different cluster configurations. She has several
-significant differences from the `build` command. For example, if we take the initial 
+`Genin` supports the `upgrade` command from the early days. The command allows
+generating inventories based on two different cluster configurations. It has several
+significant differences from the `build` command. For example, if we take the initial
 configuration with 4 servers in 2 data centers, double the number of servers, and add
-several new replicas, `genin build` will generate a standard distribution.
+several new replicas, `genin build` will generate a standard distribution:
 ```shell
 genin build --source cluster-old.genin.yml
 
@@ -839,9 +839,10 @@ genin build --source cluster-new.genin.yml
 +-------------+-------------+-------------+-------------+
 ```
 
-In this case, any change in the configuration, for example, changing ports, will completely 
-overwrite starting ports of the original cluster. Installation based on such inventory is 
-completely will break an already existing cluster.
+In this case, any change in the configuration, for example, changing
+ports, will completely overwrite starting ports of the original cluster.
+Installing such inventory will completely break an already existing
+cluster.
 ```shell
 genin build --source cluster-old.genin.yml
 
@@ -881,10 +882,12 @@ genin build --source cluster-new.genin.yml
 +-------------+-------------+-------------+-------------+
 ```
 
-Therefore, there is a `genin upgrade` command specifically for **upgrade** cases.
-> **Note:** `upgrade` is a sequential cluster change based on source configuration 
-> `--old` and target configuration `--new`. With which it is guaranteed that 
-> ports/addresses and other unchanging parameters are saved on cluster instances `--old`.
+To circumvent this issue specifically for **upgrade** cases, let's use
+the `genin upgrade` command instead.
+> **Note:** `upgrade` is a sequential cluster change based on `--old`
+>  source configuration and `--new` target configuration. The `--old`
+> cluster instances are guaranteed to keep their ports/addresses and
+> other parameters unchanged.
 
 ```shell
 genin build --source cluster-old.genin.yml
@@ -925,20 +928,21 @@ genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
 +-------------+-------------+-------------+-------------+
 ```
 
-Such inventory can be safely applied over a cluster installed with using the first inventory, 
-and all new instances will have a new configuration, and all the old ones will receive only 
-those parameters that can be changed without breaking the cluster.
+The resulting new inventory can be safely applied to a cluster that was
+initially deployed using the previous inventory. All new instances will
+have a new configuration, while the old ones will receive only those
+parameters that can be changed without breaking the cluster.
 
 
 ---
 
 ### Genin state
 
-When using `genin upgrade` we always get consistent changes in the cluster, but only within 
-one single upgrade. This is because the configuration clusters passed in the `--old` and `--new` 
-arguments are distributed in the same way as with `genin build`. That is, we first distribute the 
-configuration passed to `--old` and then over it passed to `--new`. This means that if we want to 
-`upgrade` again but already on top of the configuration passed to `--old` then this will be 
+When using `genin upgrade` we always get consistent changes in the cluster, but only within
+one single upgrade. This is because the configuration clusters passed in the `--old` and `--new`
+arguments are distributed in the same way as with `genin build`. That is, we first distribute the
+configuration passed to `--old` and then over it passed to `--new`. This means that if we want to
+`upgrade` again but already on top of the configuration passed to `--old` then this will be
 equivalent to calling `genin build`.
 ```shell
 genin upgrade --old cluster-old.genin.yml --new cluster-new.genin.yml
@@ -985,14 +989,15 @@ genin upgrade --old cluster-new.genin.yml --new cluster-new-new.genin.yml
 +-------------+-------------+-------------+-------------+
 ```
 
-Specially to avoid this, `genin` was added to save metadata and tree allocations to a special 
-`geninstate`. In fact, this is just a cast of how `genin` allocated instances when 
-`genin upgrade` is called, allowing `upgrade` to be called as much once and always receive 
-only consistent (safe) inventory changes.
+Specially to avoid this, `genin` saves metadata and tree allocations in
+`geninstate`. In fact, this is just a snapshot of how `genin` allocated
+instances during `genin upgrade`, and therefore we can call `upgrade` as
+many times as we want and always receive only consistent (and safe)
+inventory changes.
 
-Starting from version `0.5.0` in the startup directory `genin` will create a directory 
-`.geninstate` and save archives with the state in it. For example, a directory might look like 
-this:
+Starting from version `0.5.0`, `genin` will create a `.geninstate`
+ directory in the startup directory and save archives with the state
+there. For example, a directory might look like this:
 ```shell
 .geninstate
 ├── 0b94d04e689d2a52048574903de899a36582a968a700095a019dc1097587054a.gz
@@ -1004,14 +1009,16 @@ this:
 └── latest.gz
 ```
 
-`state` filenames can be of two types. The first is the `latest` state generated by last 
-successful run of `genin upgrade`. The second one is **sha256** sha sum computed on based 
-on `shasum256(shasum256 --old + shasum256 --new)`.
+The `state` filenames can be of two types. The first is the `latest`
+state generated by the last successful run of `genin upgrade`. The
+ second one is the **sha256** hashsum computed using
+ `shasum256(shasum256 --old + shasum256 --new)`.
 
-To view the states (their contents), a new command `genin list-state` has also been added which 
-will display the last 10 runs of the `genin upgrade` command. In the displayed information will be 
-the type of operation, the arguments with which `genin` was called, as well as the list of changes 
-(what has been added and removed).
+The contents of the states can be viewed with the help of the new `genin
+list-state` command, which displays the last 10 runs of the `genin
+upgrade` command. The output includes the operation type, the arguments
+with which `genin` was called, as well as the list of changes (what has
+been added and removed).
 
 ```shell
 ---
@@ -1042,22 +1049,21 @@ Hosts changes:
   - server-4
 ```
 
-To perform an `upgrade` based on `state` (that is, based on a previous `upgrade`), you can:
-- Pass the path to the file with the state to the `--old` argument.
+To perform a `state`-based `upgrade` (based on a previous `upgrade`), you can:
+- Provide the location of the state file for the `--old` argument.
   ```shell
   genin upgrade --old .geninstate/14a3a6c82ec93b6a7e87bc09e086e42cdbca97c5ed158624054265e30036cbeb.gz --new cluster-new-new.genin.yml
   ```
-- Replace `--old` argument with `--from-latest-state`.
+- Replace the `--old` argument with `--from-latest-state`.
   ```shell
   genin upgrade --from-latest-state --new cluster-new-new.genin.yml
   ```
 
-Also, in some cases it may be convenient to save the entire `geninstate` somewhere in one 
-directory. This can be done with the `--state-dir` argument or by setting the `GENIN_STATE_DIR` 
+Also, in some cases it may be convenient to save the entire `geninstate` somewhere in one
+directory. This can be done with the `--state-dir` argument or by setting the `GENIN_STATE_DIR`
 environment variable.
 
-The `--export-state` argument can be useful for keeping the upgrade state under some by another 
-name.
+The `--export-state` argument can be useful for keeping the upgrade state under another name.
 
 ## Building from sources
 
@@ -1072,7 +1078,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 ---
-> **Note:** You should refresh the `$PATH` variable to get access to locally installed `rust binaries`.
+> **Note:** You should refresh the `$PATH` variable to get access to the locally installed `rust binaries`.
 ---
 
 After installing all required tools it is time to build and install `genin`.
