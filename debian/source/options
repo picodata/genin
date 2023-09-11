@@ -1,0 +1,3 @@
+# don't pack some non-free and generated files for Debian
+extend-diff-ignore = ".*\.git$"
+extend-diff-ignore = ".*\.git/.*"
