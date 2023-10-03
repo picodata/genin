@@ -1,4 +1,4 @@
-use std::net::IpAddr;
+use std::{collections::VecDeque, net::IpAddr};
 
 use indexmap::IndexMap;
 use tabled::Alignment;
@@ -551,68 +551,61 @@ hosts:
     host
 }
 
+fn find_instance(
+    host: &HostV2,
+    mut predicate: impl FnMut(&InstanceV2) -> bool,
+) -> Option<&InstanceV2> {
+    let mut queue = VecDeque::new();
+    queue.push_front(host);
+
+    while !queue.is_empty() {
+        let current = queue.pop_back()?;
+        let instance = current
+            .instances
+            .iter()
+            .find(|instance| predicate(instance));
+        if instance.is_some() {
+            return instance;
+        }
+        queue.extend(current.hosts.iter());
+    }
+    None
+}
+
 #[test]
 fn hosts_force_failure_domain() {
     let host = failure_domain_test_host();
+    let dc2 = host.hosts.last().unwrap();
 
-    assert_eq!(
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts
-            // server-4
-            .first()
-            .unwrap()
-            .instances
-            .last()
-            .unwrap()
-            .name
-            .to_string(),
-        "cache-1".to_string()
-    );
-    assert_eq!(
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts
-            // server-5
-            .last()
-            .unwrap()
-            .instances
-            .last()
-            .unwrap()
-            .name
-            .to_string(),
-        "cache-2".to_string()
-    );
+    let cache1_name = "cache-1".to_string();
+    let cache1 = find_instance(dc2, |instance| instance.name.to_string() == cache1_name);
+    assert!(cache1.is_some());
+
+    let cache2_name = "cache-2".to_string();
+    let cache2 = find_instance(dc2, |instance| instance.name.to_string() == cache2_name);
+    assert!(cache2.is_some());
 }
 
 #[test]
 fn hosts_use_failure_domain_as_zone() {
-    fn failure_domain_instance_zone(host: &HostV2, host_index: usize) -> Option<&str> {
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts[host_index]
-            // server-1
-            .instances
-            .last()
-            .unwrap()
-            .config
-            .zone
-            .as_deref()
+    fn failure_domain_instance_zone<'a>(host: &'a HostV2, instance_name: &str) -> Option<&'a str> {
+        let instance = find_instance(host.hosts.last().unwrap(), |instance| {
+            instance.name.to_string() == instance_name
+        })
+        .unwrap();
+        instance.config.zone.as_deref()
     }
 
     let mut host = failure_domain_test_host();
-    assert_eq!(failure_domain_instance_zone(&host, 0), None);
-    assert_eq!(failure_domain_instance_zone(&host, 1), None);
+    assert_eq!(failure_domain_instance_zone(&host, "cache-1"), None);
+    assert_eq!(failure_domain_instance_zone(&host, "cache-2"), None);
 
     host.use_failure_domain_as_zone();
-    assert_eq!(failure_domain_instance_zone(&host, 0), Some("dc-2"));
-    assert_eq!(failure_domain_instance_zone(&host, 1), Some("server-5"));
+    assert_eq!(failure_domain_instance_zone(&host, "cache-1"), Some("dc-2"));
+    assert_eq!(
+        failure_domain_instance_zone(&host, "cache-2"),
+        Some("server-5")
+    );
 }
 
 #[test]
