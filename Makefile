@@ -17,9 +17,7 @@ build:
 	cargo build
 
 permissions:
-	chmod 755 target/x86_64-apple-darwin/release/genin
-	chmod 755 target/x86_64-unknown-linux-gnu/release/genin
-	chmod 755 target/x86_64-unknown-linux-musl/release/genin
+	find target -type f -name genin -exec chmod 755 {} \;
 
 install:
 	mkdir -p $(DESTDIR)/usr/bin && \

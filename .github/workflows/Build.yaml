@@ -34,7 +34,7 @@ jobs:
       image: docker.binary.picodata.io/rust-builder-stable:latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run make build
+      - name: Run make build_binary
         run: |
           make build
           make permissions
