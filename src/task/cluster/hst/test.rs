@@ -506,10 +506,8 @@ fn hosts_force_failure_domain() {
 #[test]
 fn hosts_use_failure_domain_as_zone() {
     fn failure_domain_instance_zone<'a>(host: &'a HostV2, instance_name: &str) -> Option<&'a str> {
-        let (_, instance) = find_instance(host.hosts.last().unwrap(), |instance| {
-            instance.name.to_string() == instance_name
-        })
-        .unwrap();
+        let (_, instance) =
+            find_instance(host, |instance| instance.name.to_string() == instance_name).unwrap();
         instance.config.zone.as_deref()
     }
 
