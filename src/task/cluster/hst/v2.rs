@@ -267,7 +267,11 @@ impl HostV2 {
 
         //TODO: error propagation
         let mut instances = mem::take(&mut self.instances);
+
         while let Some(instance) = instances.pop() {
+            // We sort here, as default hosts sort order is from least instances filled to most filled.
+            // And of course we'd like to push to least filled firstly.
+            self.hosts.sort();
             if instance.failure_domains.in_progress() {
                 debug!(
                     "start pushing instance {} with failure domain",
@@ -276,7 +280,6 @@ impl HostV2 {
                 self.push_to_failure_domain(instance).unwrap();
             } else {
                 debug!("instance {} is either finished its failure domains processing, or doesn't have one", instance.name);
-                self.hosts.sort();
                 self.push(instance).unwrap();
             }
         }
@@ -292,7 +295,10 @@ impl HostV2 {
 
     fn finish_host_spread(&mut self) {
         if !self.hosts.is_empty() {
-            debug!("host {} has children, therefore it is not a target for host spread finishing", self.name);
+            debug!(
+                "host {} has children, therefore it is not a target for host spread finishing",
+                self.name
+            );
             return;
         }
         debug!(
@@ -306,7 +312,7 @@ impl HostV2 {
 
         let mut instances = mem::take(&mut self.instances);
 
-        for (index, mut instance) in instances.iter_mut().enumerate() {
+        for (index, instance) in instances.iter_mut().enumerate() {
             instance.config = instance
                 .config
                 .clone()
@@ -343,6 +349,10 @@ impl HostV2 {
 
         // Nothing to do if self became the final destination for instance failure domains trip.
         if !instance.failure_domains.in_progress() {
+            debug!(
+                "host {} is final failure domain for instance {}",
+                self.name, instance.name
+            );
             return self.push(instance);
         }
 
@@ -1235,9 +1245,7 @@ impl fmt::Debug for InvalidHostV2Config {
 
         // address: String
         match &self.address {
-            Value::Null => {
-                
-            }
+            Value::Null => {}
             Value::String(address) => {
                 formatter.write_fmt(format_args!("{}address: {}", self.offset, address))?;
             }

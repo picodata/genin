@@ -1,4 +1,4 @@
-use std::net::IpAddr;
+use std::{collections::VecDeque, net::IpAddr};
 
 use indexmap::IndexMap;
 use tabled::Alignment;
@@ -7,15 +7,16 @@ use crate::task::{
     cluster::{
         hst::{
             v2::{Address, HostV2, HostV2Config, WithHosts},
-            view::{View, FG_BLUE, FG_CYAN, FG_GREEN, FG_WHITE},
+            view::{View, FG_BLUE, FG_WHITE},
         },
-        ins::v2::{InstanceV2, InstanceV2Config, Instances},
+        ins::v2::{FailureDomains, InstanceV2, InstanceV2Config, Instances},
         name::Name,
         topology::Topology,
         HostV2Helper,
     },
     utils::uncolorize,
 };
+use insta::assert_display_snapshot;
 
 #[test]
 fn hosts_v2_deepth() {
@@ -417,12 +418,12 @@ hosts:
         .unwrap()
         .into();
 
-    host.instances = Instances::from(vec![
+    fn new_instance(name: Name, failure_domains: FailureDomains) -> InstanceV2 {
         InstanceV2 {
-            name: Name::from("router-1"),
+            name,
             stateboard: Some(false),
             weight: None,
-            failure_domains: Default::default(),
+            failure_domains,
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
             config: InstanceV2Config::default(),
@@ -431,119 +432,31 @@ hosts:
                 color: FG_WHITE,
                 alignment: Alignment::left(),
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage-1-1"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("storage-1-2"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("storage-1-3"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("storage-2-1"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_CYAN,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("storage-2-2"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_CYAN,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("storage-2-3"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_CYAN,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("cache-1"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: vec!["dc-2".to_string()].into(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_GREEN,
-                alignment: Alignment::left(),
-            },
-        },
-        InstanceV2 {
-            name: Name::from("cache-2"),
-            stateboard: Some(false),
-            weight: None,
-            failure_domains: vec!["dc-2".to_string(), "server-5".to_string()].into(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_GREEN,
-                alignment: Alignment::left(),
-            },
-        },
+        }
+    }
+
+    host.instances = Instances::from(vec![
+        new_instance("router-1".into(), Default::default()),
+        // storages replicaset 1
+        new_instance("storage-1-1".into(), Default::default()),
+        new_instance("storage-1-2".into(), Default::default()),
+        new_instance("storage-1-3".into(), Default::default()),
+        // storages replicaset 2
+        new_instance("storage-2-1".into(), Default::default()),
+        new_instance("storage-2-2".into(), Default::default()),
+        new_instance("storage-2-3".into(), Default::default()),
+        // stateboards for dc-1
+        new_instance("stateboard-1-1".into(), vec!["dc-1".into()].into()),
+        new_instance("stateboard-1-2".into(), vec!["dc-1".into()].into()),
+        new_instance("stateboard-1-3".into(), vec!["dc-1".into()].into()),
+        // caches for dc-2
+        new_instance("cache-2-1".into(), vec!["dc-2".into()].into()),
+        // make sure one of the cashes has more strict requirements(it *must* be placed on server-5)
+        new_instance(
+            "cache-2-2".into(),
+            vec!["dc-2".into(), "server-5".into()].into(),
+        ),
+        new_instance("cache-2-3".into(), vec!["dc-2".into()].into()),
     ]);
 
     host.spread();
@@ -551,68 +464,66 @@ hosts:
     host
 }
 
+fn find_instance(
+    host: &HostV2,
+    mut predicate: impl FnMut(&InstanceV2) -> bool,
+) -> Option<(&HostV2, &InstanceV2)> {
+    let mut queue = VecDeque::new();
+    queue.push_front(host);
+
+    while !queue.is_empty() {
+        let current = queue.pop_back()?;
+        let instance = current
+            .instances
+            .iter()
+            .find(|instance| predicate(instance));
+        if let Some(instance) = instance {
+            return Some((current, instance));
+        }
+        queue.extend(current.hosts.iter());
+    }
+    None
+}
+
 #[test]
 fn hosts_force_failure_domain() {
     let host = failure_domain_test_host();
+    assert_display_snapshot!("host_with_failure_domains", uncolorize(&host));
+    let dc2 = host.hosts.last().unwrap();
 
-    assert_eq!(
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts
-            // server-4
-            .first()
-            .unwrap()
-            .instances
-            .last()
-            .unwrap()
-            .name
-            .to_string(),
-        "cache-1".to_string()
-    );
-    assert_eq!(
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts
-            // server-5
-            .last()
-            .unwrap()
-            .instances
-            .last()
-            .unwrap()
-            .name
-            .to_string(),
-        "cache-2".to_string()
-    );
+    let cache1_name = "cache-2-1".to_string();
+    let (_, cache1) =
+        find_instance(dc2, |instance| instance.name.to_string() == cache1_name).unwrap();
+    assert_eq!(cache1.name.to_string(), "cache-2-1");
+
+    let cache2_name = "cache-2-2".to_string();
+    let (cache2_parent, cache2) =
+        find_instance(dc2, |instance| instance.name.to_string() == cache2_name).unwrap();
+    assert_eq!(cache2_parent.name.to_string(), "server-5");
+    assert_eq!(cache2.name.to_string(), "cache-2-2");
 }
 
 #[test]
 fn hosts_use_failure_domain_as_zone() {
-    fn failure_domain_instance_zone(host: &HostV2, host_index: usize) -> Option<&str> {
-        host.hosts
-            // dc-2
-            .last()
-            .unwrap()
-            .hosts[host_index]
-            // server-1
-            .instances
-            .last()
-            .unwrap()
-            .config
-            .zone
-            .as_deref()
+    fn failure_domain_instance_zone<'a>(host: &'a HostV2, instance_name: &str) -> Option<&'a str> {
+        let (_, instance) =
+            find_instance(host, |instance| instance.name.to_string() == instance_name).unwrap();
+        instance.config.zone.as_deref()
     }
 
     let mut host = failure_domain_test_host();
-    assert_eq!(failure_domain_instance_zone(&host, 0), None);
-    assert_eq!(failure_domain_instance_zone(&host, 1), None);
+    assert_eq!(failure_domain_instance_zone(&host, "cache-2-1"), None);
+    assert_eq!(failure_domain_instance_zone(&host, "cache-2-2"), None);
 
     host.use_failure_domain_as_zone();
-    assert_eq!(failure_domain_instance_zone(&host, 0), Some("dc-2"));
-    assert_eq!(failure_domain_instance_zone(&host, 1), Some("server-5"));
+    assert_eq!(
+        failure_domain_instance_zone(&host, "cache-2-1"),
+        Some("dc-2")
+    );
+    assert_eq!(
+        failure_domain_instance_zone(&host, "cache-2-2"),
+        Some("server-5")
+    );
 }
 
 #[test]
