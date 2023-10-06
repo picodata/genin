@@ -252,7 +252,7 @@ dependencies = [
 
 [[package]]
 name = "genin"
-version = "0.5.5"
+version = "0.5.6"
 dependencies = [
  "clap",
  "env_logger",
