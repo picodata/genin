@@ -354,7 +354,7 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                                 failure_domains: Default::default(),
                                                 roles: Vec::new(),
                                                 cartridge_extra_env: instance.vars.clone(),
-                                                config: InstanceV2Config::from(&instance.config),
+                                                config: InstanceV2Config::from_inventory_host(&instance),
                                                 vars: instance.vars.clone(),
                                                 view: View::default(),
                                             })
