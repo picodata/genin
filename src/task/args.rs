@@ -69,12 +69,7 @@ pub(super) fn read() -> ArgMatches {
                         .action(ArgAction::Set)
                         .default_value("stateboard")
                         .help("(string): failover state provider"),
-                    Arg::new("fd-as-zone")
-                        .long("fd-as-zone")
-                        .action(ArgAction::SetTrue)
-                        .help(
-                            "Used to insert 'failure_domain' field's value of instances in their 'zone' field.",
-                        ),
+                    fd_as_zone_arg(),
                     Arg::new("quiet")
                         .long("quiet")
                         .short('q')
@@ -292,6 +287,7 @@ pub(super) fn read() -> ArgMatches {
                         .short('I')
                         .action(ArgAction::SetTrue)
                         .help("merge replicasets with similar names like router-1 and router-1-1"),
+                    fd_as_zone_arg()
                 ]),
             Command::new("list-state")
                 .about(
@@ -315,4 +311,11 @@ pub(super) fn read() -> ArgMatches {
                 ]),
         ])
         .get_matches()
+}
+
+fn fd_as_zone_arg() -> Arg {
+    Arg::new("fd-as-zone")
+        .long("fd-as-zone")
+        .action(ArgAction::SetTrue)
+        .help("Used to insert 'failure_domain' field's value of instances in their 'zone' field.")
 }

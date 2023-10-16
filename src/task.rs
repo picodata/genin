@@ -111,7 +111,8 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
 
             let hosts_diff = old.merge(&mut new, args.get_flag("idiomatic-merge"))?;
 
-            old.print(args)
+            old.use_failure_domain_as_zone_for_instances(args)
+                .print(args)
                 .write_upgrade_state(args, hosts_diff)?
                 .to_inventory()?
                 .write(args)?;

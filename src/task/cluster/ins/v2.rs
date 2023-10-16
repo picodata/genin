@@ -210,7 +210,7 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
             failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: inventory_host.1.cartridge_extra_env.clone(),
-            config: InstanceV2Config::from(&inventory_host.1.config),
+            config: InstanceV2Config::from_inventory_host(&inventory_host.1),
             vars: inventory_host.1.vars.clone(),
             view: View::default(),
         }
@@ -341,19 +341,18 @@ pub struct InstanceV2Config {
     pub additional_config: IndexMap<String, Value>,
 }
 
-impl<'a> From<&'a InvHostConfig> for InstanceV2Config {
-    fn from(config: &'a InvHostConfig) -> Self {
-        match config {
+impl InstanceV2Config {
+    pub fn from_inventory_host(host: &InventoryHost) -> Self {
+        match &host.config {
             InvHostConfig::Instance {
                 advertise_uri,
                 http_port,
-                zone,
                 additional_config,
             } => Self {
                 http_port: Some(*http_port),
                 binary_port: Some(advertise_uri.port),
                 all_rw: None,
-                zone: zone.clone(),
+                zone: host.zone.clone(),
                 vshard_group: None,
                 additional_config: additional_config.clone(),
             },

@@ -337,8 +337,6 @@ pub enum InvHostConfig {
     Instance {
         advertise_uri: Uri,
         http_port: u16,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        zone: Option<String>,
         #[serde(flatten, skip_serializing_if = "IndexMap::is_empty")]
         additional_config: IndexMap<String, Value>,
     },
@@ -354,7 +352,6 @@ impl<'a> From<(&'a InstanceV2, &'a HostV2)> for InvHostConfig {
                     port: pair.0.config.binary_port.unwrap(),
                 },
                 http_port: pair.0.config.http_port.unwrap(),
-                zone: pair.0.config.zone.clone(),
                 additional_config: pair.0.config.additional_config.clone(),
             }
         } else {
