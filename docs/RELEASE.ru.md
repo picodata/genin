@@ -27,7 +27,7 @@ Request` в мастер.
 4. Если `ci` прошел успешно, то ставим тег в ветки и пушим тег.
 5. После сборки и тестирования, `ci` автоматически запушит версию с тегом в [binary.picodata.io](https://binary.picodata.io/#browse/browse:bastida-raw:genin). 
 Запушенные пакеты (а так же исполняемый файл) будут иметь приписку `~rc`, например 
-`0.5.6~rc`. Это необходимо для того что бы отделять версии из пулл реквестов от 
+`0.5.7~rc`. Это необходимо для того что бы отделять версии из пулл реквестов от 
 релизных.
 6. Если патч готов к релизу, то ревьюим `Pull Request` и мерджим в мастер. После 
 того как `ci` успешно завершится, мы получим новый релиз в гитхабе, а так же набор
@@ -45,20 +45,20 @@ Request` в мастер.
 1. После того как патч с тегом влит в мастер и на GitHub появился новый релиз, 
 переходим в репозиторий [picodata homebrew tap](https://github.com/picodata/homebrew-tap) и создаем новую ветку
 в которой будет наша новая версия `Genin`.
-2. Вычисляем хэшсумму `sha256` от архива с исполняемым файлом `shasum -a 256 genin-0.5.6-x86_64-macosx.tar.gz`.
-3. Создаем файл `Formula/genin@0.5.6.rb`. Файл должен содаржать в названии версию Genin 
+2. Вычисляем хэшсумму `sha256` от архива с исполняемым файлом `shasum -a 256 genin-0.5.7-x86_64-macosx.tar.gz`.
+3. Создаем файл `Formula/genin@0.5.7.rb`. Файл должен содаржать в названии версию Genin 
 записанную через символ `@`.
 ```ruby
-# В название добавляем версию. Например версия 0.5.6 должна быть записана как AT055
-class GeninAT055 < Formula
+# В название добавляем версию. Например версия 0.5.7 должна быть записана как AT057
+class GeninAT057 < Formula
   desc "Quick inventory generation for tarantool apps"
   homepage "https://github.com/picodata/genin"
   # Меняем версию или полный путь к пакету в binary.picodata.io
-  url "https://binary.picodata.io/repository/raw/genin/osx/genin-0.5.6-x86_64-macosx.tar.gz"
+  url "https://binary.picodata.io/repository/raw/genin/osx/genin-0.5.7-x86_64-macosx.tar.gz"
   # Вставляем хэшсумму вычисленную в шаге 2
   sha256 "cf09eab628a179ccc3f548bc7b4fcfa0e4defa2ef373913a7e89dca25a65556e"
   # Меняем версию
-  version "0.5.6"
+  version "0.5.7"
   license "BSD-2-Clause license"
 
   def install
