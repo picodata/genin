@@ -540,6 +540,40 @@ With this flag, once the instances are distributed over the target hosts accordi
 
 ---
 
+#### Configuration `ansible-host`
+
+The `ansible-host` variable needs to be set in the final inventory configuration at the hosts. An example of a desirable one:
+
+```yaml
+storages:
+  vars:
+    ansible_host: 192.168.1.1
+  hosts:
+    storage-1-1: ~
+```
+
+By default, `ansible_host` is populated from the `address` parameter of the cluster host configuration,
+for example for the above result the source might look like this:
+
+```yaml
+hosts:
+  - name: storages
+    config:
+      address: 192.168.1.1
+```
+
+You can also set this parameter manually via the `ansible_host` host configuration parameter. It has a higher priority:
+
+```yaml
+hosts:
+  - name: storages
+    config:
+      address: 192.168.1.1
+      ansible_host: 192.168.1.2
+```
+
+---
+
 ### Reverse parsing config
 
 Since `Genin` is a relatively new tool, and `picodata` is far from full
