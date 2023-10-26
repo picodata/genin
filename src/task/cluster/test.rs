@@ -796,3 +796,61 @@ topology:
 
     insta::assert_display_snapshot!(uncolorize(result));
 }
+
+#[test]
+fn specify_ansible_host() {
+    let cluster = r#"---
+topology:
+  - name: router
+    replicasets_count: 2
+    roles:
+      - router
+      - failover-coordinator
+hosts:
+  - name: datacenter-1
+    config:
+      http_port: 8081
+      binary_port: 3031
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.16.11
+      - name: server-2
+        config:
+          ansible_host: 192.168.16.14
+          address: 192.168.16.12
+vars:
+  ansible_user: ansible
+  ansible_password: ansible
+  cartridge_app_name: myapp
+  cartridge_cluster_cookie: myapp-cookie
+  cartridge_package_path: /tmp/myapp.rpm
+  cartridge_bootstrap_vshard: true
+    "#;
+
+    let mut cluster: Cluster = serde_yaml::from_str(cluster).unwrap();
+    cluster.hosts.spread();
+
+    let inventory = Inventory::try_from(&cluster).unwrap();
+    let ansible_host = inventory.all.children.values().last().unwrap();
+    let ansible_host = match ansible_host {
+        Child::Replicaset { .. } => panic!("unexpected"),
+        Child::Host { vars, .. } => &vars.ansible_host,
+    };
+    assert_eq!(ansible_host, &Address::from("192.168.16.14"));
+
+    let with_default_ansible_host = inventory
+        .all
+        .children
+        .values()
+        .filter(|child| {
+            let ansible_host = match child {
+                Child::Replicaset { .. } => return false,
+                Child::Host { vars, .. } => &vars.ansible_host,
+            };
+            ansible_host == &Address::from("192.168.16.11")
+        })
+        .count();
+
+    assert_eq!(with_default_ansible_host, 1);
+}

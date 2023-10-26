@@ -120,6 +120,7 @@ impl From<Host> for HostV2 {
                 http_port: host.ports.http_as_option(),
                 binary_port: host.ports.binary_as_option(),
                 address: Address::from(host.ip),
+                ansible_host: Default::default(),
                 distance: Some(host.distance).and_then(|distance| {
                     if distance.eq(&0) {
                         None
@@ -213,6 +214,7 @@ impl HostV2 {
                         http_port: ports.http_as_option(),
                         binary_port: ports.binary_as_option(),
                         address: Address::from(ip),
+                        ansible_host: Default::default(),
                         distance: None,
                         additional_config: IndexMap::new(),
                     },
@@ -237,6 +239,7 @@ impl HostV2 {
                     http_port: ports.http_as_option(),
                     binary_port: ports.binary_as_option(),
                     address: Address::from(ip),
+                    ansible_host: Default::default(),
                     distance: None,
                     additional_config: IndexMap::new(),
                 },
@@ -837,6 +840,8 @@ pub struct HostV2Config {
     pub binary_port: Option<u16>,
     #[serde(default, skip_serializing_if = "Address::is_none")]
     pub address: Address,
+    #[serde(default, skip_serializing_if = "Address::is_none")]
+    pub ansible_host: Address,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub distance: Option<usize>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
@@ -892,6 +897,7 @@ impl<'a> From<&'a InvHostConfig> for HostV2Config {
                 http_port: Some(*http_port),
                 binary_port: Some(advertise_uri.port),
                 address: advertise_uri.address.clone(),
+                ansible_host: Default::default(),
                 distance: None,
                 additional_config: additional_config.clone(),
             },
@@ -906,6 +912,7 @@ impl<'a> From<&'a InvHostConfig> for HostV2Config {
                             .address
                     })
                     .unwrap(),
+                ansible_host: Default::default(),
                 distance: None,
                 additional_config: additional_config.clone(),
             },
@@ -953,7 +960,22 @@ impl HostV2Config {
         }
     }
 
+    pub fn with_ansible_host(self, ansible_host: Address) -> Self {
+        Self {
+            ansible_host,
+            ..self
+        }
+    }
+
     pub fn address(&self) -> Address {
+        self.address.clone()
+    }
+
+    /// Wraps ansible_host behavior - if it isn't supplied, address would be used as a replacement.
+    pub fn ansible_host(&self) -> Address {
+        if !self.ansible_host.is_none() {
+            return self.ansible_host.clone();
+        }
         self.address.clone()
     }
 
@@ -962,6 +984,7 @@ impl HostV2Config {
             http_port: self.http_port.or(other.http_port),
             binary_port: self.binary_port.or(other.binary_port),
             address: self.address.or(other.address),
+            ansible_host: self.ansible_host.or(other.ansible_host),
             distance: self.distance.or(other.distance),
             additional_config: merge_index_maps(self.additional_config, other.additional_config),
         }
