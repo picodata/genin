@@ -19,11 +19,13 @@ hosts:
       http_port: 8081
       binary_port: 3031
       address: 192.168.16.11
+      ansible_host: 192.168.16.11
   - name: server-2
     config:
       http_port: 8081
       binary_port: 3031
       address: 192.168.16.12
+      ansible_host: 192.168.16.12
 failover:
   mode: stateful
   state_provider: stateboard

@@ -131,7 +131,7 @@ impl<'a> TryFrom<&'a Cluster> for Inventory {
                             .entry(host.name.clone())
                             .or_insert(Child::Host {
                                 vars: HostVars {
-                                    ansible_host: host.config.address(),
+                                    ansible_host: host.config.ansible_host(),
                                     additional_config: host.config.additional_config.clone(),
                                 },
                                 hosts: host
@@ -236,7 +236,7 @@ impl<'a> TryFrom<&'a Option<Cluster>> for Inventory {
                             .entry(host.name.clone())
                             .or_insert(Child::Host {
                                 vars: HostVars {
-                                    ansible_host: host.config.address(),
+                                    ansible_host: host.config.ansible_host(),
                                     additional_config: host.config.additional_config.clone(),
                                 },
                                 hosts: host
