@@ -301,6 +301,7 @@ stateboard_params:
             },
             password: "some_password".to_string(),
         }),
+        ..Default::default()
     };
 
     assert_eq!(failover, failover_model);
@@ -312,8 +313,8 @@ fn failover_from_ip_and_port() {
 mode: stateful
 state_provider: stateboard
 stateboard_params:
-  uri: 
-    ip: 192.168.16.11 
+  uri:
+    ip: 192.168.16.11
     port: 4401
   password: some_password
 "#
@@ -331,6 +332,7 @@ stateboard_params:
             },
             password: "some_password".to_string(),
         }),
+        ..Default::default()
     };
 
     assert_eq!(failover, failover_model);
@@ -341,6 +343,10 @@ fn failover_to_str() {
     let failover = Failover {
         mode: Mode::Stateful,
         state_provider: StateProvider::Stateboard,
+        failover_timeout: Some(666),
+        fencing_enabled: Some(true),
+        fencing_pause: Some(42),
+        fencing_timeout: Some(24),
         failover_variants: FailoverVariants::StateboardVariant(StateboardParams {
             uri: Uri {
                 address: Address::Ip("192.168.16.11".parse().unwrap()),
@@ -353,6 +359,10 @@ fn failover_to_str() {
     let failover_model_str: String = r#"---
 mode: stateful
 state_provider: stateboard
+failover_timeout: 666
+fencing_enabled: true
+fencing_timeout: 24
+fencing_pause: 42
 stateboard_params:
   uri: "192.168.16.11:4401"
   password: some_password
@@ -387,6 +397,7 @@ stateboard_params:
             },
             password: "sosiska-123".into(),
         }),
+        ..Default::default()
     };
 
     assert_eq!(flv, flv_model);
@@ -400,10 +411,10 @@ etcd2_params:
   prefix: /cartridge
   lock_delay: 30
   endpoints:
-    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.12:2379"
     - "http://172.20.73.13:2379"
     - "http://172.20.73.14:2379"
-  username: 111   
+  username: 111
   password: 111
 "#;
 
@@ -433,10 +444,10 @@ etcd2_params:
   prefix: /cartridge
   lock_delay: 30
   endpoints:
-    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.12:2379"
     - "http://172.20.73.13:2379"
     - "http://172.20.73.14:2379"
-  username: 111   
+  username: 111
   password: 111
 "#;
 
@@ -488,10 +499,10 @@ etcd2_params:
   prefix: /cartridge
   lock_delay: 30
   endpoints:
-    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.12:2379"
     - "http://172.20.73.13:2379"
     - "http://172.20.73.14:2379"
-  username: 111   
+  username: 111
   password: 111
 stateboard_params:
   uri: "192.168.16.11:4401"
@@ -512,9 +523,9 @@ etcd2_params:
   prefix: /cartridge
   lock_delay: hudred
   endpoints:
-    - "http://172.20.73.12:2379" 
+    - "http://172.20.73.12:2379"
     - 100000
-  username: 111   
+  username: 111
   password: 111
 "#;
 

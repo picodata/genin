@@ -14,6 +14,10 @@ all:
     cartridge_failover_params:
       mode: stateful
       state_provider: stateboard
+      failover_timeout: 666
+      fencing_enabled: true
+      fencing_timeout: 24
+      fencing_pause: 42
       stateboard_params:
         uri: "192.168.16.11:4401"
         password: password

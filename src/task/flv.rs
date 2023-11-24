@@ -19,6 +19,10 @@ use super::{cluster::hst::v2::Address, AsError, TypeError, LIST, NUMBER, STRING}
 /// failover:
 ///     mode: stateful
 ///     state_provider: stateboard
+///     failover_timeout: 30
+///     fencing_enabled: false
+///     fencing_timeout: 30
+///     fencing_pause: 30
 ///     stateboard_params:
 ///         uri: "10.99.3.100:4001"
 ///         password: "vG?-GG!4sxV8q5:f"
@@ -27,6 +31,14 @@ pub struct Failover {
     pub mode: Mode,
     #[serde(skip_serializing_if = "StateProvider::is_disabled")]
     pub state_provider: StateProvider,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub failover_timeout: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fencing_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fencing_timeout: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fencing_pause: Option<usize>,
     #[serde(skip_serializing_if = "FailoverVariants::is_disabled", flatten)]
     pub failover_variants: FailoverVariants,
 }
@@ -37,6 +49,10 @@ impl Default for Failover {
             mode: Mode::Disabled,
             state_provider: StateProvider::Disabled,
             failover_variants: FailoverVariants::Disabled,
+            failover_timeout: None,
+            fencing_enabled: None,
+            fencing_timeout: None,
+            fencing_pause: None,
         }
     }
 }
@@ -54,6 +70,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
                 mode: Mode::Disabled,
                 state_provider: StateProvider::Disabled,
                 failover_variants: FailoverVariants::Disabled,
+                ..Default::default()
             }),
             (_, Some("disabled")) => {
                 warn!(
@@ -65,17 +82,20 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
                     mode: Mode::Disabled,
                     state_provider: StateProvider::Disabled,
                     failover_variants: FailoverVariants::Disabled,
+                ..Default::default()
                 })
             }
             (Some("eventual"), _) => Ok(Self {
                 mode: Mode::Eventual,
                 state_provider: StateProvider::Disabled,
                 failover_variants: FailoverVariants::Disabled,
+                ..Default::default()
             }),
             (Some("stateful"), Some(arg)) => Ok(Self {
                 mode: Mode::Stateful,
                 state_provider: StateProvider::try_from(arg)?,
                 failover_variants: FailoverVariants::try_from(arg)?,
+                ..Default::default()
             }),
             _ => Err(FailoverError::InvalidParams(
                 "Unknown failover options".into(),
@@ -109,6 +129,10 @@ impl<'de> Deserialize<'de> for Failover {
                 state_provider: StateProvider,
                 #[serde(flatten)]
                 failover_variants: FailoverVariants,
+                failover_timeout: Option<usize>,
+                fencing_enabled: Option<bool>,
+                fencing_timeout: Option<usize>,
+                fencing_pause: Option<usize>,
             },
             Disabled {
                 mode: Mode,
@@ -120,15 +144,27 @@ impl<'de> Deserialize<'de> for Failover {
                 mode,
                 state_provider,
                 failover_variants,
+                failover_timeout,
+                fencing_enabled,
+                fencing_timeout,
+                fencing_pause,
             }) => Ok(Self {
                 mode,
                 state_provider,
                 failover_variants,
+                failover_timeout,
+                fencing_enabled,
+                fencing_timeout,
+                fencing_pause,
             }),
             Ok(FailoverHelper::Disabled { mode }) => Ok(Self {
                 mode,
                 state_provider: StateProvider::Disabled,
                 failover_variants: FailoverVariants::Disabled,
+                failover_timeout: None,
+                fencing_enabled: None,
+                fencing_timeout: None,
+                fencing_pause: None,
             }),
             Err(e) => {
                 error!("Failover looks like {:?}", e);

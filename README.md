@@ -236,7 +236,7 @@ topology:
     replication_factor: 0     # (optional) number of replicas in replicaset, default for router 0
     weight: 10                # (optional) replicaset weight
     zone:                     # (optional) zone parameter for ansible cartridge playbook
-    roles:                    # (optional) list of roles    
+    roles:                    # (optional) list of roles
       - router
       - api
       - failover-coordinator
@@ -273,8 +273,13 @@ hosts:
 
 # failover parameters
 failover:
-  mode: stateful                      # (optional) failover mode (stateful, eventual, disabled)
-  state_provider: stateboard          # (optional) what is serve failover (stateboard, stateful)
+  mode: stateful               # (optional) failover mode (stateful, eventual, disabled)
+  state_provider: stateboard   # (optional) what is serve failover (stateboard, stateful)
+  failover_timeout: 60         # (optional) timeout (in seconds), used by membership to mark `suspect` members as `dead`
+  fencing_enabled: true        # (optional) abandon leadership when both the state provider quorum and at least one
+                               # replica are lost (suitable in stateful mode only)
+  fencing_timeout: 20          # (optional) time (in seconds) to actuate fencing after the check fails
+  fencing_pause: 120           # (optional) the period (in seconds) of performing the check
   stateboard_params:                  # (optional) params for chosen in state_provider failover type
       uri: 192.168.16.1:4401
       password: "vG?-GG!4sxV8q5:f"

@@ -51,6 +51,14 @@ failover:
   mode: stateful
   # What is serve failover (stateboard, stateful)
   state_provider: stateboard
+  # Timeout (in seconds), used by membership to mark `suspect` members as `dead`
+  failover_timeout: 666
+  # Abandon leadership when both the state provider quorum and at least one replica are lost (suitable in stateful mode only)
+  fencing_enabled: true
+  # Time (in seconds) to actuate fencing after the check fails
+  fencing_timeout: 24
+  # The period (in seconds) of performing the check
+  fencing_pause: 42
   # Params for chosen in state_provider failover type
   stateboard_params:
     # Uri on which the stateboard will be available

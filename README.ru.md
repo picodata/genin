@@ -250,7 +250,7 @@ topolgy:
     replications_factor: 0    # (опционально) количество реплик в репликасете, для роутера по умолчанию 0
     weight: 10                # (опционально) вес репликасета (не учитывается генином)
     zone: host-1              # (опционально) параметр зоны для ansible cartridge
-    roles:                    # (опционально) список ролей в виде массива   
+    roles:                    # (опционально) список ролей в виде массива
       - router
       - api
       - failover-coordinator
@@ -290,9 +290,13 @@ hosts:
 
 # параметры фейловера
 failover:
-  mode: stateful                      # (опционально) вариант работы фейловера (stateful, eventual, disabled)
-  state_provider: stateboard          # (опционально) провайдер предоставляющий фейловер (stateboard, stateful)
-  stateboard_params:                  # (опционально) параметры для провайдера
+  mode: stateful              # (опционально) вариант работы фейловера (stateful, eventual, disabled)
+  state_provider: stateboard  # (опционально) провайдер предоставляющий фейловер (stateboard, stateful)
+  failover_timeout: 60        # (опционально) время (в секундах), определяет время перевода инстанса в статус `dead`
+  fencing_enabled: true       # (опционально) включение режима fencing
+  fencing_timeout: 20         # (опционально) время (в секундах) после которого лидер автоматически переходит в режим реплики
+  fencing_pause: 120          # (опционально) период (в секундах) между выполнением проверок
+  stateboard_params:          # (опционально) параметры для провайдера
       uri:
         ip: 192.168.16.1
         port: 4401
@@ -707,7 +711,7 @@ genin upgrade --old cluster.genin.yml --new upgrade.genin.yml -o inventory.yml
 ```
 
 Опция `--old` указазывает путь к старому конфигу кластера которому мы хотим
-сделать `upgrade`.  
+сделать `upgrade`.
 Опция `--new` путь к новой конфигурации кластера, на основе которой `Genin`
 сделает `diff` и добавит те инстансы которых не было в конфиге переданном в
 `--old`.
