@@ -70,6 +70,7 @@ fn vars_failover() {
             },
             password: "some_password".to_string(),
         }),
+        ..Default::default()
     };
 
     let vars = Vars::from(&stateboard_failover);
@@ -85,6 +86,7 @@ fn vars_failover() {
                 },
                 password: "some_password".to_string(),
             }),
+            ..Default::default()
         }),
         ..Vars::default()
     };

@@ -55,6 +55,7 @@ impl Default for Vars {
                 mode: Mode::Disabled,
                 state_provider: StateProvider::Disabled,
                 failover_variants: FailoverVariants::Disabled,
+                ..Default::default()
             }),
             another_fields: IndexMap::new(),
         }

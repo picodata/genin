@@ -148,6 +148,7 @@ vars:
                 password: "some_password".into(),
             },
         ),
+        ..Default::default()
     });
 
     hosts_v2_model.spread();

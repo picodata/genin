@@ -177,6 +177,7 @@ impl Default for Cluster {
                         password: String::from("password"),
                     },
                 ),
+                ..Default::default()
             },
             vars: Default::default(),
             metadata: ClusterMetadata {
