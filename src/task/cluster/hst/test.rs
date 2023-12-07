@@ -515,7 +515,7 @@ fn hosts_use_failure_domain_as_zone() {
     assert_eq!(failure_domain_instance_zone(&host, "cache-2-1"), None);
     assert_eq!(failure_domain_instance_zone(&host, "cache-2-2"), None);
 
-    host.use_failure_domain_as_zone();
+    host.use_failure_domain_as_zone(None);
     assert_eq!(
         failure_domain_instance_zone(&host, "cache-2-1"),
         Some("dc-2")

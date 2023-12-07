@@ -628,7 +628,7 @@ impl Cluster {
     /// - that's it, when there may only be single domain name in instance's `failure_domains`.
     pub fn use_failure_domain_as_zone_for_instances(mut self, args: &ArgMatches) -> Self {
         if args.get_flag("fd-as-zone") {
-            self.hosts.use_failure_domain_as_zone();
+            self.hosts.use_failure_domain_as_zone(None);
         }
         self
     }
