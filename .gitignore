@@ -8,6 +8,9 @@ CMakeFiles
 cmake_install.cmake
 *.dylib
 *.idea
+*.vscode
+cluster.genin.yml
+inventory.yml
 __pycache__
 *pyc
 .cache
