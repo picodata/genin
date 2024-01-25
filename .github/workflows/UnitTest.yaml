@@ -30,21 +30,18 @@ jobs:
       - name: Clean workspace
         run: rm -rf ..?* .[!.]* *
         if: always()
-  call_build:
-    name: Build
-    needs: [version, test]
-    uses: ./.github/workflows/Build.yaml
-    secrets:
-      RAW_AUTH_RW: ${{ secrets.RAW_AUTH_RW }}
-      YUM_AUTH_RW: ${{ secrets.YUM_AUTH_RW }}
-      GPG_KEY_KDY: ${{ secrets.GPG_KEY_KDY }}
-      DEPLOY_PROD_SSH_KEY: ${{ secrets.DEPLOY_PROD_SSH_KEY }}
-      KNOWN_HOSTS: ${{ secrets.KNOWN_HOSTS }}
-    with:
-      VERSION: ${{ needs.version.outputs.VERSION }}
   call_integrations_tests:
     name: IntegrationTest
     needs: [version]
     uses: ./.github/workflows/IntegrationTest.yaml
+    with:
+      VERSION: ${{ needs.version.outputs.VERSION }}
+  call_build:
+    name: Build
+    needs: [version, test]
+    uses: ./.github/workflows/Release.yaml
+    secrets:
+      RAW_AUTH_RW: ${{ secrets.RAW_AUTH_RW }}
+      GITLAB_BUILDER: ${{ secrets.GITLAB_BUILDER }}
     with:
       VERSION: ${{ needs.version.outputs.VERSION }}

@@ -1,0 +1,15 @@
+name: Trigger_gitlab
+on:
+  workflow_call:
+    secrets:
+      GITLAB_BUILDER:
+        description: 'A GITLAB_BUILDER passed from Release'
+        required: true
+
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: run gitlab pipeline
+        run: |
+          curl -f -X POST -F token=${{ secrets.GITLAB_BUILDER }} -F ref=main -F "variables[TYPE]=RELEASE" -F "variables[PROJECT_TARGET]=genin" https://git.picodata.io/api/v4/projects/166/trigger/pipeline

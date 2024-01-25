@@ -42,108 +42,30 @@ Genin это генератор инваентаря для `Ansible Cartridge`.
 
 ## Установка
 
-Genin уже заранее скомпилирован под разные архитектуры и для установки требуется
-только скачать бинарный файл, или установить пакет.
-
-#### Linux bin файл
-
-Универсальный исполняемый файл:
+Универсальный исполняемый файл (от пользователя root или через sudo):
 ```shell
 curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.5.8-x86_64-musl.tar.gz
-tar -xvf genin-0.5.8-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+tar -xvf genin-0.5.8-x86_64-musl.tar.gz ; install genin /usr/local/bin/
 ```
 
----
+#### Универскальная установка через пакетный менеджер
 
-#### RHEL, CentOS, Rockylinux, Fedora
+1. Подключите репозиторий Picodata, используя следующую команду в терминале (от пользователя root или через sudo):
 
-Для операционных систем RHEL, CentOS, Rockylinux and Fedora доступно три вида установки.
-
-1. Установка с помощью пакетного менеджера.
-
-Сначала нужено установить gpg ключ picodata:
 ```shell
-sudo rpm --import https://download.picodata.io/tarantool-picodata/el/RPM-GPG-KEY-kdy
-```
-После чего можно добавлять репозиторий `picodata-release`.
-RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-```shell
-sudo yum install -y https://download.picodata.io/tarantool-picodata/el/8/x86_64/picodata-release-1.1.0.11-1.el8.x86_64.rpm
-```
-RHEL 7.x, CentOS 7.x
-```shell
-sudo yum install -y https://download.picodata.io/tarantool-picodata/el/7/x86_64/picodata-release-1.1.0.11-1.el7.x86_64.rpm
-```
-Обновите метаданные yum.
-```shell
-sudo yum update
-```
-Теперь можно запустить установку последней версии genin **Genin**:
-```shell
-sudo yum install -y genin
-```
-> **Note:** при таком способе установки вам так же будут доступны все обновления с помощью `yum upgrade genin`
-
-2. Так же вы можете установить пакет `rpm` напрямую без добавления нашего репозитория.
-RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.5.8-1.el8.x86_64.rpm
-```
-RHEL 7.x, CentOS 7.x
-```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.5.8-1.el7.x86_64.rpm
-```
-> **Note:** будьте внимательны, так как при выборе не правильной версии ос могут быть ошибки
-> при установке `rpm`
-
----
-
-#### Ubuntu
-
-Для установки на `ubuntu` доступен `deb` пакет с `Genin`. Установить пакет
-можно двумя способами.
-1. Из репозитория `picodata`:
-Скачиваем и устанавливаем gpg ключ:
-```shell
-wget -q -O - https://download.picodata.io/tarantool-picodata/ubuntu/picodata.gpg.key | sudo apt-key add -
-```
-Добавляем репозиторий:
-```shell
-sudo add-apt-repository 'deb [arch=amd64] https://download.picodata.io/tarantool-picodata/ubuntu/ focal main'
-```
-Устанавливаем пакет с `Genin`.
-```shell
-sudo apt install -y genin
+curl -L https://download.picodata.io/tarantool-picodata/install.sh | bash
 ```
 
-2. Загрузкой и установкой пакета напрямую:
-```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.8.amd64.deb && sudo dpkg -i genin-0.5.8.amd64.deb
-```
+Теперь можно запустить установку последней версии genin через соответствующий пакетный менеджер:
+Пример для RHEL и Debian OC:
 
----
-
-#### Debian
-
-Для установки на `debian` доступен `deb` пакет с `Genin`. Установить пакет
-можно двумя способами.
-1. Из репозитория `picodata`:
-   Скачиваем и устанавливаем gpg ключ:
+RHEL OC:
 ```shell
-wget -q -O - https://download.picodata.io/tarantool-picodata/ubuntu/picodata.gpg.key | sudo apt-key add -
+yum install -y genin
 ```
-Добавляем репозиторий:
+Debian OC:
 ```shell
-sudo add-apt-repository 'deb [arch=amd64] https://download.picodata.io/tarantool-picodata/debian/ bullseye main'
-```
-Устанавливаем пакет с `Genin`.
-```shell
-sudo apt install -y genin
-```
-
-2. Загрузкой и установкой пакета напрямую:
-```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.8.amd64.deb && sudo dpkg -i genin-0.5.8.amd64.deb
+apt install -y genin
 ```
 
 ---
@@ -181,25 +103,6 @@ brew search genin
 ```shell
 brew install genin@0.3.8
 ```
-
----
-
-#### Windows
-Используйте следующие команды для скачивания и установки Genin на операционных системах
-Windows 7 64 и новее.
-```shell
-curl.exe -sLO https://binary.picodata.io/repository/raw/genin/win/genin-0.5.8-win64.zip
-unzip.exe genin-0.5.8-win64.zip -d %HOME%/.cargo/bin/
-```
-> **Note:** Genin будет распакован в директорию `.cargo/bin` которая находится в домашнем
-> каталоге важего пользователя. Перед использованием приложения пожалуйста удостоверьтесь
-> что `.cargo/bin` добавлена в переменную окружения `%PATH%`.
-
-Для проверки успешнойсти установки вызовите:
-```
-genin --version
-```
-Если вы видите сообщение `genin 0.5.8` значит установка прошла успешно.
 
 ---
 ## Руководство по использованию
@@ -816,11 +719,11 @@ install -m 001 target/release/genin /usr/local/bin/
 >
 > Для дистрибутивов основанных на debian:
 > ```shell
-> sudo apt install -y build-essential
+> apt install -y build-essential
 > ```
 > Для rhel подобных дистрибутивов (RHEL, CentOS, Rockylinux, Fedora):
 > ```
-> sudo yum install -y gcc
+> yum install -y gcc
 > ```
 > Для MacOSX возможно могут понадобиться `Command Line Developer Tools`
 > проверить их установку можно вызвав `xcode-select --install`.
