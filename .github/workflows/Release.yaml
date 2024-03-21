@@ -14,8 +14,6 @@ on:
         required: true
 env:
   VERSION: ${{ inputs.version }}
-  YUM_REGISTRY: https://binary.picodata.io/repository/yum
-  DEB_REGISTRY: https://binary.picodata.io/repository/ubuntu
   RAW_REGISTRY: https://binary.picodata.io/repository/raw
 jobs:
   build:
@@ -86,7 +84,7 @@ jobs:
             [genin-${{ env.VERSION }}-x86_64-macos.tar.gz](${{ env.RAW_REGISTRY }}/genin/osx/genin-${{ env.VERSION }}-x86_64-macosx.tar.gz)
 
             ### For other OS, use the Picodata repository: 
-            [genin-${{ env.VERSION }}-x86_64-musl.tar.gz(https://picodata.io/download/)            
+            [genin-${{ env.VERSION }}](https://picodata.io/download/)            
 
   call_gitlab_ci:
     name: Trigger_gitlab
