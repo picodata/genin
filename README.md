@@ -38,111 +38,29 @@ Genin is the tool that will help you very quickly roll out cluster configuration
 
 ## Installation
 
-Download and unzip the archive for the desired architecture.
-
----
-
-#### Linux binary file
-
-Universal executable:
+Linux binary file
+Universal executable (as root user or via sudo):
 ```shell
 curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.5.8-x86_64-musl.tar.gz
-tar -xvf genin-0.5.8-x86_64-musl.tar.gz ; sudo install genin /usr/local/bin/
+tar -xvf genin-0.5.8-x86_64-musl.tar.gz ; install genin /usr/local/bin/
 ```
 
----
+1. Add the Picodata repository using the following command in a terminal (as root or via sudo):
 
-#### RHEL, CentOS, Rockylinux, Fedora
-There are two installation methods supported for RHEL, CentOS, Rockylinux and Fedora.
-
-1. Installation using the package manager.
-
-At first install picodata gpg key:
 ```shell
-sudo rpm --import https://download.picodata.io/tarantool-picodata/el/RPM-GPG-KEY-kdy
-```
-Now add `picodata-release` repository.
-RHEL 8.x, CentOS 8.x, Rockylinux 8.x, recent Fedora version
-```shell
-sudo yum install -y https://download.picodata.io/tarantool-picodata/el/8/x86_64/picodata-release-1.1.0.11-1.el8.x86_64.rpm
-```
-RHEL 7.x, CentOS 7.x
-```shell
-sudo yum install -y https://download.picodata.io/tarantool-picodata/el/7/x86_64/picodata-release-1.1.0.11-1.el7.x86_64.rpm
-```
-Update yum metadata.
-```shell
-sudo yum update
-```
-Install latest **Genin** package:
-```shell
-sudo yum install -y genin
-
-> **Note:** with this installation method, all updates will
-> also be available to you using `yum upgrade genin`
-
-2. If you want to install `rpm` packages directly without
-adding our repository.
-```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/8/x86_64/os/genin-0.5.8-1.el8.x86_64.rpm
-```
-RHEL 7.x, CentOS 7.x
-```shell
-sudo rpm -i https://binary.picodata.io/repository/yum/el/7/x86_64/os/genin-0.5.8-1.el7.x86_64.rpm
+curl -L https://download.picodata.io/tarantool-picodata/install.sh | bash
 ```
 
----
-> **Note:** please don't forget to pick the right package for your OS version.
----
+Now you can install the latest version of genin through the appropriate package manager:
+Example for RHEL and Debian OS:
 
-####  Ubuntu
-
-A `deb` package with `Genin` is available for installation on `ubuntu`.
-Install package possible in two ways.
-
-1. From the `picodata` repository:
-Download and install gpg key:
+RHEL OC:
 ```shell
-wget -q -O - https://download.picodata.io/tarantool-picodata/ubuntu/picodata.gpg.key | sudo apt-key add -
+yum install -y genin
 ```
-Add `Picodata` repository:
+Debian OC:
 ```shell
-sudo add-apt-repository 'deb [arch=amd64] https://download.picodata.io/tarantool-picodata/ubuntu/ focal main'
-```
-Install `Genin` package.
-```shell
-sudo apt install -y genin
-```
-
-2. Downloading and installing the package directly:
-```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.8.amd64.deb && sudo dpkg -i genin-0.5.8.amd64.deb
-```
-
----
-
-#### Debian
-
-A `deb` package with `Genin` is available for installation on `debian`. Install package
-possible in two ways.
-
-1. From the `picodata` repository:
-Download and install gpg key:
-```shell
-wget -q -O - https://download.picodata.io/tarantool-picodata/ubuntu/picodata.gpg.key | sudo apt-key add -
-```
-Add `Picodata` repository:
-```shell
-sudo add-apt-repository 'deb [arch=amd64] https://download.picodata.io/tarantool-picodata/debian/ bullseye main'
-```
-Install `Genin` package.
-```shell
-sudo apt install -y genin
-```
-
-2. Downloading and installing the package directly:
-```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/deb/genin-0.5.8.amd64.deb && sudo dpkg -i genin-0.5.8.amd64.deb
+apt install -y genin
 ```
 
 ---
@@ -176,20 +94,6 @@ brew search genin
 Install specific version:
 ```shell
 brew install genin@0.3.8
-```
-
-#### Windows
-Use the following command to grab and install Genin in Windows 7 64 bit or newer:
-```shell
-curl.exe -L https://binary.picodata.io/repository/raw/genin/windows/genin-0.5.8-darwin-amd64.zip -o genin-0.5.8-windows-amd64.zip
-unzip.exe genin-0.5.8-windows-amd64.zip -d %HOME%/.cargo/bin/
-```
-> **Note:** The application can then be found under the `.cargo/bin` folder inside
-> your user profile folder. Make sure it is in your `%PATH%`.
-
-Сheck that the installation was successful:
-```
-genin --version
 ```
 
 ---
@@ -786,11 +690,11 @@ install -m 001 target/release/genin /usr/local/bin/
 >
 > For Debian-based distributions:
 > ```shell
-> sudo apt install -y build-essential
+> apt install -y build-essential
 > ```
 > For Red Hat-based distributions (RHEL, CentOS, Fedora):
 > ```
-> sudo yum install -y gcc
+> yum install -y gcc
 > ```
 > For macOS make sure you have `Command Line Developer Tools` installed (`xcode-select --install`).
 ---
