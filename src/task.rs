@@ -68,12 +68,35 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
                 .write(args)?;
         }
         Some(("build", args)) => {
-            Cluster::try_from(args)?
-                .use_failure_domain_as_zone_for_instances(args)
-                .print(args)
-                .write_build_state(args)?
-                .to_inventory()?
-                .write(args)?;
+            if args.get_flag("recreate") {
+                State::recreate(args)?;
+            }
+
+            match State::from_latest(args) {
+                Ok(state) => {
+                    let mut old: Cluster = state.into();
+                    old.hosts.clear_view();
+
+                    let mut new =
+                        Cluster::try_from(args)?.use_failure_domain_as_zone_for_instances(args);
+
+                    let hosts_diff = old.merge(&mut new, args.get_flag("idiomatic-merge"))?;
+
+                    old.use_failure_domain_as_zone_for_instances(args)
+                        .print(args)
+                        .write_upgrade_state(args, hosts_diff)?
+                        .to_inventory()?
+                        .write(args)?;
+                }
+                _ => {
+                    Cluster::try_from(args)?
+                        .use_failure_domain_as_zone_for_instances(args)
+                        .print(args)
+                        .write_build_state(args)?
+                        .to_inventory()?
+                        .write(args)?;
+                }
+            }
         }
         Some(("inspect", args)) => {
             println!("{}", Cluster::try_from(args)?);

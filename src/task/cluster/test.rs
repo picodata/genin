@@ -153,7 +153,9 @@ vars:
 
     hosts_v2_model.spread();
 
-    let cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
+    let mut cluster_v1: Cluster = serde_yaml::from_str(&cluster_v1_str).unwrap();
+    cluster_v1.hosts.add_queue = IndexMap::default();
+    cluster_v1.hosts.delete_queue = IndexMap::default();
 
     println!(
         "stateboard 1: {:?}",
@@ -213,7 +215,9 @@ vars:
 "#
     .into();
 
-    let cluster_v2: Cluster = serde_yaml::from_str(&cluster_v2_str).unwrap();
+    let mut cluster_v2: Cluster = serde_yaml::from_str(&cluster_v2_str).unwrap();
+    cluster_v2.hosts.add_queue = IndexMap::default();
+    cluster_v2.hosts.delete_queue = IndexMap::default();
 
     println!(
         "stateboard 3: {:?}",

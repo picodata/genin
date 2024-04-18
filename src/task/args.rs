@@ -75,10 +75,20 @@ pub(super) fn read() -> ArgMatches {
                         .short('q')
                         .action(ArgAction::SetTrue)
                         .help("do not print table and cluster yaml"),
-                    Arg::new("export-state")
-                        .long("export-state")
+                    Arg::new("state-dir")
+                        .long("state-dir")
+                        .env("GENIN_STATE_DIR")
                         .action(ArgAction::Set)
-                        .help("export the build state"),
+                        .help("override .geninstate directory location"),
+                    Arg::new("recreate")
+                        .long("recreate")
+                        .action(ArgAction::SetTrue)
+                        .help("Delete the existing state before building"),
+                    Arg::new("idiomatic-merge")
+                        .long("idiomatic-merge")
+                        .short('I')
+                        .action(ArgAction::SetTrue)
+                        .help("merge replicasets with similar names like router-1 and router-1-1"),
                 ]),
             Command::new("init")
                 .about("Init genin and create cluster.genin.yml configuration")
@@ -201,17 +211,14 @@ pub(super) fn read() -> ArgMatches {
                 ]),
             Command::new("upgrade")
                 .about(
-                    "Using the genin configuration and the inventory to be \
+                    "[Deprecated] Using the genin configuration and the inventory to be \
                     modified creates a new inventory",
                 )
                 .args(&[
-                    Arg::new("old")
-                        .long("old")
-                        .action(ArgAction::Set)
-                        .help(
-                            "Absolute or relative path of the file with \
+                    Arg::new("old").long("old").action(ArgAction::Set).help(
+                        "Absolute or relative path of the file with \
                             the description of the cluster to be generated",
-                        ),
+                    ),
                     Arg::new("new")
                         .long("new")
                         .action(ArgAction::Set)
@@ -287,12 +294,10 @@ pub(super) fn read() -> ArgMatches {
                         .short('I')
                         .action(ArgAction::SetTrue)
                         .help("merge replicasets with similar names like router-1 and router-1-1"),
-                    fd_as_zone_arg()
+                    fd_as_zone_arg(),
                 ]),
             Command::new("list-state")
-                .about(
-                    "Print last 10 genin states",
-                )
+                .about("Print last 10 genin states")
                 .args(&[
                     Arg::new("export-state")
                         .long("export-state")

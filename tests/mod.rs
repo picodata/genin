@@ -1,5 +1,5 @@
 use std::{
-    fs::{read_to_string, File},
+    fs::{read_dir, read_to_string, File},
     io::Write,
     process::{Command, Output},
 };
@@ -168,73 +168,6 @@ fn init_with_comments() {
     let generated = std::fs::read_to_string("tests/.init_with_comments/cluster.genin.yml").unwrap();
 
     insta::assert_display_snapshot!(generated)
-}
-
-#[test]
-fn build_from_state() {
-    cleanup_test_dir("tests/.build_from_state");
-
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg("tests/resources/cluster.genin.yml")
-    .arg("-o")
-    .arg("tests/.build_from_state/inventory.yml")
-    .arg("--export-state")
-    .arg("tests/.build_from_state/state.gz")
-    .output()
-    .expect("Failed to execute command");
-
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg("tests/.build_from_state/state.gz")
-    .arg("-o")
-    .arg("tests/.build_from_state/inventory.yml")
-    .arg("-f")
-    .output()
-    .expect("Failed to execute command");
-
-    let inventory = read_to_string("tests/.build_from_state/inventory.yml").unwrap();
-
-    insta::assert_display_snapshot!(inventory);
-
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg("tests/resources/cluster-new.genin.yml")
-    .arg("-o")
-    .arg("tests/.build_from_state/inventory_new.yml")
-    .arg("--export-state")
-    .arg("tests/.build_from_state/state.gz")
-    .output()
-    .expect("Failed to execute command");
-
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg("tests/.build_from_state/state.gz")
-    .arg("-o")
-    .arg("tests/.build_from_state/inventory_new.yml")
-    .arg("-f")
-    .output()
-    .expect("Failed to execute command");
-
-    let inventory_new = read_to_string("tests/.build_from_state/inventory_new.yml").unwrap();
-
-    insta::assert_display_snapshot!(inventory_new);
 }
 
 #[test]
@@ -435,4 +368,107 @@ fn build_invalid_config() {
     let build_invalid_config = build_result_from_output(output);
 
     insta::assert_display_snapshot!(build_invalid_config);
+}
+
+#[test]
+fn build_with_recreate() {
+    let base_dir = "tests/.build_with_recreate";
+    let source = "tests/resources/cluster.genin.yml";
+    let state_dir = format!("{base_dir}/.geninstate");
+    let inventory = format!("{base_dir}/inventory.yml");
+    cleanup_test_dir(base_dir);
+
+    // build from config
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&source)
+    .arg("-o")
+    .arg(&inventory)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+
+    let result = format!("{result}\n{}", read_to_string(&source).unwrap());
+    insta::assert_display_snapshot!("cluster_genin", result);
+    assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
+
+    // build with recreate state
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&source)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .arg("--recreate")
+    .arg("-o")
+    .arg(format!("{base_dir}/recreate_inventory.yml"))
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+    let result = format!("{result}\n{}", read_to_string(&source).unwrap());
+    insta::assert_display_snapshot!("cluster_genin", result);
+    assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
+}
+
+#[test]
+fn build_with_upgrade() {
+    let src = "tests/resources/cluster.genin.yml";
+    let upg_src = "tests/resources/cluster-new.genin.yml";
+    let base_dir = "tests/.build_with_upgrade";
+    let state_dir = format!("{base_dir}/.geninstate");
+    let inventory = format!("{base_dir}/inventory.yml");
+    cleanup_test_dir(base_dir);
+
+    // build from config
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&src)
+    .arg("-o")
+    .arg(&inventory)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+    let result = format!("{result}\n{}", read_to_string(&src).unwrap());
+    insta::assert_display_snapshot!("cluster_genin", result);
+    assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
+
+    // build with upgrade from latest
+    for i in 0..3 {
+        let output = Command::new(format!(
+            "{}/target/debug/genin",
+            std::env::var("CARGO_MANIFEST_DIR").unwrap()
+        ))
+        .arg("build")
+        .arg("-s")
+        .arg(&upg_src)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("-o")
+        .arg(format!("{base_dir}/upg_inventory.{i}.yml"))
+        .output()
+        .expect("Failed to execute command");
+
+        let result = build_result_from_output(output);
+        let result = format!("{result}\n{}", read_to_string(&upg_src).unwrap());
+        insta::assert_display_snapshot!("cluster_new_genin", result);
+        assert_eq!(read_dir(&state_dir).unwrap().count(), 3);
+    }
 }

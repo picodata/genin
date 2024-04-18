@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    fs::{create_dir_all, File},
+    fs::{create_dir_all, remove_dir_all, File},
     io::{self, Read, Write},
     path::PathBuf,
 };
@@ -12,6 +12,7 @@ use sha256::{digest, try_digest, TrySha256Digest};
 use thiserror::Error;
 
 use crate::task::cluster::hst::view::{FG_GREEN, FG_RED};
+use crate::task::cluster::topology::Topology;
 use crate::task::{cluster::hst::v2::HostV2, flv::Failover, vars::Vars};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,6 +26,7 @@ pub struct State {
     #[serde(default)]
     pub hosts_changes: Vec<Change>,
     pub vars: Vars,
+    pub topology: Topology,
     pub hosts: HostV2,
     pub failover: Failover,
 }
@@ -75,7 +77,17 @@ impl State {
             hosts: None,
             vars: None,
             failover: None,
+            topology: None,
         }
+    }
+
+    pub fn recreate(args: &ArgMatches) -> Result<(), io::Error> {
+        let state_dir = args
+            .get_one::<String>("state-dir")
+            .cloned()
+            .unwrap_or(".geninstate".into());
+
+        remove_dir_all(state_dir)
     }
 
     pub fn dump_by_path(&mut self, path: &str) -> Result<(), io::Error> {
@@ -90,7 +102,8 @@ impl State {
 
         self.path = path.to_string();
         let mut encoder = GzEncoder::new(File::create(path)?, Compression::default());
-        encoder.write_all(&serde_json::to_vec(self)?)?;
+        let val = &serde_json::to_vec(self)?;
+        encoder.write_all(val)?;
 
         Ok(())
     }
@@ -113,6 +126,7 @@ impl State {
         decoder.read_to_end(&mut buffer)?;
 
         let mut state: State = serde_json::from_slice(&buffer)?;
+        state.hosts.finalize_failure_domains();
         state.path = path;
 
         Ok(state)
@@ -182,6 +196,7 @@ pub struct StateBuilder {
     hosts: Option<HostV2>,
     vars: Option<Vars>,
     failover: Option<Failover>,
+    topology: Option<Topology>,
 }
 
 #[allow(unused)]
@@ -231,21 +246,28 @@ impl StateBuilder {
 
     pub fn hosts(self, hosts: &HostV2) -> Self {
         Self {
-            hosts: Some(hosts.clone()),
+            hosts: Some(hosts.to_owned()),
             ..self
         }
     }
 
     pub fn vars(self, vars: &Vars) -> Self {
         Self {
-            vars: Some(vars.clone()),
+            vars: Some(vars.to_owned()),
             ..self
         }
     }
 
     pub fn failover(self, failover: &Failover) -> Self {
         Self {
-            failover: Some(failover.clone()),
+            failover: Some(failover.to_owned()),
+            ..self
+        }
+    }
+
+    pub fn topology(self, topology: &Topology) -> Self {
+        Self {
+            topology: Some(topology.to_owned()),
             ..self
         }
     }
@@ -270,6 +292,9 @@ impl StateBuilder {
             failover: self
                 .failover
                 .ok_or::<String>("failover is not set".into())?,
+            topology: self
+                .topology
+                .ok_or::<String>("topology is not set".into())?,
         })
     }
 }
