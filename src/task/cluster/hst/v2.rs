@@ -774,25 +774,26 @@ impl HostV2 {
     }
 
     /// For every instance that has finalized failure domain, replace its zone with that domain name.
-    pub fn use_failure_domain_as_zone(&mut self, dc: Option<String>) {
-        let dc = if dc.is_some() {
-            dc
-        } else if self.name == Name::from("cluster") {
-            None
-        } else {
-            Some(self.name.to_string())
-        };
+    pub fn use_failure_domain_as_zone(&mut self, dc_lvl: u8) {
+        let lvl: u8 = 0;
+        let zone: Option<String> = None;
+        self.set_zone(lvl, dc_lvl, zone)
+    }
+
+    pub fn set_zone(&mut self, mut lvl: u8, dc_lvl: u8, mut zone: Option<String>) {
+        if dc_lvl == lvl {
+            zone = Some(self.name.to_string());
+        }
+
         for instance in self.instances.iter_mut() {
             if let FailureDomains::Finished(failure_domain) = &instance.failure_domains {
-                if let Some(dc) = &dc {
-                    instance.config.zone = Some(dc.clone());
-                } else {
-                    instance.config.zone = Some(failure_domain.clone());
-                }
+                instance.config.zone = zone.clone().or(Some(failure_domain.clone()));
             }
         }
+
+        lvl = lvl + 1;
         for sub_host in self.hosts.iter_mut() {
-            sub_host.use_failure_domain_as_zone(dc.clone())
+            sub_host.set_zone(lvl, dc_lvl, zone.clone())
         }
     }
 

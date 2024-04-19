@@ -627,8 +627,8 @@ impl Cluster {
     /// Note that method is intended to be called after cluster is spread
     /// - that's it, when there may only be single domain name in instance's `failure_domains`.
     pub fn use_failure_domain_as_zone_for_instances(mut self, args: &ArgMatches) -> Self {
-        if args.get_flag("fd-as-zone") {
-            self.hosts.use_failure_domain_as_zone(None);
+        if let Ok(Some(lvl)) = args.try_get_one::<u8>("fd-as-zone") {
+            self.hosts.use_failure_domain_as_zone(*lvl);
         }
         self
     }
