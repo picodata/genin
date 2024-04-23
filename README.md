@@ -541,7 +541,32 @@ will be on the specified hosts.
 
 You can also use a failure domain name as a value for the [`zone`](https://github.com/tarantool/ansible-cartridge/blob/master/doc/variables.md?plain=1#L90) property of the instances config. Just add the `--fd-as-zone` flag to your `build` command, for example: `genin build --fd-as-zone`.
 
+The `--fd-as-zone` option takes the value 1..255, which indicates at what level
+nesting `hosts` contains the required name `zone`
+
 With this flag, once the instances are distributed over the target hosts according to the failure_domains algorithm, the final host name of each instance becomes its zone parameter and gets stored in the instance's config.
+
+
+For example, when configuring:
+```yaml
+hosts:
+  - name: region
+    hosts:
+      - name: datacenter
+        hosts:
+          - name: host
+```
+Team:
+```shell
+genin build --fd-as-zone=2
+```
+We get:
+```yaml
+hosts:
+  role:
+    zone: datacenter
+    config:
+```
 
 ---
 
