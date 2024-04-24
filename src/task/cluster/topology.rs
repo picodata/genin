@@ -21,7 +21,7 @@ use super::{
     TopologyMemberV1,
 };
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Topology(Vec<TopologySet>);
 
 impl TryFrom<Instances> for Topology {
@@ -307,7 +307,7 @@ impl Default for Topology {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 struct TopologySet {
     name: Name,
     #[serde(skip_serializing_if = "Option::is_none")]

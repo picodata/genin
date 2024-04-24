@@ -785,6 +785,18 @@ impl HostV2 {
         }
     }
 
+    /// used only when restoring from state
+    pub fn finalize_failure_domains(&mut self) {
+        for instance in self.instances.iter_mut() {
+            if instance.failure_domains.in_progress() {
+                instance.failure_domains = FailureDomains::Finished(self.name.to_string())
+            }
+        }
+        for sub_host in self.hosts.iter_mut() {
+            sub_host.finalize_failure_domains()
+        }
+    }
+
     pub fn clear_instances(&mut self) {
         self.instances.clear();
         if !self.hosts.is_empty() {

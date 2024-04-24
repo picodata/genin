@@ -17,6 +17,25 @@ fn build_from_state() {
         "cartridge_package_path": "/tmp/myapp.rpm",
         "cartridge_bootstrap_vshard": true
     },
+    "topology": [
+        {
+            "name": "router",
+            "replicasets_count": 1,
+            "roles": [
+                "router",
+                "failover-coordinator"
+            ]
+        },
+        {
+            "name": "storage",
+            "replicasets_count": 2,
+            "replication_factor": 2,
+            "failure_domains": [],
+            "roles": [
+                "storage"
+            ]
+        }
+    ],
     "hosts": {
         "name": "cluster",
         "config": {

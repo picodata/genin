@@ -16,7 +16,7 @@ use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::{self, Write};
 use std::net::IpAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 use crate::task::cluster::hst::v1::Host;
@@ -149,6 +149,19 @@ impl Default for Cluster {
     ///             ip: 10.99.3.100
     /// ```
     fn default() -> Self {
+        let failover = Failover {
+            mode: Mode::Stateful,
+            state_provider: StateProvider::Stateboard,
+            failover_variants: super::flv::FailoverVariants::StateboardVariant(StateboardParams {
+                uri: super::flv::Uri {
+                    address: hst::v2::Address::Ip(IpAddr::from([192, 168, 16, 11])),
+                    port: 4401,
+                },
+                password: String::from("password"),
+            }),
+            ..Default::default()
+        };
+
         Self {
             topology: Topology::default(),
             hosts: HostV2::from("cluster")
@@ -165,21 +178,8 @@ impl Default for Cluster {
                     ])
                     .with_config(HostV2Config::from((8081, 3031)))])
                 .with_config(HostV2Config::from((8081, 3031))),
-            failover: Failover {
-                mode: Mode::Stateful,
-                state_provider: StateProvider::Stateboard,
-                failover_variants: super::flv::FailoverVariants::StateboardVariant(
-                    StateboardParams {
-                        uri: super::flv::Uri {
-                            address: hst::v2::Address::Ip(IpAddr::from([192, 168, 16, 11])),
-                            port: 4401,
-                        },
-                        password: String::from("password"),
-                    },
-                ),
-                ..Default::default()
-            },
-            vars: Default::default(),
+            failover: failover.clone(),
+            vars: Vars::default().with_failover(failover),
             metadata: ClusterMetadata {
                 paths: vec![PathBuf::from("cluster.genin.yml")],
             },
@@ -204,32 +204,20 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
 
     fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
         match args.try_get_one::<String>("source") {
-            Ok(Some(path)) if path.ends_with(".gz") => {
-                debug!("Restoring the cluster distribution from the state file {path}");
-                Ok(Cluster {
-                    metadata: ClusterMetadata {
-                        paths: vec![path.into()],
-                    },
-                    ..Cluster::from(State::try_from(&PathBuf::from(path))?)
-                })
-            }
-            Ok(Some(path)) => {
+            Ok(path) => {
+                let source = String::from("cluster.genin.yml");
+                let path = path.unwrap_or(&source);
+
                 let file = File::open(path)?;
-                Ok(Cluster {
+                let mut cluster = Cluster {
                     metadata: ClusterMetadata {
                         paths: vec![path.into()],
                     },
                     ..serde_yaml::from_reader(file)?
-                })
-            }
-            Ok(None) => {
-                let file = File::open("cluster.genin.yml")?;
-                Ok(Cluster {
-                    metadata: ClusterMetadata {
-                        paths: vec!["cluster.genin.yml".into()],
-                    },
-                    ..serde_yaml::from_reader(file)?
-                })
+                };
+
+                cluster.vars = cluster.vars.with_failover(cluster.failover.clone());
+                Ok(cluster)
             }
             Err(_) => {
                 debug!(
@@ -404,6 +392,7 @@ impl From<State> for Cluster {
             hosts,
             vars: state.vars.with_failover(state.failover.clone()),
             failover: state.failover,
+            topology: state.topology,
             metadata: ClusterMetadata {
                 paths: vec![PathBuf::from(state.path)],
             },
@@ -560,23 +549,25 @@ pub fn check_placeholders(slice: &[u8]) -> Result<String, serde_yaml::Error> {
 impl Cluster {
     pub fn spread(self) -> Self {
         let instances = Instances::from(&self.topology);
-        let mut hosts = self
-            .hosts
+        let mut hosts = self.hosts.with_instances(instances);
+        hosts.with_stateboard(&self.failover);
+        let mut hosts = hosts
+            .clone()
             .with_add_queue(
-                instances
+                hosts
+                    .instances
                     .iter()
                     .map(|instance| (instance.name.clone(), instance.clone()))
                     .collect(),
             )
             .with_delete_queue(
-                instances
+                hosts
+                    .instances
                     .iter()
                     .map(|instance| (instance.name.clone(), instance.clone()))
                     .collect(),
-            )
-            .with_instances(instances);
-        hosts.spread();
-        hosts.with_stateboard(&self.failover);
+            );
+
         hosts.spread();
         Self { hosts, ..self }
     }
@@ -792,17 +783,26 @@ impl Cluster {
     }
 
     pub fn write_build_state(self, args: &ArgMatches) -> Result<Self, ClusterError> {
-        if let Ok(Some(path)) = args.try_get_one::<String>("export-state") {
-            State::builder()
-                .uid(self.metadata.paths.clone())?
-                .make_build_state()
-                .path(path)
-                .hosts(&self.hosts)
-                .vars(&self.vars)
-                .failover(&self.failover)
-                .build()?
-                .dump_by_path(path)?;
-        }
+        let state_dir = args
+            .get_one::<String>("state-dir")
+            .cloned()
+            .unwrap_or(".geninstate".into());
+        let latest_path = Path::new(&state_dir).join("latest.gz");
+        let latest_path = latest_path.to_str().unwrap();
+
+        let mut state = State::builder()
+            .uid(self.metadata.paths.clone())?
+            .make_build_state()
+            .path(latest_path)
+            .hosts(&self.hosts)
+            .vars(&self.vars)
+            .failover(&self.failover)
+            .topology(&self.topology)
+            .build()?;
+
+        state.dump_by_uid(&state_dir)?;
+        state.dump_by_path(latest_path)?;
+
         Ok(self)
     }
 
@@ -811,6 +811,27 @@ impl Cluster {
         args: &ArgMatches,
         hosts_diff: Vec<Change>,
     ) -> Result<Self, ClusterError> {
+        let instances_diff: Vec<Change> = self
+            .hosts
+            .add_queue
+            .iter()
+            .map(|(name, _)| Change::Added(name.to_string()))
+            .chain(
+                self.hosts
+                    .delete_queue
+                    .iter()
+                    .map(|(name, _)| Change::Removed(name.to_string())),
+            )
+            .collect();
+
+        if hosts_diff.is_empty() && instances_diff.is_empty() {
+            return Ok(self);
+        }
+
+        // if args != export-state -> try open latest
+        // if .geninstate not exists -> create dir
+        // if latest not exists -> create latest
+        // if write state
         let state_dir = args
             .get_one::<String>("state-dir")
             .cloned()
@@ -822,31 +843,16 @@ impl Cluster {
             format!("{state_dir}/latest.gz")
         };
 
-        // if args != export-state -> try open latest
-        // if .geninstate not exists -> create dir
-        // if latest not exists -> create latest
-        // if write state
         let mut state = State::builder()
             .uid(self.metadata.paths.clone())?
             .make_upgrade_state()
             .path(&path)
-            .instances_changes(
-                self.hosts
-                    .add_queue
-                    .iter()
-                    .map(|(name, _)| Change::Added(name.to_string()))
-                    .chain(
-                        self.hosts
-                            .delete_queue
-                            .iter()
-                            .map(|(name, _)| Change::Removed(name.to_string())),
-                    )
-                    .collect(),
-            )
+            .instances_changes(instances_diff)
             .hosts_changes(hosts_diff)
             .hosts(&self.hosts)
             .vars(&self.vars)
             .failover(&self.failover)
+            .topology(&self.topology)
             .build()?;
 
         state.dump_by_uid(&state_dir)?;

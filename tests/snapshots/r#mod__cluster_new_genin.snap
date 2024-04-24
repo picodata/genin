@@ -1,0 +1,109 @@
+---
+source: tests/mod.rs
+assertion_line: 470
+expression: result
+---
++-------------+-------------+-------------+
+|                 cluster                 |
++-------------+-------------+-------------+
+|              datacenter-1               |
++-------------+-------------+-------------+
+|  server-1   |  server-2   |  server-3   |
++-------------+-------------+-------------+
+|  router-1   |  router-2   |  router-3   |
+|  8081/3031  |  8081/3031  |  8081/3031  |
++-------------+-------------+-------------+
+| storage-1-1 | storage-1-2 | storage-1-3 |
+| 8082/3032   | 8082/3032   | 8082/3032   |
++-------------+-------------+-------------+
+| storage-2-1 | storage-2-2 | storage-2-3 |
+| 8083/3033   | 8083/3033   | 8083/3033   |
++-------------+-------------+-------------+
+
+---
+# List of replicasets as an array
+topology:
+  - name: router
+    # How many masters we want, by default equal 1
+    replicasets_count: 3
+    # Array of roles for this instance
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage
+    # How many masters we want, by default equal 1
+    replicasets_count: 2
+    # Number of replicas in replicaset, default 0
+    replication_factor: 3
+    # Array of roles for this instance
+    roles:
+      - storage
+    config:
+      DISABLE_METRICS: "true"
+
+# List of regions, datacenters, and servers
+hosts:
+  - name: datacenter-1
+    # Config with arbitrary key-values pairs
+    config:
+      # Specify http port to start counting from
+      http_port: 8081
+      # Specify binary port to start counting from
+      binary_port: 3031
+    # List of regions, datacenters, and servers
+    hosts:
+      - name: server-1
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.11
+      - name: server-2
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.12
+      - name: server-3
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.13
+# Failover management options
+failover:
+  # Failover mode (stateful, eventual, disabled)
+  mode: stateful
+  # What is serve failover (stateboard, stateful)
+  state_provider: etcd2
+  # Params for chosen in state_provider failover type
+  etcd2_params:
+    prefix: some/prefix
+    lock_delay: 30
+    endpoints:
+      - "http://192.168.16.11:2379"
+      - "http://192.168.16.12:2379"
+      - "http://192.168.16.13:2379"
+# Vars similar to those configured in the cartridge inventory
+vars:
+  # Username under which the ansible will connect to the servers
+  ansible_user: vagrant
+  # Ansible user password
+  ansible_password: vagrant
+  # Application name
+  cartridge_app_name: new-app
+  # Cookie for connecting to the administrative console of the instances
+  cartridge_cluster_cookie: myapp-cookie
+  # Path to the application package
+  cartridge_package_path: /tmp/myapp.rpm
+  # Indicates if vshard must be bootstrapped on the cluster
+  cartridge_bootstrap_vshard: true

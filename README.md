@@ -578,6 +578,20 @@ vars:
 
 #### Cluster reconfiguration
 
+To update a previous cluster using the generated `Genin`
+inventory, you can use the `build` command. In this case `Genin`
+automatically restores the latest cluster state and applies changes
+from the new cluster configuration
+
+```shell
+genin build -s cluster.genin.yml
+```
+
+Option `-s` path to the new cluster configuration (default `cluster.genin.yml`).
+The `--recreate` option will remove all previous cluster states and collect a new inventory
+
+#### [DEPRECATED]
+
 To update a deployed cluster using the generated `Genin` inventory, there is
 a special `upgrade` command for adding new instances. Unlike inventory
 regeneration, when which all instances are redistributed each time anew,
