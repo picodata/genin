@@ -321,6 +321,9 @@ pub(super) fn read() -> ArgMatches {
 fn fd_as_zone_arg() -> Arg {
     Arg::new("fd-as-zone")
         .long("fd-as-zone")
-        .action(ArgAction::SetTrue)
+        .action(ArgAction::Set)
+        .num_args(0..=1)
+        .default_missing_value("1")
+        .value_parser(clap::value_parser!(u8))
         .help("Used to insert 'failure_domain' field's value of instances in their 'zone' field.")
 }

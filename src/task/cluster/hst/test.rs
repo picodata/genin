@@ -515,14 +515,18 @@ fn hosts_use_failure_domain_as_zone() {
     assert_eq!(failure_domain_instance_zone(&host, "cache-2-1"), None);
     assert_eq!(failure_domain_instance_zone(&host, "cache-2-2"), None);
 
-    host.use_failure_domain_as_zone();
+    host.use_failure_domain_as_zone(1);
     assert_eq!(
         failure_domain_instance_zone(&host, "cache-2-1"),
         Some("dc-2")
     );
     assert_eq!(
         failure_domain_instance_zone(&host, "cache-2-2"),
-        Some("server-5")
+        Some("dc-2")
+    );
+    assert_eq!(
+        failure_domain_instance_zone(&host, "stateboard-1-1"),
+        Some("dc-1")
     );
 }
 
