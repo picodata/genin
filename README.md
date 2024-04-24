@@ -312,6 +312,22 @@ launched `Genin`. Now we can set up the cluster:
 ansible-playbook -i inventory.yaml playbook.yaml
 ```
 
+### State
+
+---
+
+After each execution of the `genin build` command, the cluster state will be generated.
+By default, the state will be stored in the `.geninstate` directory.
+For all cluster changes, Genin is based on the "latest" state and
+after updating it overwrites it.
+
+:exclamation: Loss of `.geninstate` directory or `latest` state, `genin build` command recreates
+configuration with new state
+
+:exclamation: `genin build --recreate` recreates the configuration with a new state
+
+---
+
 ---
 
 ### Editing the cluster configuration
