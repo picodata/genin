@@ -44,8 +44,8 @@ Genin это генератор инваентаря для `Ansible Cartridge`.
 
 Универсальный исполняемый файл (от пользователя root или через sudo):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.5.8-x86_64-musl.tar.gz
-tar -xvf genin-0.5.8-x86_64-musl.tar.gz ; install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.6.0-x86_64-musl.tar.gz
+tar -xvf genin-0.6.0-x86_64-musl.tar.gz ; install genin /usr/local/bin/
 ```
 
 #### Универскальная установка через пакетный менеджер
@@ -85,8 +85,8 @@ brew install genin
 Для установки без помощи homebrew используйте следующие команды для загрузки и установки
 Genin на macOS (10.10+):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.5.8-x86_64-macosx.tar.gz
-unzip genin-0.5.8-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.6.0-x86_64-macosx.tar.gz
+unzip genin-0.6.0-darwin-amd64.zip -d ~/bin/
 ```
 
 ---
@@ -239,11 +239,11 @@ ansible-playbook -i inventory.yaml playbook.yaml
 ---
 
 После каждого выполнения команды `genin build` будет сформировано состояние кластера.
-По умолчанию состояние будет храниться в директории `.geninstate`. 
-При всех последующих обновлениях кластера `Genin` основывается на состоянии `latest` и  
+По умолчанию состояние будет храниться в директории `.geninstate`.
+При всех последующих обновлениях кластера `Genin` основывается на состоянии `latest` и
 после обновления перезапишет его.
 
-:exclamation: Потеря директории `.geninstate` или состояния `latest` команда `genin build` пересоздаст 
+:exclamation: Потеря директории `.geninstate` или состояния `latest` команда `genin build` пересоздаст
 конфигруацию с новым состоянием
 
 :exclamation: `genin build --recreate` пересоздаст конфигурацию с новым состоянием
@@ -649,8 +649,8 @@ vars:
 ```shell
 genin build -s cluster.genin.yml
 ```
-Опция `-s` путь к новой конфигурации кластера (по умолчанию `cluster.genin.yml`).  
-Опция `--recreate` удалит все предыдущие состояния кластера и соберет новый инвентарь 
+Опция `-s` путь к новой конфигурации кластера (по умолчанию `cluster.genin.yml`).
+Опция `--recreate` удалит все предыдущие состояния кластера и соберет новый инвентарь
 
 #### [DEPRECATED]
 
