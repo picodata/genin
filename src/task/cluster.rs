@@ -396,7 +396,6 @@ impl From<State> for Cluster {
             metadata: ClusterMetadata {
                 paths: vec![PathBuf::from(state.path)],
             },
-            ..Default::default()
         }
     }
 }
@@ -581,6 +580,7 @@ impl Cluster {
 
         std::mem::swap(&mut self.failover, &mut new.failover);
         std::mem::swap(&mut self.vars, &mut new.vars);
+        std::mem::swap(&mut self.topology, &mut new.topology);
 
         let hosts_diff = HostV2::merge(&mut self.hosts, &mut new.hosts, idiomatic);
 

@@ -74,7 +74,7 @@ impl<'de> Deserialize<'de> for Name {
         let name = String::deserialize(deserializer)?;
         let instance_regex = Regex::new(
             r"(?x)
-^(?P<name>[a-zA-Z]+) # instance name
+^(?P<name>[a-zA-Z_]+) # instance name
 [-_]
 (?P<replicaset_num>\d) # replicaset number
 [-_]
@@ -83,7 +83,7 @@ impl<'de> Deserialize<'de> for Name {
         .unwrap();
         let replicaset_regex = Regex::new(
             r"(?x)
-^(?P<name>[a-zA-Z]+) # instance name
+^(?P<name>[a-zA-Z_]+) # instance name
 [-_]
 (?P<replicaset_num>\d)$ # replicaset number",
         )
@@ -239,7 +239,9 @@ impl Name {
     }
 
     pub fn get_ancestor_name(&self) -> Self {
-        Self { childrens: self.childrens.clone().drain(0..1).collect() }
+        Self {
+            childrens: self.childrens.clone().drain(0..1).collect(),
+        }
     }
 
     pub fn as_replicaset_name(&self) -> Self {
@@ -279,7 +281,6 @@ impl Name {
             .last()
             .map(|index| index.parse::<usize>().unwrap())
     }
-
 }
 
 #[cfg(test)]

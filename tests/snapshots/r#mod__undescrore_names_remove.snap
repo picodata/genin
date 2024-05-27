@@ -1,0 +1,106 @@
+---
+source: tests/mod.rs
+assertion_line: 521
+expression: result
+---
++---------------------+---------------------+
+|                  cluster                  |
++---------------------+---------------------+
+|               datacenter-1                |
++---------------------+---------------------+
+|      server-1       |      server-2       |
++---------------------+---------------------+
+|   router_router-1   |   router_router-2   |
+|   8081/3031         |   8081/3031         |
++---------------------+---------------------+
+| storage_storage-1-1 | storage_storage-1-2 |
+| 8082/3032           | 8082/3032           |
++---------------------+---------------------+
+| storage_storage-2-1 | storage_storage-2-2 |
+| 8083/3033           | 8083/3033           |
++---------------------+---------------------+
+|     stateboard      |                     |
++---------------------+---------------------+
+
+---
+# List of replicasets as an array
+topology:
+  - name: router_router
+    # How many masters we want, by default equal 1
+    replicasets_count: 2
+    # Array of roles for this instance
+    roles:
+      - router
+      - failover-coordinator
+  - name: storage_storage
+    # How many masters we want, by default equal 1
+    replicasets_count: 2
+    # Number of replicas in replicaset, default 0
+    replication_factor: 2
+    # Array of roles for this instance
+    roles:
+      - storage
+# List of regions, datacenters, and servers
+hosts:
+  - name: datacenter-1
+    # Config with arbitrary key-values pairs
+    config:
+      # Specify http port to start counting from
+      http_port: 8081
+      # Specify binary port to start counting from
+      binary_port: 3031
+    # List of regions, datacenters, and servers
+    hosts:
+      - name: server-1
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.11
+      - name: server-2
+        # Config with arbitrary key-values pairs
+        config:
+          # Specify http port to start counting from
+          http_port: 8081
+          # Specify binary port to start counting from
+          binary_port: 3031
+          # Host or instance address (maybe IP or URI)
+          address: 192.168.16.12
+# Failover management options
+failover:
+  # Failover mode (stateful, eventual, disabled)
+  mode: stateful
+  # What is serve failover (stateboard, stateful)
+  state_provider: stateboard
+  # Timeout (in seconds), used by membership to mark `suspect` members as `dead`
+  failover_timeout: 666
+  # Abandon leadership when both the state provider quorum and at least one replica are lost (suitable in stateful mode only)
+  fencing_enabled: true
+  # Time (in seconds) to actuate fencing after the check fails
+  fencing_timeout: 24
+  # The period (in seconds) of performing the check
+  fencing_pause: 42
+  # Params for chosen in state_provider failover type
+  stateboard_params:
+    # Uri on which the stateboard will be available
+    uri: "192.168.16.11:4401"
+    # Stateboard password
+    password: password
+# Vars similar to those configured in the cartridge inventory
+vars:
+  # Username under which the ansible will connect to the servers
+  ansible_user: ansible
+  # Ansible user password
+  ansible_password: ansible
+  # Application name
+  cartridge_app_name: myapp
+  # Cookie for connecting to the administrative console of the instances
+  cartridge_cluster_cookie: myapp-cookie
+  # Path to the application package
+  cartridge_package_path: /tmp/myapp.rpm
+  # Indicates if vshard must be bootstrapped on the cluster
+  cartridge_bootstrap_vshard: true
+
