@@ -472,3 +472,71 @@ fn build_with_upgrade() {
         assert_eq!(read_dir(&state_dir).unwrap().count(), 3);
     }
 }
+
+#[test]
+fn remove_role_with_undescrore_name() {
+    let src = "tests/resources/names/cluster-underscore1.genin.yml";
+    let upg_src = "tests/resources/names/cluster-underscore2.genin.yml";
+    let base_dir = "tests/.remove_role_with_undescrore_name";
+    let state_dir = format!("{base_dir}/.geninstate");
+    let inventory = format!("{base_dir}/inventory.yml");
+    cleanup_test_dir(base_dir);
+
+    // build from config
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&src)
+    .arg("-o")
+    .arg(&inventory)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+    let result = format!("{result}\n{}", read_to_string(&src).unwrap());
+    insta::assert_display_snapshot!("undescrore_names", result);
+    assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
+
+    // remove subscription_status role
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&upg_src)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .arg("-o")
+    .arg(format!("{base_dir}/upg_inventory_remove.yml"))
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+    let result = format!("{result}\n{}", read_to_string(&upg_src).unwrap());
+    insta::assert_display_snapshot!("undescrore_names_remove", result);
+
+    // add subscription_status role
+    let output = Command::new(format!(
+        "{}/target/debug/genin",
+        std::env::var("CARGO_MANIFEST_DIR").unwrap()
+    ))
+    .arg("build")
+    .arg("-s")
+    .arg(&src)
+    .arg("--state-dir")
+    .arg(&state_dir)
+    .arg("-o")
+    .arg(format!("{base_dir}/upg_inventory_add.yml"))
+    .output()
+    .expect("Failed to execute command");
+
+    let result = build_result_from_output(output);
+    let result = format!("{result}\n{}", read_to_string(&src).unwrap());
+    insta::assert_display_snapshot!("undescrore_names", result);
+}
