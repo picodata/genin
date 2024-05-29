@@ -4,6 +4,8 @@ use std::{
     process::{Command, Output},
 };
 
+const INVENTORY_HEADER_SIZE: usize = 2;
+
 fn create_file(path: &str) {
     File::create(path).unwrap();
 }
@@ -19,6 +21,15 @@ fn delete_test_dir(path: &str) {
 fn cleanup_test_dir(path: &str) {
     delete_test_dir(path);
     create_test_dir(path);
+}
+
+pub fn read_inventory(path: &str) -> String {
+    read_to_string(path)
+        .unwrap()
+        .lines()
+        .map(String::from)
+        .collect::<Vec<String>>()[INVENTORY_HEADER_SIZE..]
+        .join("\n")
 }
 
 #[allow(unused)]
@@ -196,7 +207,7 @@ fn sequential_upgrade_from_state() {
 
     let cluster_to_cluster_new = format!(
         "{cluster_to_cluster_new}\n{}",
-        read_to_string("tests/.sequential_upgrade_from_state/v1_inventory.yml").unwrap()
+        read_inventory("tests/.sequential_upgrade_from_state/v1_inventory.yml")
     );
 
     insta::assert_display_snapshot!("cluster_to_cluster_new", cluster_to_cluster_new);
@@ -225,7 +236,7 @@ fn sequential_upgrade_from_state() {
 
     let cluster_new_to_cluster_v2 = format!(
         "{cluster_new_to_cluster_v2}\n{}",
-        read_to_string("tests/.sequential_upgrade_from_state/v2_inventory.yml").unwrap()
+        read_inventory("tests/.sequential_upgrade_from_state/v2_inventory.yml")
     );
 
     insta::assert_display_snapshot!("cluster_new_to_cluster_v2", cluster_new_to_cluster_v2);
@@ -252,7 +263,7 @@ fn sequential_upgrade_from_state() {
     let cluster_v2_to_cluster_v3 = build_result_from_output(output);
     let cluster_v2_to_cluster_v3 = format!(
         "{cluster_v2_to_cluster_v3}\n{}",
-        read_to_string("tests/.sequential_upgrade_from_state/v3_inventory.yml").unwrap()
+        read_inventory("tests/.sequential_upgrade_from_state/v3_inventory.yml")
     );
 
     insta::assert_display_snapshot!("cluster_v2_to_cluster_v3", cluster_v2_to_cluster_v3);
@@ -282,7 +293,7 @@ fn sequential_upgrade_with_decreasing() {
 
     let cluster_v3_to_cluster_v4 = format!(
         "{cluster_v3_to_cluster_v4}\n{}",
-        read_to_string("tests/.sequential_upgrade_with_decreasing/v1_inventory.yml").unwrap()
+        read_inventory("tests/.sequential_upgrade_with_decreasing/v1_inventory.yml")
     );
 
     insta::assert_display_snapshot!("cluster_v3_to_cluster_v4", cluster_v3_to_cluster_v4);
@@ -310,7 +321,7 @@ fn sequential_upgrade_with_decreasing() {
 
     let cluster_v4_to_cluster_v5 = format!(
         "{cluster_v4_to_cluster_v5}\n{}",
-        read_to_string("tests/.sequential_upgrade_with_decreasing/v2_inventory.yml").unwrap()
+        read_inventory("tests/.sequential_upgrade_with_decreasing/v2_inventory.yml")
     );
 
     insta::assert_display_snapshot!("cluster_v4_to_cluster_v5", cluster_v4_to_cluster_v5);
@@ -342,7 +353,7 @@ fn upgrade_consistency_100_times() {
 
         let consistency_100_times = format!(
             "{consistency_100_times}\n{}",
-            read_to_string("tests/.upgrade_consistency_100_times/inventory.yml").unwrap()
+            read_inventory("tests/.upgrade_consistency_100_times/inventory.yml")
         );
 
         insta::assert_display_snapshot!("consistency_100_times", consistency_100_times);
