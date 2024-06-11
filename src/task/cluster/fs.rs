@@ -69,6 +69,8 @@ impl FsInteraction {
     }
 }
 
+#[allow(dead_code)]
+
 pub trait TryIntoFile {
     type Error;
 
@@ -126,6 +128,7 @@ impl<'a> From<&'a ArgMatches> for IO<PathBuf, PathBuf> {
     }
 }
 
+#[allow(dead_code)]
 pub trait TryMap<A, B> {
     type Error;
     type Output;
