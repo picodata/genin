@@ -193,6 +193,7 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub trait Validate {
     type Type: fmt::Debug + Default + 'static;
     type Error: fmt::Debug + ToString;

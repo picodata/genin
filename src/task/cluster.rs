@@ -801,7 +801,7 @@ impl Cluster {
             .build()?;
 
         state.dump_by_uid(&state_dir)?;
-        state.dump_by_path(latest_path)?;
+        state.symlink_latest(latest_path)?;
 
         Ok(self)
     }
