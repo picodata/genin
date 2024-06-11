@@ -2,6 +2,7 @@ use std::{
     fmt::Display,
     fs::{create_dir_all, remove_dir_all, File},
     io::{self, Read, Write},
+    os::unix::fs,
     path::PathBuf,
 };
 
@@ -110,6 +111,10 @@ impl State {
 
     pub fn dump_by_uid(&mut self, state_dir: &str) -> Result<(), io::Error> {
         self.dump_by_path(&format!("{state_dir}/{}.gz", &self.uid))
+    }
+
+    pub fn symlink_latest(&mut self, latest: &str) -> Result<(), io::Error> {
+        fs::symlink(&format!("{}.gz", &self.uid), latest)
     }
 
     pub fn from_latest(args: &ArgMatches) -> Result<Self, StateError> {
