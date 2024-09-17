@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 
 use crate::{
     task::{
-        cluster::hst::v2::Address,
+        cluster::host::hst::Address,
         flv::{Failover, FailoverVariants, Mode, StateProvider, StateboardParams, Uri},
         utils::uncolorize,
         vars::Vars,

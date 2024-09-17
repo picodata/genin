@@ -12,9 +12,9 @@ use serde::{Deserialize, Serialize};
 use sha256::{digest, try_digest, TrySha256Digest};
 use thiserror::Error;
 
-use crate::task::cluster::hst::view::{FG_GREEN, FG_RED};
+use crate::task::cluster::host::view::{FG_GREEN, FG_RED};
 use crate::task::cluster::topology::Topology;
-use crate::task::{cluster::hst::v2::HostV2, flv::Failover, vars::Vars};
+use crate::task::{cluster::host::hst::Host, flv::Failover, vars::Vars};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct State {
@@ -28,7 +28,7 @@ pub struct State {
     pub hosts_changes: Vec<Change>,
     pub vars: Vars,
     pub topology: Topology,
-    pub hosts: HostV2,
+    pub hosts: Host,
     pub failover: Failover,
 }
 
@@ -88,7 +88,10 @@ impl State {
             .cloned()
             .unwrap_or(".geninstate".into());
 
-        remove_dir_all(state_dir)
+        remove_dir_all(state_dir.clone())
+            .is_err()
+            .then(|| println!("State dir \"{}\" is empty", state_dir));
+        Ok(())
     }
 
     pub fn dump_by_path(&mut self, path: &str) -> Result<(), io::Error> {
@@ -198,7 +201,7 @@ pub struct StateBuilder {
     path: Option<String>,
     instances_changes: Option<Vec<Change>>,
     hosts_changes: Option<Vec<Change>>,
-    hosts: Option<HostV2>,
+    hosts: Option<Host>,
     vars: Option<Vars>,
     failover: Option<Failover>,
     topology: Option<Topology>,
@@ -249,7 +252,7 @@ impl StateBuilder {
         }
     }
 
-    pub fn hosts(self, hosts: &HostV2) -> Self {
+    pub fn hosts(self, hosts: &Host) -> Self {
         Self {
             hosts: Some(hosts.to_owned()),
             ..self

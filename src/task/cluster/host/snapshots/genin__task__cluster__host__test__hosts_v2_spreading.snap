@@ -1,0 +1,1191 @@
+---
+source: src/task/cluster/host/test.rs
+assertion_line: 577
+expression: host
+---
+Host {
+    name: Name {
+        childrens: [
+            "Cluster",
+        ],
+    },
+    config: HostConfig {
+        http_port: Some(
+            8081,
+        ),
+        binary_port: Some(
+            3031,
+        ),
+        address: Ip(
+            192.168.123.11,
+        ),
+        ansible_host: None,
+        distance: None,
+        additional_config: {},
+    },
+    hosts: [
+        Host {
+            name: Name {
+                childrens: [
+                    "Server-1",
+                ],
+            },
+            config: HostConfig {
+                http_port: Some(
+                    8081,
+                ),
+                binary_port: Some(
+                    3031,
+                ),
+                address: Ip(
+                    192.168.123.11,
+                ),
+                ansible_host: None,
+                distance: None,
+                additional_config: {},
+            },
+            hosts: [],
+            add_queue: {
+                Name {
+                    childrens: [
+                        "router",
+                        "router-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "router",
+                            "router-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Router(
+                            "router",
+                        ),
+                        FailoverCoordinator(
+                            "failover-coordinator",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[37m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-1",
+                        "storage-1-2",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-1",
+                            "storage-1-2",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[34m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-2",
+                        "storage-2-2",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-2",
+                            "storage-2-2",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[36m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+            },
+            delete_queue: {
+                Name {
+                    childrens: [
+                        "router",
+                        "router-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "router",
+                            "router-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Router(
+                            "router",
+                        ),
+                        FailoverCoordinator(
+                            "failover-coordinator",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[37m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-1",
+                        "storage-1-2",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-1",
+                            "storage-1-2",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[34m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-2",
+                        "storage-2-2",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-2",
+                            "storage-2-2",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[36m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+            },
+            instances: Instances(
+                [
+                    Instance {
+                        name: Name {
+                            childrens: [
+                                "router",
+                                "router-1",
+                            ],
+                        },
+                        stateboard: None,
+                        weight: None,
+                        failure_domains: NotProvided(
+                            [],
+                        ),
+                        roles: [
+                            Router(
+                                "router",
+                            ),
+                            FailoverCoordinator(
+                                "failover-coordinator",
+                            ),
+                        ],
+                        cartridge_extra_env: {},
+                        config: InstanceConfig {
+                            http_port: Some(
+                                8081,
+                            ),
+                            binary_port: Some(
+                                3031,
+                            ),
+                            all_rw: None,
+                            zone: None,
+                            vshard_group: None,
+                            additional_config: {},
+                        },
+                        vars: {},
+                        view: View {
+                            color: AnsiColor {
+                                prefix: "\u{1b}[37m",
+                                suffix: "\u{1b}[39m",
+                            },
+                            alignment: Horizontal(
+                                Left,
+                            ),
+                        },
+                    },
+                    Instance {
+                        name: Name {
+                            childrens: [
+                                "storage",
+                                "storage-1",
+                                "storage-1-2",
+                            ],
+                        },
+                        stateboard: None,
+                        weight: None,
+                        failure_domains: NotProvided(
+                            [],
+                        ),
+                        roles: [
+                            Storage(
+                                "storage",
+                            ),
+                        ],
+                        cartridge_extra_env: {},
+                        config: InstanceConfig {
+                            http_port: Some(
+                                8082,
+                            ),
+                            binary_port: Some(
+                                3032,
+                            ),
+                            all_rw: None,
+                            zone: None,
+                            vshard_group: None,
+                            additional_config: {},
+                        },
+                        vars: {},
+                        view: View {
+                            color: AnsiColor {
+                                prefix: "\u{1b}[34m",
+                                suffix: "\u{1b}[39m",
+                            },
+                            alignment: Horizontal(
+                                Left,
+                            ),
+                        },
+                    },
+                    Instance {
+                        name: Name {
+                            childrens: [
+                                "storage",
+                                "storage-2",
+                                "storage-2-2",
+                            ],
+                        },
+                        stateboard: None,
+                        weight: None,
+                        failure_domains: NotProvided(
+                            [],
+                        ),
+                        roles: [
+                            Storage(
+                                "storage",
+                            ),
+                        ],
+                        cartridge_extra_env: {},
+                        config: InstanceConfig {
+                            http_port: Some(
+                                8083,
+                            ),
+                            binary_port: Some(
+                                3033,
+                            ),
+                            all_rw: None,
+                            zone: None,
+                            vshard_group: None,
+                            additional_config: {},
+                        },
+                        vars: {},
+                        view: View {
+                            color: AnsiColor {
+                                prefix: "\u{1b}[36m",
+                                suffix: "\u{1b}[39m",
+                            },
+                            alignment: Horizontal(
+                                Left,
+                            ),
+                        },
+                    },
+                ],
+            ),
+        },
+        Host {
+            name: Name {
+                childrens: [
+                    "Server-2",
+                ],
+            },
+            config: HostConfig {
+                http_port: Some(
+                    25000,
+                ),
+                binary_port: Some(
+                    26000,
+                ),
+                address: Ip(
+                    192.168.123.11,
+                ),
+                ansible_host: None,
+                distance: None,
+                additional_config: {},
+            },
+            hosts: [],
+            add_queue: {
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-1",
+                        "storage-1-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-1",
+                            "storage-1-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[34m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-2",
+                        "storage-2-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-2",
+                            "storage-2-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[36m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+            },
+            delete_queue: {
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-1",
+                        "storage-1-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-1",
+                            "storage-1-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[34m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+                Name {
+                    childrens: [
+                        "storage",
+                        "storage-2",
+                        "storage-2-1",
+                    ],
+                }: Instance {
+                    name: Name {
+                        childrens: [
+                            "storage",
+                            "storage-2",
+                            "storage-2-1",
+                        ],
+                    },
+                    stateboard: None,
+                    weight: None,
+                    failure_domains: NotProvided(
+                        [],
+                    ),
+                    roles: [
+                        Storage(
+                            "storage",
+                        ),
+                    ],
+                    cartridge_extra_env: {},
+                    config: InstanceConfig {
+                        http_port: None,
+                        binary_port: None,
+                        all_rw: None,
+                        zone: None,
+                        vshard_group: None,
+                        additional_config: {},
+                    },
+                    vars: {},
+                    view: View {
+                        color: AnsiColor {
+                            prefix: "\u{1b}[36m",
+                            suffix: "\u{1b}[39m",
+                        },
+                        alignment: Horizontal(
+                            Left,
+                        ),
+                    },
+                },
+            },
+            instances: Instances(
+                [
+                    Instance {
+                        name: Name {
+                            childrens: [
+                                "storage",
+                                "storage-1",
+                                "storage-1-1",
+                            ],
+                        },
+                        stateboard: None,
+                        weight: None,
+                        failure_domains: NotProvided(
+                            [],
+                        ),
+                        roles: [
+                            Storage(
+                                "storage",
+                            ),
+                        ],
+                        cartridge_extra_env: {},
+                        config: InstanceConfig {
+                            http_port: Some(
+                                25000,
+                            ),
+                            binary_port: Some(
+                                26000,
+                            ),
+                            all_rw: None,
+                            zone: None,
+                            vshard_group: None,
+                            additional_config: {},
+                        },
+                        vars: {},
+                        view: View {
+                            color: AnsiColor {
+                                prefix: "\u{1b}[34m",
+                                suffix: "\u{1b}[39m",
+                            },
+                            alignment: Horizontal(
+                                Left,
+                            ),
+                        },
+                    },
+                    Instance {
+                        name: Name {
+                            childrens: [
+                                "storage",
+                                "storage-2",
+                                "storage-2-1",
+                            ],
+                        },
+                        stateboard: None,
+                        weight: None,
+                        failure_domains: NotProvided(
+                            [],
+                        ),
+                        roles: [
+                            Storage(
+                                "storage",
+                            ),
+                        ],
+                        cartridge_extra_env: {},
+                        config: InstanceConfig {
+                            http_port: Some(
+                                25001,
+                            ),
+                            binary_port: Some(
+                                26001,
+                            ),
+                            all_rw: None,
+                            zone: None,
+                            vshard_group: None,
+                            additional_config: {},
+                        },
+                        vars: {},
+                        view: View {
+                            color: AnsiColor {
+                                prefix: "\u{1b}[36m",
+                                suffix: "\u{1b}[39m",
+                            },
+                            alignment: Horizontal(
+                                Left,
+                            ),
+                        },
+                    },
+                ],
+            ),
+        },
+    ],
+    add_queue: {
+        Name {
+            childrens: [
+                "router",
+                "router-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "router",
+                    "router-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Router(
+                    "router",
+                ),
+                FailoverCoordinator(
+                    "failover-coordinator",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[37m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-1",
+                "storage-1-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-1",
+                    "storage-1-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[34m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-1",
+                "storage-1-2",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-1",
+                    "storage-1-2",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[34m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-2",
+                "storage-2-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-2",
+                    "storage-2-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[36m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-2",
+                "storage-2-2",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-2",
+                    "storage-2-2",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[36m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+    },
+    delete_queue: {
+        Name {
+            childrens: [
+                "router",
+                "router-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "router",
+                    "router-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Router(
+                    "router",
+                ),
+                FailoverCoordinator(
+                    "failover-coordinator",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[37m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-1",
+                "storage-1-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-1",
+                    "storage-1-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[34m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-1",
+                "storage-1-2",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-1",
+                    "storage-1-2",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[34m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-2",
+                "storage-2-1",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-2",
+                    "storage-2-1",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[36m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+        Name {
+            childrens: [
+                "storage",
+                "storage-2",
+                "storage-2-2",
+            ],
+        }: Instance {
+            name: Name {
+                childrens: [
+                    "storage",
+                    "storage-2",
+                    "storage-2-2",
+                ],
+            },
+            stateboard: None,
+            weight: None,
+            failure_domains: NotProvided(
+                [],
+            ),
+            roles: [
+                Storage(
+                    "storage",
+                ),
+            ],
+            cartridge_extra_env: {},
+            config: InstanceConfig {
+                http_port: None,
+                binary_port: None,
+                all_rw: None,
+                zone: None,
+                vshard_group: None,
+                additional_config: {},
+            },
+            vars: {},
+            view: View {
+                color: AnsiColor {
+                    prefix: "\u{1b}[36m",
+                    suffix: "\u{1b}[39m",
+                },
+                alignment: Horizontal(
+                    Left,
+                ),
+            },
+        },
+    },
+    instances: Instances(
+        [],
+    ),
+}

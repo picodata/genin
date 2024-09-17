@@ -1,6 +1,6 @@
 pub mod fs;
-pub mod hst;
-pub mod ins;
+pub mod host;
+pub mod instance;
 pub mod name;
 pub mod topology;
 
@@ -15,26 +15,23 @@ use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::{self, Write};
-use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-use crate::task::cluster::hst::v1::Host;
-use crate::task::cluster::hst::v2::{HostV2, HostV2Config, WithHosts};
-use crate::task::cluster::hst::view::View;
-use crate::task::cluster::ins::v2::{InstanceV2, InstanceV2Config, Instances};
-use crate::task::cluster::ins::Role;
+use crate::task::cluster::host::hst::{Host, HostConfig, WithHosts};
+use crate::task::cluster::host::view::View;
+use crate::task::cluster::instance::ins::{Instance, InstanceConfig, Instances};
+use crate::task::cluster::instance::Role;
 use crate::task::cluster::name::Name;
 use crate::task::cluster::topology::{InvalidTopologySet, Topology};
 use crate::task::flv::Failover;
-use crate::task::flv::{Mode, StateProvider, StateboardParams};
 use crate::task::inventory::{Child, HostVars, Inventory};
 use crate::task::vars::Vars;
 use crate::task::AsError;
 use crate::task::Validate;
-use crate::{DEFAULT_BINARY_PORT, DEFAULT_HTTP_PORT};
+use crate::{DEFAULT_BINARY_PORT, DEFAULT_CFG, DEFAULT_CFG_NAME, DEFAULT_HTTP_PORT};
 
-use self::hst::v2::InvalidHostV2;
+use self::host::hst::InvalidHost;
 
 use crate::task::flv::{FailoverError, InvalidFailover};
 use crate::task::inventory::InventoryError;
@@ -86,7 +83,7 @@ use super::{TypeError, DICT};
 ///     //           hosts:
 ///     //             - name: server-10
 ///     //               ip: 10.99.3.100
-///     hosts: HostV2, //TODO
+///     hosts: Host, //TODO
 ///     // Failover coordinator struct.
 ///     // If cluster should be without failover (`failover_mode: "disabled"`)
 ///     // this field will be skipped
@@ -114,77 +111,22 @@ use super::{TypeError, DICT};
 #[derive(Debug, PartialEq, Eq)]
 pub struct Cluster {
     pub topology: Topology,
-    pub hosts: HostV2,
+    pub hosts: Host,
     pub failover: Failover,
     pub vars: Vars,
     pub metadata: ClusterMetadata,
 }
 
 impl Default for Cluster {
-    /// Host can be Region, Datacenter, Server
-    /// ```yaml
-    /// hosts:
-    ///   - name: selectel
-    ///     hosts:
-    ///       - name: moscow
-    ///         config:
-    ///           http_port: 8091
-    ///           binary_port: 3031
-    ///           distance: 10
-    ///         hosts:
-    ///           - name: server-1
-    ///             config:
-    ///               address: 192.168.99.11
-    ///           - name: server-2
-    ///             config:
-    ///               address: 192.168.99.12
-    ///     - name: kaukaz
-    ///       config:
-    ///         distance: 20
-    ///       hosts:
-    ///         - name: server-3
-    ///           config:
-    ///             http_port: 8191
-    ///             binary_port: 3131
-    ///             ip: 10.99.3.100
-    /// ```
     fn default() -> Self {
-        let failover = Failover {
-            mode: Mode::Stateful,
-            state_provider: StateProvider::Stateboard,
-            failover_variants: super::flv::FailoverVariants::StateboardVariant(StateboardParams {
-                uri: super::flv::Uri {
-                    address: hst::v2::Address::Ip(IpAddr::from([192, 168, 16, 11])),
-                    port: 4401,
-                },
-                password: String::from("password"),
-            }),
-            ..Default::default()
-        };
-
-        Self {
-            topology: Topology::default(),
-            hosts: HostV2::from("cluster")
-                .with_hosts(vec![HostV2::from("datacenter-1")
-                    .with_hosts(vec![
-                        HostV2::from("server-1").with_config(
-                            HostV2Config::from(IpAddr::from([192, 168, 16, 11]))
-                                .with_ports((8081, 3031)),
-                        ),
-                        HostV2::from("server-2").with_config(
-                            HostV2Config::from(IpAddr::from([192, 168, 16, 12]))
-                                .with_ports((8081, 3031)),
-                        ),
-                    ])
-                    .with_config(HostV2Config::from((8081, 3031)))])
-                .with_config(HostV2Config::from((8081, 3031))),
-            failover: failover.clone(),
-            vars: Vars::default().with_failover(failover),
+        let mut cluster = Cluster {
             metadata: ClusterMetadata {
-                paths: vec![PathBuf::from("cluster.genin.yml")],
+                paths: vec![DEFAULT_CFG_NAME.into()],
             },
-        }
-        .spread()
+            ..serde_yaml::from_reader(DEFAULT_CFG).expect("cluster is yaml format")
+        };
+        cluster.vars = cluster.vars.with_failover(cluster.failover.clone());
+        cluster
     }
 }
 
@@ -205,7 +147,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Cluster {
     fn try_from(args: &'a ArgMatches) -> Result<Self, Self::Error> {
         match args.try_get_one::<String>("source") {
             Ok(path) => {
-                let source = String::from("cluster.genin.yml");
+                let source = String::from(DEFAULT_CFG_NAME);
                 let path = path.unwrap_or(&source);
 
                 let file = File::open(path)?;
@@ -266,7 +208,7 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                         } else {
                             name.get_parent_name().clone_with_index("replicaset")
                         };
-                        let mut instance = InstanceV2::from((name, inventory_host)).with_roles(
+                        let mut instance = Instance::from((name, inventory_host)).with_roles(
                             inventory
                                 .all
                                 .children
@@ -288,9 +230,9 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
 
                         Ok(instance)
                     })
-                    .collect::<Result<Vec<InstanceV2>, ClusterError>>()?,
+                    .collect::<Result<Vec<Instance>, ClusterError>>()?,
             ))?,
-            hosts: HostV2::from("cluster").with_hosts(
+            hosts: Host::from("cluster").with_hosts(
                 inventory
                     .all
                     .children
@@ -303,9 +245,9 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                     additional_config,
                                 },
                             ..
-                        } => Some(HostV2 {
+                        } => Some(Host {
                             name: name.clone(),
-                            config: HostV2Config::from(ansible_host.clone())
+                            config: HostConfig::from(ansible_host.clone())
                                 .with_additional_config(additional_config.clone())
                                 .with_ansible_host(ansible_host.clone())
                                 .with_ports(
@@ -330,21 +272,21 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                     .hosts
                                     .iter()
                                     .filter_map(|(name, instance)| {
-                                        let config = HostV2Config::from(&instance.config);
+                                        let config = HostConfig::from(&instance.config);
                                         debug!(
                                             "ansible_host: {} instance_address: {}",
                                             ansible_host,
                                             config.address()
                                         );
                                         if ansible_host.eq(&config.address()) {
-                                            Some(InstanceV2 {
+                                            Some(Instance {
                                                 name: name.clone(),
                                                 stateboard: instance.stateboard.then_some(true),
                                                 weight: None,
                                                 failure_domains: Default::default(),
                                                 roles: Vec::new(),
                                                 cartridge_extra_env: instance.vars.clone(),
-                                                config: InstanceV2Config::from_inventory_host(
+                                                config: InstanceConfig::from_inventory_host(
                                                     &instance,
                                                 ),
                                                 vars: instance.vars.clone(),
@@ -354,12 +296,12 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                             None
                                         }
                                     })
-                                    .collect::<Vec<InstanceV2>>(),
+                                    .collect::<Vec<Instance>>(),
                             ),
                         }),
                         Child::Replicaset { .. } => None,
                     })
-                    .collect::<Vec<HostV2>>(),
+                    .collect::<Vec<Host>>(),
             ),
             failover: inventory
                 .all
@@ -408,16 +350,9 @@ impl<'de> Deserialize<'de> for Cluster {
         #[derive(Deserialize)]
         #[serde(untagged)]
         enum ClusterHelper {
-            V1 {
-                instances: Vec<TopologyMemberV1>,
-                hosts: Vec<Host>,
-                #[serde(default)]
-                failover: Failover,
-                vars: Vars,
-            },
-            V2 {
+            Cluster {
                 topology: Topology,
-                hosts: Vec<HostV2>,
+                hosts: Vec<Host>,
                 #[serde(default)]
                 failover: Failover,
                 vars: Vars,
@@ -426,32 +361,13 @@ impl<'de> Deserialize<'de> for Cluster {
         }
 
         ClusterHelper::deserialize(deserializer).and_then(|cluster| match cluster {
-            ClusterHelper::V1 {
-                instances,
-                hosts,
-                failover,
-                vars,
-            } => Ok(Cluster {
-                hosts: HostV2::from("cluster")
-                    .with_hosts(hosts)
-                    .with_http_port(DEFAULT_HTTP_PORT)
-                    .with_binary_port(DEFAULT_BINARY_PORT),
-                topology: Topology::try_from(instances)
-                    .map_err(|err| serde::de::Error::custom(err.to_string()))?,
-                failover,
-                vars,
-                metadata: ClusterMetadata {
-                    paths: Default::default(),
-                },
-            }
-            .spread()),
-            ClusterHelper::V2 {
+            ClusterHelper::Cluster {
                 topology,
                 hosts,
                 failover,
                 vars,
             } => Ok(Cluster {
-                hosts: HostV2::from("cluster")
+                hosts: Host::from("cluster")
                     .with_hosts(hosts)
                     .with_http_port(DEFAULT_HTTP_PORT)
                     .with_binary_port(DEFAULT_BINARY_PORT),
@@ -499,10 +415,6 @@ impl Validate for Cluster {
 
     fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error> {
         serde_yaml::from_str(&check_placeholders(bytes)?)
-    }
-
-    fn whole_block(bytes: &[u8]) -> String {
-        String::from_utf8(bytes.to_vec()).unwrap()
     }
 }
 
@@ -582,7 +494,7 @@ impl Cluster {
         std::mem::swap(&mut self.vars, &mut new.vars);
         std::mem::swap(&mut self.topology, &mut new.topology);
 
-        let hosts_diff = HostV2::merge(&mut self.hosts, &mut new.hosts, idiomatic);
+        let hosts_diff = Host::merge(&mut self.hosts, &mut new.hosts, idiomatic);
 
         debug!(
             "Instances to Add: {}",
@@ -636,7 +548,7 @@ impl Cluster {
         let path = PathBuf::from(
             args.get_one::<String>("output")
                 .cloned()
-                .unwrap_or("cluster.genin.yml".into()),
+                .unwrap_or(DEFAULT_CFG_NAME.to_string()),
         );
 
         let mut file = create_file_or_copy(path, args.get_flag("force"))?;
@@ -892,25 +804,25 @@ impl From<String> for ClusterError {
 }
 
 #[derive(Deserialize)]
-struct HostV2Helper {
+struct HostHelper {
     name: String,
     #[serde(default)]
-    config: HostV2Config,
+    config: HostConfig,
     #[serde(default)]
-    hosts: Vec<HostV2Helper>,
+    hosts: Vec<HostHelper>,
 }
 
-impl From<HostV2Helper> for HostV2 {
-    fn from(helper: HostV2Helper) -> Self {
+impl From<HostHelper> for Host {
+    fn from(helper: HostHelper) -> Self {
         let name = Name::from(helper.name.as_str());
         helper.into_host_v2(name)
     }
 }
 
-impl HostV2Helper {
-    fn into_host_v2(self, name: Name) -> HostV2 {
+impl HostHelper {
+    fn into_host_v2(self, name: Name) -> Host {
         if self.hosts.is_empty() {
-            return HostV2 {
+            return Host {
                 name,
                 config: self.config,
                 hosts: Vec::default(),
@@ -920,7 +832,7 @@ impl HostV2Helper {
             };
         }
 
-        HostV2 {
+        Host {
             hosts: self
                 .hosts
                 .into_iter()
@@ -938,7 +850,7 @@ impl HostV2Helper {
     }
 }
 
-struct TopologyMemberV1 {
+struct TopologyMember {
     name: Name,
     count: usize,
     replicas: usize,
@@ -947,7 +859,7 @@ struct TopologyMemberV1 {
     config: IndexMap<String, Value>,
 }
 
-impl<'de> Deserialize<'de> for TopologyMemberV1 {
+impl<'de> Deserialize<'de> for TopologyMember {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -961,7 +873,6 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
             replicas: usize,
             #[serde(default)]
             weight: usize,
-            #[serde(default)]
             roles: Vec<Role>,
             #[serde(default)]
             config: IndexMap<String, Value>,
@@ -973,14 +884,11 @@ impl<'de> Deserialize<'de> for TopologyMemberV1 {
                  count,
                  replicas,
                  weight,
-                 mut roles,
+                 roles,
                  config,
                  ..
              }| {
-                if roles.is_empty() {
-                    roles = vec![Role::from(name.as_str())]
-                }
-                TopologyMemberV1 {
+                TopologyMember {
                     name: Name::from(name),
                     count,
                     replicas,
@@ -1040,7 +948,7 @@ impl std::fmt::Debug for InvalidCluster {
                     .try_for_each(|host| -> Result<(), std::fmt::Error> {
                         formatter.write_fmt(format_args!(
                             "{:?}",
-                            serde_yaml::from_value::<InvalidHostV2>(host.clone())
+                            serde_yaml::from_value::<InvalidHost>(host.clone())
                                 .map(|mut host| {
                                     host.offset = "\n  ".into();
                                     host

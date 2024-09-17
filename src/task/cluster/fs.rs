@@ -69,26 +69,6 @@ impl FsInteraction {
     }
 }
 
-#[allow(dead_code)]
-
-pub trait TryIntoFile {
-    type Error;
-
-    fn try_into_file(self) -> Result<Option<File>, Self::Error>;
-}
-
-impl TryIntoFile for Option<PathBuf> {
-    type Error = std::io::Error;
-
-    fn try_into_file(self) -> Result<Option<File>, Self::Error> {
-        if let Some(path) = self {
-            return File::open(path).map(Some);
-        }
-
-        Ok(None)
-    }
-}
-
 pub struct IO<I, O> {
     pub input: Option<I>,
     pub output: Option<O>,
@@ -126,17 +106,6 @@ impl<'a> From<&'a ArgMatches> for IO<PathBuf, PathBuf> {
                 .and_then(|r| r.map_or(None, |s| Some(PathBuf::from(s.as_str())))),
         }
     }
-}
-
-#[allow(dead_code)]
-pub trait TryMap<A, B> {
-    type Error;
-    type Output;
-
-    fn try_map<F>(self, f: F) -> Result<Self::Output, Self::Error>
-    where
-        Self: Sized,
-        F: FnOnce(Self) -> Result<Self::Output, Self::Error>;
 }
 
 impl<I, O> Display for IO<I, O>

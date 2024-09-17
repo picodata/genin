@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 
 use crate::task::cluster::{
-    ins::{v1::Instance, v2::InstanceV2, Role, Type},
+    ins::{v1::Instance, v2::Instance, Role, Type},
     Cluster,
 };
 
@@ -152,7 +152,7 @@ count: 1
 #[test]
 fn default_instances() {
     let instances = vec![
-        InstanceV2 {
+        Instance {
             name: "router".into(),
             parent: "router".into(),
             itype: Type::Router,
@@ -163,7 +163,7 @@ fn default_instances() {
             roles: vec![Role::router(), Role::failover_coordinator()],
             config: IndexMap::new(),
         },
-        InstanceV2 {
+        Instance {
             name: "storage".into(),
             parent: "storage".into(),
             itype: Type::Storage,
@@ -177,4 +177,3 @@ fn default_instances() {
     ];
     assert_eq!(Cluster::default().topology(), instances);
 }
-

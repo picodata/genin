@@ -1,10 +1,8 @@
+pub mod hst;
 pub mod view;
-pub mod v1;
-pub mod v2;
-
-use std::{fmt::Display, net::IpAddr, hash::Hash};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, hash::Hash, net::IpAddr};
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HostType {
@@ -32,12 +30,6 @@ impl Display for HostType {
     }
 }
 
-impl HostType {
-    pub fn is_server(&self) -> bool {
-        matches!(self, Self::Server)
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum PortsVariants {
@@ -48,26 +40,6 @@ pub enum PortsVariants {
 impl Default for PortsVariants {
     fn default() -> Self {
         Self::None
-    }
-}
-
-impl PortsVariants {
-    pub fn is_none(&self) -> bool {
-        matches!(self, Self::None)
-    }
-
-    pub fn http_as_option(&self) -> Option<u16> {
-        match self {
-            PortsVariants::Ports(p) => Some(p.http),
-            PortsVariants::None => None,
-        }
-    }
-
-    pub fn binary_as_option(&self) -> Option<u16> {
-        match self {
-            PortsVariants::Ports(p) => Some(p.binary),
-            PortsVariants::None => None,
-        }
     }
 }
 
@@ -114,16 +86,6 @@ impl ToString for IP {
             Self::None => String::new(),
         }
     }
-}
-
-impl IP {
-    pub fn is_none(&self) -> bool {
-        matches!(self, Self::None)
-    }
-}
-
-pub fn is_null(u: &usize) -> bool {
-    matches!(u, 0)
 }
 
 pub fn merge_index_maps<A, B>(left: IndexMap<A, B>, right: IndexMap<A, B>) -> IndexMap<A, B>
