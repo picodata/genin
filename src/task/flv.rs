@@ -11,7 +11,7 @@ use crate::{
     DEFAULT_STATEBOARD_PORT,
 };
 
-use super::{cluster::hst::v2::Address, AsError, TypeError, LIST, NUMBER, STRING};
+use super::{cluster::host::hst::Address, AsError, TypeError, LIST, NUMBER, STRING};
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 /// Failover enum
@@ -82,7 +82,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Failover {
                     mode: Mode::Disabled,
                     state_provider: StateProvider::Disabled,
                     failover_variants: FailoverVariants::Disabled,
-                ..Default::default()
+                    ..Default::default()
                 })
             }
             (Some("eventual"), _) => Ok(Self {

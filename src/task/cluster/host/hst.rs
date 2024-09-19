@@ -7,16 +7,16 @@ use std::{fmt, mem};
 use tabled::papergrid::AnsiColor;
 use tabled::{builder::Builder, merge::Merge, Alignment, Tabled};
 
-use crate::task::cluster::hst::view::BG_BLACK;
-use crate::task::cluster::hst::{merge_index_maps, v1::Host, v1::HostsVariants, view::View, IP};
-use crate::task::cluster::ins::v2::{FailureDomains, Instances};
+use crate::task::cluster::host::view::BG_BLACK;
+use crate::task::cluster::host::{merge_index_maps, view::View, IP};
+use crate::task::cluster::instance::ins::{FailureDomains, Instances};
 use crate::task::flv::{Failover, FailoverVariants};
 use crate::task::state::Change;
 use crate::task::{AsError, ErrConfMapping, TypeError, DICT, LIST, NUMBER, STRING};
 use crate::{
     error::{GeninError, GeninErrorKind},
     task::{
-        cluster::ins::v2::{InstanceV2, InstanceV2Config},
+        cluster::instance::ins::{Instance, InstanceConfig},
         flv::Uri,
     },
     task::{cluster::name::Name, inventory::InvHostConfig},
@@ -56,25 +56,25 @@ use super::view::{FG_BRIGHT_BLACK, FG_WHITE};
 ///               ip: 10.99.3.100
 /// ```
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq)]
-pub struct HostV2 {
+pub struct Host {
     pub name: Name,
-    #[serde(skip_serializing_if = "HostV2Config::is_none", default)]
-    pub config: HostV2Config,
+    #[serde(skip_serializing_if = "HostConfig::is_none", default)]
+    pub config: HostConfig,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub hosts: Vec<HostV2>,
+    pub hosts: Vec<Host>,
     #[serde(skip)]
-    pub add_queue: IndexMap<Name, InstanceV2>,
+    pub add_queue: IndexMap<Name, Instance>,
     #[serde(skip)]
-    pub delete_queue: IndexMap<Name, InstanceV2>,
+    pub delete_queue: IndexMap<Name, Instance>,
     #[serde(skip_serializing_if = "Instances::is_empty", default)]
     pub instances: Instances,
 }
 
-impl<'a> From<&'a str> for HostV2 {
+impl<'a> From<&'a str> for Host {
     fn from(s: &'a str) -> Self {
         Self {
             name: Name::from(s),
-            config: HostV2Config::default(),
+            config: HostConfig::default(),
             hosts: Vec::default(),
             add_queue: IndexMap::default(),
             delete_queue: IndexMap::default(),
@@ -83,57 +83,12 @@ impl<'a> From<&'a str> for HostV2 {
     }
 }
 
-impl From<Name> for HostV2 {
+impl From<Name> for Host {
     fn from(name: Name) -> Self {
         Self {
             name,
-            config: HostV2Config::default(),
+            config: HostConfig::default(),
             hosts: Vec::default(),
-            add_queue: IndexMap::default(),
-            delete_queue: IndexMap::default(),
-            instances: Instances::default(),
-        }
-    }
-}
-
-impl From<Vec<Host>> for HostV2 {
-    fn from(hosts: Vec<Host>) -> Self {
-        HostV2 {
-            name: Name::from("cluster"),
-            config: HostV2Config::default(),
-            hosts: hosts
-                .into_iter()
-                .map(|host| HostV2::into_host_v2(Name::from("cluster"), host))
-                .collect(),
-            add_queue: IndexMap::default(),
-            delete_queue: IndexMap::default(),
-            instances: Instances::default(),
-        }
-    }
-}
-
-impl From<Host> for HostV2 {
-    fn from(host: Host) -> Self {
-        HostV2 {
-            name: Name::from(host.name),
-            config: HostV2Config {
-                http_port: host.ports.http_as_option(),
-                binary_port: host.ports.binary_as_option(),
-                address: Address::from(host.ip),
-                ansible_host: Default::default(),
-                distance: Some(host.distance).and_then(|distance| {
-                    if distance.eq(&0) {
-                        None
-                    } else {
-                        Some(distance)
-                    }
-                }),
-                additional_config: IndexMap::new(),
-            },
-            hosts: match host.hosts {
-                HostsVariants::None => Vec::new(),
-                HostsVariants::Hosts(hosts) => hosts.into_iter().map(HostV2::from).collect(),
-            },
             add_queue: IndexMap::default(),
             delete_queue: IndexMap::default(),
             instances: Instances::default(),
@@ -145,22 +100,13 @@ pub trait WithHosts<T> {
     fn with_hosts(self, hosts: T) -> Self;
 }
 
-impl WithHosts<Vec<HostV2>> for HostV2 {
-    fn with_hosts(self, hosts: Vec<HostV2>) -> Self {
+impl WithHosts<Vec<Host>> for Host {
+    fn with_hosts(self, hosts: Vec<Host>) -> Self {
         Self { hosts, ..self }
     }
 }
 
-impl WithHosts<Vec<Host>> for HostV2 {
-    fn with_hosts(self, hosts: Vec<Host>) -> Self {
-        Self {
-            hosts: hosts.into_iter().map(HostV2::from).collect(),
-            ..self
-        }
-    }
-}
-
-impl PartialOrd for HostV2 {
+impl PartialOrd for Host {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match self.instances.len().partial_cmp(&other.instances.len()) {
             Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
@@ -169,7 +115,7 @@ impl PartialOrd for HostV2 {
     }
 }
 
-impl Ord for HostV2 {
+impl Ord for Host {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.instances.len().cmp(&other.instances.len()) {
             Ordering::Equal => self.name.cmp(&other.name),
@@ -178,7 +124,7 @@ impl Ord for HostV2 {
     }
 }
 
-impl Display for HostV2 {
+impl Display for Host {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let collector = RefCell::new(vec![Vec::new(); self.depth()]);
         let depth = 0;
@@ -193,62 +139,10 @@ impl Display for HostV2 {
     }
 }
 
-impl HostV2 {
-    pub fn with_config(self, config: HostV2Config) -> Self {
+impl Host {
+    #[cfg(test)]
+    pub fn with_config(self, config: HostConfig) -> Self {
         Self { config, ..self }
-    }
-
-    fn into_host_v2(parent_name: Name, host: Host) -> HostV2 {
-        match host {
-            Host {
-                name,
-                ports,
-                ip,
-                hosts: HostsVariants::Hosts(hosts),
-                ..
-            } => {
-                let name = parent_name.with_raw_index(name);
-                HostV2 {
-                    name: name.clone(),
-                    config: HostV2Config {
-                        http_port: ports.http_as_option(),
-                        binary_port: ports.binary_as_option(),
-                        address: Address::from(ip),
-                        ansible_host: Default::default(),
-                        distance: None,
-                        additional_config: IndexMap::new(),
-                    },
-                    hosts: hosts
-                        .into_iter()
-                        .map(|host| HostV2::into_host_v2(name.clone(), host))
-                        .collect(),
-                    add_queue: IndexMap::default(),
-                    delete_queue: IndexMap::default(),
-                    instances: Instances::default(),
-                }
-            }
-            Host {
-                name,
-                ports,
-                ip,
-                hosts: HostsVariants::None,
-                ..
-            } => HostV2 {
-                name: parent_name.with_raw_index(name),
-                config: HostV2Config {
-                    http_port: ports.http_as_option(),
-                    binary_port: ports.binary_as_option(),
-                    address: Address::from(ip),
-                    ansible_host: Default::default(),
-                    distance: None,
-                    additional_config: IndexMap::new(),
-                },
-                hosts: Vec::default(),
-                add_queue: IndexMap::default(),
-                delete_queue: IndexMap::default(),
-                instances: Instances::default(),
-            },
-        }
     }
 
     pub fn spread(&mut self) {
@@ -329,7 +223,7 @@ impl HostV2 {
         self.instances = instances
     }
 
-    fn push(&mut self, instance: InstanceV2) -> Result<(), GeninError> {
+    fn push(&mut self, instance: Instance) -> Result<(), GeninError> {
         let host = if let Some(host) = self.hosts.first_mut() {
             host
         } else {
@@ -342,7 +236,7 @@ impl HostV2 {
         Ok(())
     }
 
-    fn push_to_failure_domain(&mut self, mut instance: InstanceV2) -> Result<(), GeninError> {
+    fn push_to_failure_domain(&mut self, mut instance: Instance) -> Result<(), GeninError> {
         debug!(
             "trying to find reqested failure_domains inside host {} for instance {}",
             self.name, instance.name,
@@ -363,7 +257,7 @@ impl HostV2 {
 
         // retain only hosts that contains one of failure domain members
         // failure_domains: ["dc-1"] -> vec!["dc-1"]
-        let mut failure_domain_hosts: Vec<&mut HostV2> = self
+        let mut failure_domain_hosts: Vec<&mut Host> = self
             .hosts
             .iter_mut()
             .filter_map(|host| {
@@ -405,7 +299,7 @@ impl HostV2 {
         ))
     }
 
-    fn advertise_as_failure_domain(&mut self, instance: &mut InstanceV2) -> Result<(), GeninError> {
+    fn advertise_as_failure_domain(&mut self, instance: &mut Instance) -> Result<(), GeninError> {
         let failure_domains = instance.failure_domains.try_get_queue()?;
         let failure_domain_index = failure_domains
             .iter()
@@ -436,10 +330,10 @@ impl HostV2 {
     }
 
     #[allow(unused)]
-    /// Count number for instances spreaded in HostV2 on all levels
+    /// Count number for instances spreaded in Host on all levels
     ///
-    /// * If top level HostV2 has 10 instances and instances not spreaded `size() = 0`
-    /// * If 20 instances already spreaded accross HostV2 childrens  `size() = 20`
+    /// * If top level Host has 10 instances and instances not spreaded `size() = 0`
+    /// * If 20 instances already spreaded accross Host childrens  `size() = 20`
     pub fn size(&self) -> usize {
         if self.hosts.is_empty() {
             self.instances.len()
@@ -544,7 +438,7 @@ impl HostV2 {
         }
     }
 
-    pub fn lower_level_hosts(&self) -> Vec<&HostV2> {
+    pub fn lower_level_hosts(&self) -> Vec<&Host> {
         if self.hosts.is_empty() {
             vec![self]
         } else {
@@ -582,11 +476,11 @@ impl HostV2 {
         Self { instances, ..self }
     }
 
-    pub fn with_add_queue(self, add_queue: IndexMap<Name, InstanceV2>) -> Self {
+    pub fn with_add_queue(self, add_queue: IndexMap<Name, Instance>) -> Self {
         Self { add_queue, ..self }
     }
 
-    pub fn with_delete_queue(self, delete_queue: IndexMap<Name, InstanceV2>) -> Self {
+    pub fn with_delete_queue(self, delete_queue: IndexMap<Name, Instance>) -> Self {
         Self {
             delete_queue,
             ..self
@@ -609,7 +503,7 @@ impl HostV2 {
             ..
         } = failover
         {
-            self.instances.push(InstanceV2 {
+            self.instances.push(Instance {
                 name: Name::from("stateboard"),
                 stateboard: Some(true),
                 weight: None,
@@ -620,7 +514,7 @@ impl HostV2 {
                     .into(),
                 roles: Vec::new(),
                 cartridge_extra_env: IndexMap::default(),
-                config: InstanceV2Config {
+                config: InstanceConfig {
                     additional_config: vec![
                         (
                             String::from("listen"),
@@ -633,7 +527,7 @@ impl HostV2 {
                     ]
                     .into_iter()
                     .collect(),
-                    ..InstanceV2Config::default()
+                    ..InstanceConfig::default()
                 },
                 vars: IndexMap::default(),
                 view: View {
@@ -648,7 +542,7 @@ impl HostV2 {
     // used only in tests
     pub fn with_http_port(self, http_port: u16) -> Self {
         Self {
-            config: HostV2Config {
+            config: HostConfig {
                 http_port: Some(http_port),
                 ..self.config
             },
@@ -660,7 +554,7 @@ impl HostV2 {
     // used only in tests
     pub fn with_binary_port(self, binary_port: u16) -> Self {
         Self {
-            config: HostV2Config {
+            config: HostConfig {
                 binary_port: Some(binary_port),
                 ..self.config
             },
@@ -672,7 +566,7 @@ impl HostV2 {
     // used only in tests
     pub fn with_address(self, address: Address) -> Self {
         Self {
-            config: HostV2Config {
+            config: HostConfig {
                 address,
                 ..self.config
             },
@@ -688,7 +582,7 @@ impl HostV2 {
     /// left [server-1, server-2, server-3]
     /// right [server-1, server-2]
     /// -> left [server-1, server-2]
-    pub fn merge(left: &mut HostV2, right: &mut HostV2, idiomatic: bool) -> Vec<Change> {
+    pub fn merge(left: &mut Host, right: &mut Host, idiomatic: bool) -> Vec<Change> {
         std::mem::swap(&mut left.config.distance, &mut right.config.distance);
         std::mem::swap(
             &mut left.config.additional_config,
@@ -762,7 +656,7 @@ impl HostV2 {
                 .iter_mut()
                 .find(|left_host| left_host.name.eq(&right_host.name))
             {
-                hosts_diff.extend(HostV2::merge(left_host, right_host, idiomatic));
+                hosts_diff.extend(Host::merge(left_host, right_host, idiomatic));
             } else {
                 right_host.clear_instances();
                 left.hosts.push(right_host.clone());
@@ -823,7 +717,7 @@ impl HostV2 {
             .add_queue
             .iter()
             .map(|(_, instance)| instance.clone())
-            .collect::<Vec<InstanceV2>>();
+            .collect::<Vec<Instance>>();
         instances_for_spreading.sort();
         self.instances = Instances::from(instances_for_spreading);
     }
@@ -857,7 +751,7 @@ impl HostV2 {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
-pub struct HostV2Config {
+pub struct HostConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub http_port: Option<u16>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -872,7 +766,7 @@ pub struct HostV2Config {
     pub additional_config: IndexMap<String, Value>,
 }
 
-impl From<(u16, u16)> for HostV2Config {
+impl From<(u16, u16)> for HostConfig {
     fn from(p: (u16, u16)) -> Self {
         Self {
             http_port: Some(p.0),
@@ -882,7 +776,7 @@ impl From<(u16, u16)> for HostV2Config {
     }
 }
 
-impl From<IpAddr> for HostV2Config {
+impl From<IpAddr> for HostConfig {
     fn from(ip: IpAddr) -> Self {
         Self {
             address: Address::Ip(ip),
@@ -891,7 +785,7 @@ impl From<IpAddr> for HostV2Config {
     }
 }
 
-impl From<Address> for HostV2Config {
+impl From<Address> for HostConfig {
     fn from(address: Address) -> Self {
         Self {
             address,
@@ -900,7 +794,7 @@ impl From<Address> for HostV2Config {
     }
 }
 
-impl From<usize> for HostV2Config {
+impl From<usize> for HostConfig {
     fn from(distance: usize) -> Self {
         Self {
             distance: Some(distance),
@@ -909,7 +803,7 @@ impl From<usize> for HostV2Config {
     }
 }
 
-impl<'a> From<&'a InvHostConfig> for HostV2Config {
+impl<'a> From<&'a InvHostConfig> for HostConfig {
     fn from(config: &'a InvHostConfig) -> Self {
         match config {
             InvHostConfig::Instance {
@@ -944,7 +838,7 @@ impl<'a> From<&'a InvHostConfig> for HostV2Config {
     }
 }
 
-impl From<IndexMap<String, Value>> for HostV2Config {
+impl From<IndexMap<String, Value>> for HostConfig {
     fn from(additional_config: IndexMap<String, Value>) -> Self {
         let uri: Uri = additional_config
             .get("advertise_uri")
@@ -961,7 +855,7 @@ impl From<IndexMap<String, Value>> for HostV2Config {
     }
 }
 
-impl HostV2Config {
+impl HostConfig {
     pub fn is_none(&self) -> bool {
         self.http_port.is_none()
             && self.binary_port.is_none()
@@ -1003,7 +897,7 @@ impl HostV2Config {
         self.address.clone()
     }
 
-    pub fn merge(self, other: HostV2Config) -> Self {
+    pub fn merge(self, other: HostConfig) -> Self {
         Self {
             http_port: self.http_port.or(other.http_port),
             binary_port: self.binary_port.or(other.binary_port),
@@ -1145,14 +1039,14 @@ pub struct IPSubnet(Vec<IpAddr>);
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
-pub struct InvalidHostV2 {
+pub struct InvalidHost {
     pub offset: String,
     name: Value,
     config: Value,
     hosts: Value,
 }
 
-impl fmt::Debug for InvalidHostV2 {
+impl fmt::Debug for InvalidHost {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         // name: String
         match &self.name {
@@ -1175,13 +1069,13 @@ impl fmt::Debug for InvalidHostV2 {
             }
         }
 
-        // config: InvalidHostV2Config
+        // config: InvalidHostConfig
         match &self.config {
             Value::Null => {}
             config @ Value::Mapping(_) => formatter.write_fmt(format_args!(
                 "{}  config: {:?}",
                 &self.offset,
-                serde_yaml::from_value::<InvalidHostV2Config>(config.clone())
+                serde_yaml::from_value::<InvalidHostConfig>(config.clone())
                     .map(|mut config| {
                         config.offset = format!("{}    ", &self.offset);
                         config
@@ -1197,7 +1091,7 @@ impl fmt::Debug for InvalidHostV2 {
             }
         }
 
-        // hosts: InvalidHostV2
+        // hosts: InvalidHost
         match &self.hosts {
             Value::Null => {}
             Value::Sequence(hosts) => {
@@ -1207,7 +1101,7 @@ impl fmt::Debug for InvalidHostV2 {
                     .try_for_each(|host| -> Result<(), std::fmt::Error> {
                         formatter.write_fmt(format_args!(
                             "{:?}",
-                            serde_yaml::from_value::<InvalidHostV2>(host.clone())
+                            serde_yaml::from_value::<InvalidHost>(host.clone())
                                 .map(|mut host| {
                                     host.offset = format!("{}    ", &self.offset);
                                     host
@@ -1231,7 +1125,7 @@ impl fmt::Debug for InvalidHostV2 {
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
-pub struct InvalidHostV2Config {
+pub struct InvalidHostConfig {
     #[serde(skip)]
     offset: String,
     pub http_port: Value,
@@ -1241,7 +1135,7 @@ pub struct InvalidHostV2Config {
     pub additional_config: Value,
 }
 
-impl fmt::Debug for InvalidHostV2Config {
+impl fmt::Debug for InvalidHostConfig {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         // http_port: u16
         match &self.http_port {

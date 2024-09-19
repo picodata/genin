@@ -1,11 +1,10 @@
-pub(in crate::task) mod v1;
-pub(in crate::task) mod v2;
+pub mod ins;
 
 use indexmap::IndexMap;
 use serde::{de::Visitor, Deserialize, Serialize};
 use serde_yaml::Value;
 
-use super::hst::v2::Address;
+use super::host::hst::Address;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
@@ -118,22 +117,6 @@ impl Role {
     pub fn api() -> Self {
         Self::Api("api".into())
     }
-}
-
-pub fn is_zero(u: &usize) -> bool {
-    matches!(u, 0)
-}
-
-pub fn is_false(v: &bool) -> bool {
-    !*v
-}
-
-pub fn default_weight() -> usize {
-    10
-}
-
-fn count_one() -> usize {
-    1
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]

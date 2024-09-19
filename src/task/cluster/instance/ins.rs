@@ -8,34 +8,34 @@ use std::vec::IntoIter;
 use tabled::papergrid::AnsiColor;
 
 use crate::error::{GeninError, GeninErrorKind};
-use crate::task::cluster::hst::merge_index_maps;
-use crate::task::cluster::hst::v2::HostV2Config;
-use crate::task::cluster::hst::view::View;
-use crate::task::cluster::ins::Role;
+use crate::task::cluster::host::hst::HostConfig;
+use crate::task::cluster::host::merge_index_maps;
+use crate::task::cluster::host::view::View;
+use crate::task::cluster::instance::Role;
 use crate::task::cluster::name::Name;
 use crate::task::inventory::{InvHostConfig, InventoryHost};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Instances(Vec<InstanceV2>);
+pub struct Instances(Vec<Instance>);
 
-impl From<Vec<InstanceV2>> for Instances {
-    fn from(instances: Vec<InstanceV2>) -> Self {
+impl From<Vec<Instance>> for Instances {
+    fn from(instances: Vec<Instance>) -> Self {
         Self(instances)
     }
 }
 
 impl Instances {
-    pub fn iter(&self) -> Iter<InstanceV2> {
+    pub fn iter(&self) -> Iter<Instance> {
         self.0.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<InstanceV2> {
+    pub fn iter_mut(&mut self) -> IterMut<Instance> {
         self.0.iter_mut()
     }
 
     #[allow(unused)]
     // used in tests
-    pub fn into_iter(self) -> IntoIter<InstanceV2> {
+    pub fn into_iter(self) -> IntoIter<Instance> {
         self.0.into_iter()
     }
 
@@ -47,7 +47,7 @@ impl Instances {
         self.0.len()
     }
 
-    pub fn get(&self, index: usize) -> Option<&InstanceV2> {
+    pub fn get(&self, index: usize) -> Option<&Instance> {
         self.0.get(index)
     }
 
@@ -57,29 +57,29 @@ impl Instances {
 
     #[allow(unused)]
     // used in tests
-    pub fn pop(&mut self) -> Option<InstanceV2> {
+    pub fn pop(&mut self) -> Option<Instance> {
         self.0.pop()
     }
 
     #[allow(unused)]
     // used in tests
-    pub fn first(&self) -> Option<&InstanceV2> {
+    pub fn first(&self) -> Option<&Instance> {
         self.0.first()
     }
 
     #[allow(unused)]
     // used in tests
-    pub fn last(&self) -> Option<&InstanceV2> {
+    pub fn last(&self) -> Option<&Instance> {
         self.0.last()
     }
 
-    pub fn push(&mut self, instance: InstanceV2) {
+    pub fn push(&mut self, instance: Instance) {
         self.0.push(instance)
     }
 
     pub fn retain<F>(&mut self, f: F)
     where
-        F: FnMut(&InstanceV2) -> bool,
+        F: FnMut(&Instance) -> bool,
     {
         self.0.retain(f)
     }
@@ -88,15 +88,15 @@ impl Instances {
         self.0.clear()
     }
 
-    pub fn extend<I: IntoIterator<Item = InstanceV2>>(&mut self, iter: I) {
+    pub fn extend<I: IntoIterator<Item = Instance>>(&mut self, iter: I) {
         self.0.extend(iter)
     }
 }
 
 impl IntoIterator for Instances {
-    type Item = InstanceV2;
+    type Item = Instance;
 
-    type IntoIter = std::vec::IntoIter<InstanceV2>;
+    type IntoIter = std::vec::IntoIter<Instance>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
@@ -120,7 +120,7 @@ pub struct Replicaset {
     pub weight: Option<usize>,
     pub failure_domains: Vec<String>,
     pub roles: Vec<Role>,
-    pub config: InstanceV2Config,
+    pub config: InstanceConfig,
     pub view: View,
 }
 
@@ -138,28 +138,28 @@ pub struct Replicaset {
 /// instances with different names but similar configuration (based on the parent)
 /// ```rust
 /// let instances = vec![
-///     InstanceV2 {
+///     Instance {
 ///         name: Name::from("catalogue").with_index(1).with_index(1),
 ///         stateboard: None,
 ///         weight: Some(10),
 ///         failure_domains: Default::default(),
 ///         roles: vec![String::from("catalogue")],
 ///         cartridge_extra_env: IndexMap::default(),
-///         config: InstanceV2Config::default(),
+///         config: InstanceConfig::default(),
 ///         vars: IndexMap::default(),
 ///         view: View {
 ///             alignment: Alignment::left(),
 ///             color: FG_BLUE,
 ///         },
 ///     },
-///     InstanceV2 {
+///     Instance {
 ///         name: Name::from("catalogue").with_index(1).with_index(2),
 ///         stateboard: None,
 ///         weight: Some(10),
 ///         failure_domains: Default::default(),
 ///         roles: vec![String::from("catalogue")],
 ///         cartridge_extra_env: IndexMap::default(),
-///         config: InstanceV2Config::default(),
+///         config: InstanceConfig::default(),
 ///         vars: IndexMap::default(),
 ///         view: View {
 ///             alignment: Alignment::left(),
@@ -169,7 +169,7 @@ pub struct Replicaset {
 /// ]
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct InstanceV2 {
+pub struct Instance {
     /// Instance name with replicaset number and the index of the instance in the replicaset
     pub name: Name,
     //TODO: remove stateboard option
@@ -180,13 +180,13 @@ pub struct InstanceV2 {
     pub failure_domains: FailureDomains,
     pub roles: Vec<Role>,
     pub cartridge_extra_env: IndexMap<String, Value>,
-    pub config: InstanceV2Config,
+    pub config: InstanceConfig,
     pub vars: IndexMap<String, Value>,
     #[serde(skip)]
     pub view: View,
 }
 
-impl PartialOrd for InstanceV2 {
+impl PartialOrd for Instance {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match self.name.partial_cmp(&other.name) {
             Some(Ordering::Equal) => Some(Ordering::Equal),
@@ -195,13 +195,13 @@ impl PartialOrd for InstanceV2 {
     }
 }
 
-impl Ord for InstanceV2 {
+impl Ord for Instance {
     fn cmp(&self, other: &Self) -> Ordering {
         self.name.cmp(&other.name)
     }
 }
 
-impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
+impl<'a> From<(&'a Name, &'a InventoryHost)> for Instance {
     fn from(inventory_host: (&'a Name, &'a InventoryHost)) -> Self {
         Self {
             name: inventory_host.0.clone(),
@@ -210,14 +210,14 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for InstanceV2 {
             failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: inventory_host.1.cartridge_extra_env.clone(),
-            config: InstanceV2Config::from_inventory_host(&inventory_host.1),
+            config: InstanceConfig::from_inventory_host(&inventory_host.1),
             vars: inventory_host.1.vars.clone(),
             view: View::default(),
         }
     }
 }
 
-impl From<Name> for InstanceV2 {
+impl From<Name> for Instance {
     fn from(name: Name) -> Self {
         Self {
             name,
@@ -226,14 +226,14 @@ impl From<Name> for InstanceV2 {
             failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: IndexMap::default(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
             view: View::default(),
         }
     }
 }
 
-impl InstanceV2 {
+impl Instance {
     pub fn is_stateboard(&self) -> bool {
         if let Some(stateboard) = self.stateboard {
             stateboard
@@ -326,7 +326,7 @@ impl Default for FailureDomains {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
-pub struct InstanceV2Config {
+pub struct InstanceConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub http_port: Option<u16>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -341,7 +341,7 @@ pub struct InstanceV2Config {
     pub additional_config: IndexMap<String, Value>,
 }
 
-impl InstanceV2Config {
+impl InstanceConfig {
     pub fn from_inventory_host(host: &InventoryHost) -> Self {
         match &host.config {
             InvHostConfig::Instance {
@@ -368,7 +368,7 @@ impl InstanceV2Config {
     }
 }
 
-impl<'a> From<&'a IndexMap<String, Value>> for InstanceV2Config {
+impl<'a> From<&'a IndexMap<String, Value>> for InstanceConfig {
     fn from(config: &'a IndexMap<String, Value>) -> Self {
         Self {
             http_port: config
@@ -396,8 +396,8 @@ impl<'a> From<&'a IndexMap<String, Value>> for InstanceV2Config {
 }
 
 #[allow(unused)]
-impl InstanceV2Config {
-    pub fn merge_and_up_ports(self, other: HostV2Config, index: u16) -> Self {
+impl InstanceConfig {
+    pub fn merge_and_up_ports(self, other: HostConfig, index: u16) -> Self {
         trace!("Config before merge: {:?}", &self);
         Self {
             http_port: self
@@ -413,7 +413,7 @@ impl InstanceV2Config {
         }
     }
 
-    pub fn merge_with_host_v2_config(self, other: HostV2Config) -> Self {
+    pub fn merge_with_host_v2_config(self, other: HostConfig) -> Self {
         Self {
             http_port: self.http_port.or(other.http_port),
             binary_port: self.binary_port.or(other.binary_port),

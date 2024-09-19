@@ -1,9 +1,9 @@
 use indexmap::IndexMap;
 
 use crate::task::cluster::{
-    hst::view::{FG_BLUE, FG_CYAN, FG_WHITE},
-    ins::{
-        v2::{InstanceV2, InstanceV2Config, Instances},
+    host::view::{FG_BLUE, FG_CYAN, FG_WHITE},
+    instance::{
+        ins::{Instance, InstanceConfig, Instances},
         Role,
     },
     name::Name,
@@ -15,19 +15,19 @@ use crate::task::cluster::{
 /// instances -> topology -> instances
 fn topology_from_instances() {
     let instances_model = Instances::from(vec![
-        InstanceV2::from(Name::from("router").with_index(1))
+        Instance::from(Name::from("router").with_index(1))
             .with_roles(vec![Role::router(), Role::failover_coordinator()])
             .with_color(FG_WHITE),
-        InstanceV2::from(Name::from("storage").with_index(1).with_index(1))
+        Instance::from(Name::from("storage").with_index(1).with_index(1))
             .with_roles(vec![Role::storage()])
             .with_color(FG_BLUE),
-        InstanceV2::from(Name::from("storage").with_index(1).with_index(2))
+        Instance::from(Name::from("storage").with_index(1).with_index(2))
             .with_roles(vec![Role::storage()])
             .with_color(FG_BLUE),
-        InstanceV2::from(Name::from("storage").with_index(2).with_index(1))
+        Instance::from(Name::from("storage").with_index(2).with_index(1))
             .with_roles(vec![Role::storage()])
             .with_color(FG_CYAN),
-        InstanceV2::from(Name::from("storage").with_index(2).with_index(2))
+        Instance::from(Name::from("storage").with_index(2).with_index(2))
             .with_roles(vec![Role::storage()])
             .with_color(FG_CYAN),
     ]);
@@ -40,7 +40,7 @@ fn topology_from_instances() {
             failure_domains: Default::default(),
             roles: vec![Role::router(), Role::failover_coordinator()],
             cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
         },
         TopologySet {
@@ -51,7 +51,7 @@ fn topology_from_instances() {
             failure_domains: Default::default(),
             roles: vec![Role::storage()],
             cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
         },
     ]);
@@ -66,7 +66,7 @@ fn topology_from_instances() {
 }
 
 #[test]
-/// ClusterV2.topology string -> Topology -> ClusterV2.topology string
+/// Cluster.topology string -> Topology -> Cluster.topology string
 fn topology_member_v2() {
     let topology_member_str: String = r#"---
 name: router
@@ -85,7 +85,7 @@ roles:
         failure_domains: Default::default(),
         roles: vec![Role::router(), Role::failover_coordinator()],
         cartridge_extra_env: IndexMap::new(),
-        config: InstanceV2Config::default(),
+        config: InstanceConfig::default(),
         vars: IndexMap::default(),
     };
 
@@ -103,19 +103,19 @@ roles:
 #[test]
 fn non_unique_replicaset_names() {
     let instances = Instances::from(vec![
-        InstanceV2::from(Name::from("router").with_index(1))
+        Instance::from(Name::from("router").with_index(1))
             .with_roles(vec![Role::router(), Role::failover_coordinator()])
             .with_color(FG_WHITE),
-        InstanceV2::from(Name::from("storage").with_index(1).with_index(1))
+        Instance::from(Name::from("storage").with_index(1).with_index(1))
             .with_roles(vec![Role::storage()])
             .with_color(FG_BLUE),
-        InstanceV2::from(Name::from("storage").with_index(1).with_index(1))
+        Instance::from(Name::from("storage").with_index(1).with_index(1))
             .with_roles(vec![Role::storage()])
             .with_color(FG_BLUE),
-        InstanceV2::from(Name::from("storage").with_index(2).with_index(1))
+        Instance::from(Name::from("storage").with_index(2).with_index(1))
             .with_roles(vec![Role::storage()])
             .with_color(FG_CYAN),
-        InstanceV2::from(Name::from("storage").with_index(2).with_index(2))
+        Instance::from(Name::from("storage").with_index(2).with_index(2))
             .with_roles(vec![Role::storage()])
             .with_color(FG_CYAN),
     ]);
@@ -134,7 +134,7 @@ fn non_unique_replicaset_names() {
             failure_domains: Default::default(),
             roles: vec![Role::router(), Role::failover_coordinator()],
             cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
         },
         TopologySet {
@@ -145,7 +145,7 @@ fn non_unique_replicaset_names() {
             failure_domains: Default::default(),
             roles: vec![Role::storage()],
             cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
         },
     ]);

@@ -109,25 +109,6 @@ pub(super) fn read() -> ArgMatches {
                             "Used to overwrite the output file, whether \
                             or not it exists.",
                         ),
-                    Arg::new("failover-mode")
-                        .long("failover-mode")
-                        .short('m')
-                        .action(ArgAction::Set)
-                        .default_value("stateful")
-                        .help("(string): failover mode (stateful, eventual, disabled)"),
-                    Arg::new("failover-state-provider")
-                        .long("failover-state-provider")
-                        .short('F')
-                        .action(ArgAction::Set)
-                        .default_value("stateboard")
-                        .help("(string): failover state provider (etcd2, stateboard, disabled)"),
-                    Arg::new("print")
-                        .long("print")
-                        .short('p')
-                        .action(ArgAction::Set)
-                        .default_values(["colorized", "ports"])
-                        .num_args(1..=3)
-                        .help("(list, optional): cluster print output option"),
                     Arg::new("quiet")
                         .long("quiet")
                         .short('q')

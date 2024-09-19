@@ -11,9 +11,9 @@ use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 use thiserror::Error;
 
-use crate::task::cluster::hst::v2::Address;
-use crate::task::cluster::hst::v2::HostV2;
-use crate::task::cluster::ins::v2::InstanceV2;
+use crate::task::cluster::host::hst::Address;
+use crate::task::cluster::host::hst::Host;
+use crate::task::cluster::instance::ins::Instance;
 use crate::task::cluster::name::Name;
 use crate::task::flv::Uri;
 use crate::task::vars::Vars;
@@ -21,7 +21,7 @@ use crate::task::Cluster;
 use crate::task::Validate;
 use crate::{
     error::{GeninError, GeninErrorKind},
-    task::cluster::ins::Role,
+    task::cluster::instance::Role,
     APP_VERSION,
 };
 
@@ -321,10 +321,6 @@ impl Validate for Inventory {
     fn validate(_bytes: &[u8]) -> Result<Self::Type, Self::Error> {
         Ok(String::default())
     }
-
-    fn whole_block(bytes: &[u8]) -> String {
-        String::from_utf8(bytes.to_vec()).unwrap()
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -365,8 +361,8 @@ pub enum InvHostConfig {
     Stateboard(IndexMap<String, Value>),
 }
 
-impl<'a> From<(&'a InstanceV2, &'a HostV2)> for InvHostConfig {
-    fn from(pair: (&'a InstanceV2, &'a HostV2)) -> Self {
+impl<'a> From<(&'a Instance, &'a Host)> for InvHostConfig {
+    fn from(pair: (&'a Instance, &'a Host)) -> Self {
         if !pair.0.is_stateboard() {
             InvHostConfig::Instance {
                 advertise_uri: Uri {

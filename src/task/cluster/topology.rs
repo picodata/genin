@@ -12,13 +12,13 @@ use crate::task::{
 };
 
 use super::{
-    hst::view::{TableColors, View},
-    ins::{
-        v2::{InstanceV2, InstanceV2Config, Instances},
+    host::view::{TableColors, View},
+    instance::{
+        ins::{Instance, InstanceConfig, Instances},
         Role,
     },
     name::Name,
-    TopologyMemberV1,
+    TopologyMember,
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -43,7 +43,7 @@ impl TryFrom<Instances> for Topology {
                 .fold(
                     IndexMap::<Name, TopologySet>::new(),
                     |mut replicasets,
-                     InstanceV2 {
+                     Instance {
                          name,
                          weight,
                          failure_domains,
@@ -171,7 +171,7 @@ impl<'a> From<&'a Topology> for Instances {
                             .flat_map(|repliaset_num| {
                                 if !replication_factor.is_none() {
                                     (1..=replication_factor.unwrap())
-                                        .map(|instance_num| InstanceV2 {
+                                        .map(|instance_num| Instance {
                                             name: name
                                                 .clone_with_index(repliaset_num)
                                                 .clone_with_index(instance_num),
@@ -189,9 +189,9 @@ impl<'a> From<&'a Topology> for Instances {
                                                 ),
                                             },
                                         })
-                                        .collect::<Vec<InstanceV2>>()
+                                        .collect::<Vec<Instance>>()
                                 } else {
-                                    vec![InstanceV2 {
+                                    vec![Instance {
                                         name: name.clone_with_index(repliaset_num),
                                         stateboard: None,
                                         weight: *weight,
@@ -207,10 +207,10 @@ impl<'a> From<&'a Topology> for Instances {
                                     }]
                                 }
                             })
-                            .collect::<Vec<InstanceV2>>()
+                            .collect::<Vec<Instance>>()
                     },
                 )
-                .collect::<Vec<InstanceV2>>(),
+                .collect::<Vec<Instance>>(),
         )
     }
 }
@@ -231,13 +231,13 @@ impl Topology {
     }
 }
 
-impl From<Vec<TopologyMemberV1>> for Topology {
-    fn from(members: Vec<TopologyMemberV1>) -> Self {
+impl From<Vec<TopologyMember>> for Topology {
+    fn from(members: Vec<TopologyMember>) -> Self {
         Self(
             members
                 .into_iter()
                 .map(
-                    |TopologyMemberV1 {
+                    |TopologyMember {
                          name,
                          count,
                          replicas,
@@ -265,9 +265,9 @@ impl From<Vec<TopologyMemberV1>> for Topology {
                             failure_domains: Default::default(),
                             roles,
                             cartridge_extra_env: IndexMap::default(),
-                            config: InstanceV2Config {
+                            config: InstanceConfig {
                                 additional_config: config,
-                                ..InstanceV2Config::default()
+                                ..InstanceConfig::default()
                             },
                             vars: IndexMap::default(),
                         }
@@ -289,7 +289,7 @@ impl Default for Topology {
                 failure_domains: Default::default(),
                 roles: vec![Role::router(), Role::failover_coordinator()],
                 cartridge_extra_env: IndexMap::default(),
-                config: InstanceV2Config::default(),
+                config: InstanceConfig::default(),
                 vars: IndexMap::default(),
             },
             TopologySet {
@@ -300,7 +300,7 @@ impl Default for Topology {
                 failure_domains: Default::default(),
                 roles: vec![Role::storage()],
                 cartridge_extra_env: IndexMap::default(),
-                config: InstanceV2Config::default(),
+                config: InstanceConfig::default(),
                 vars: IndexMap::default(),
             },
         ])
@@ -322,8 +322,8 @@ struct TopologySet {
     roles: Vec<Role>,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     cartridge_extra_env: IndexMap<String, Value>,
-    #[serde(skip_serializing_if = "InstanceV2Config::is_none")]
-    config: InstanceV2Config,
+    #[serde(skip_serializing_if = "InstanceConfig::is_none")]
+    config: InstanceConfig,
     #[serde(default, skip_serializing_if = "IndexMap::is_empty")]
     vars: IndexMap<String, Value>,
 }
@@ -351,7 +351,7 @@ impl<'de> Deserialize<'de> for TopologySet {
             #[serde(default)]
             cartridge_extra_env: IndexMap<String, Value>,
             #[serde(default)]
-            config: Option<InstanceV2Config>,
+            config: Option<InstanceConfig>,
             #[serde(default)]
             vars: IndexMap<String, Value>,
         }
@@ -363,16 +363,13 @@ impl<'de> Deserialize<'de> for TopologySet {
                  replication_factor,
                  weight,
                  failure_domains,
-                 mut roles,
+                 roles,
                  all_rw,
                  cartridge_extra_env,
                  config,
                  vars,
              }| {
                 // If type not defined in yaml let's try to infer based on name
-                if roles.is_empty() {
-                    roles = vec![Role::from(name.as_str())]
-                }
                 TopologySet {
                     name: Name::from(name),
                     replicasets_count,
@@ -583,7 +580,7 @@ impl std::fmt::Debug for InvalidTopologySet {
             Value::Null => {}
             config @ Value::Mapping(_) => formatter.write_fmt(format_args!(
                 "{:?}",
-                serde_yaml::from_value::<ErrInstanceV2Config>(config.clone())
+                serde_yaml::from_value::<ErrInstanceConfig>(config.clone())
                     .map(|mut config| {
                         config.offset = "\n    ".into();
                         config
@@ -672,7 +669,7 @@ impl<'a> std::fmt::Debug for InvalidRoles<'a> {
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
-pub struct ErrInstanceV2Config {
+pub struct ErrInstanceConfig {
     #[serde(skip)]
     offset: String,
     http_port: Value,
@@ -684,7 +681,7 @@ pub struct ErrInstanceV2Config {
     additional_config: Value,
 }
 
-impl std::fmt::Debug for ErrInstanceV2Config {
+impl std::fmt::Debug for ErrInstanceConfig {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_fmt(format_args!("{}config: ", self.offset))?;
         // http_port: u16

@@ -1,0 +1,43 @@
+---
+source: src/task/cluster/host/test.rs
+assertion_line: 774
+expression: hosts_old
+---
+name: cluster
+config:
+  http_port: 8081
+  binary_port: 3301
+hosts:
+  - name: dc-1
+    hosts:
+      - name: server-1
+        config:
+          address: 192.168.32.101
+      - name: server-2
+        config:
+          address: 192.168.32.102
+      - name: server-3
+        config:
+          address: 192.168.16.13
+  - name: dc-2
+    hosts:
+      - name: server-4
+        config:
+          address: 192.168.64.101
+      - name: server-5
+        config:
+          address: 192.168.64.102
+      - name: server-6
+        config:
+          address: 192.168.16.16
+  - name: dc-3
+    hosts:
+      - name: server-7
+        config:
+          address: 192.168.16.17
+      - name: server-8
+        config:
+          address: 192.168.16.18
+      - name: server-9
+        config:
+          address: 192.168.16.19

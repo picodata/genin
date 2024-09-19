@@ -199,8 +199,6 @@ pub trait Validate {
     type Error: fmt::Debug + ToString;
 
     fn validate(bytes: &[u8]) -> Result<Self::Type, Self::Error>;
-
-    fn whole_block(bytes: &[u8]) -> String;
 }
 
 trait AsError {

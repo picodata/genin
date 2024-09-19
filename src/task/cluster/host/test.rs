@@ -5,14 +5,14 @@ use tabled::Alignment;
 
 use crate::task::{
     cluster::{
-        hst::{
-            v2::{Address, HostV2, HostV2Config, WithHosts},
+        host::{
+            hst::{Address, Host, HostConfig, WithHosts},
             view::{View, FG_BLUE, FG_WHITE},
         },
-        ins::v2::{FailureDomains, InstanceV2, InstanceV2Config, Instances},
+        instance::ins::{FailureDomains, Instance, InstanceConfig, Instances},
         name::Name,
         topology::Topology,
-        HostV2Helper,
+        HostHelper,
     },
     utils::uncolorize,
 };
@@ -35,11 +35,11 @@ hosts:
 "#
     .into();
 
-    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+    let host: Host = serde_yaml::from_str::<HostHelper>(&hosts_v2_str)
         .unwrap()
         .into();
 
-    assert_eq!(hosts_v2.depth(), 2);
+    assert_eq!(host.depth(), 2);
 
     let hosts_v2_str: String = r#"---
 name: cluster
@@ -59,11 +59,11 @@ hosts:
 "#
     .into();
 
-    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+    let host: Host = serde_yaml::from_str::<HostHelper>(&hosts_v2_str)
         .unwrap()
         .into();
 
-    assert_eq!(hosts_v2.depth(), 5);
+    assert_eq!(host.depth(), 5);
 }
 
 #[test]
@@ -117,11 +117,11 @@ hosts:
 "#
     .into();
 
-    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+    let host: Host = serde_yaml::from_str::<HostHelper>(&hosts_v2_str)
         .unwrap()
         .into();
 
-    assert_eq!(hosts_v2.width(), 10);
+    assert_eq!(host.width(), 10);
 }
 
 #[test]
@@ -154,157 +154,155 @@ hosts:
 "#
     .into();
 
-    let mut hosts_v2: HostV2 = HostV2::from(
-        serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str).unwrap(),
-    )
-    .with_instances(Instances::from(vec![
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(1),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+    let mut host: Host = Host::from(serde_yaml::from_str::<HostHelper>(&hosts_v2_str).unwrap())
+        .with_instances(Instances::from(vec![
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(1),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(2),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(2),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(3),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(3),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(4),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(4),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(5),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(5),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(6),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(6),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(7),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(7),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(8),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(8),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(9),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(9),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-        InstanceV2 {
-            name: Name::from("storage").with_index(1).with_index(10),
-            stateboard: None,
-            weight: None,
-            failure_domains: Default::default(),
-            roles: Vec::new(),
-            cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
-            vars: IndexMap::default(),
-            view: View {
-                color: FG_BLUE,
-                alignment: Alignment::left(),
+            Instance {
+                name: Name::from("storage").with_index(1).with_index(10),
+                stateboard: None,
+                weight: None,
+                failure_domains: Default::default(),
+                roles: Vec::new(),
+                cartridge_extra_env: IndexMap::new(),
+                config: InstanceConfig::default(),
+                vars: IndexMap::default(),
+                view: View {
+                    color: FG_BLUE,
+                    alignment: Alignment::left(),
+                },
             },
-        },
-    ]));
+        ]));
 
-    assert_eq!(hosts_v2.size(), 0);
+    assert_eq!(host.size(), 0);
 
-    hosts_v2.spread();
+    host.spread();
 
-    assert_eq!(hosts_v2.size(), 10);
+    assert_eq!(host.size(), 10);
 }
 
 #[test]
@@ -337,55 +335,54 @@ hosts:
 "#
     .into();
 
-    let hosts_v2: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+    let host: Host = serde_yaml::from_str::<HostHelper>(&hosts_v2_str)
         .unwrap()
         .into();
 
-    hosts_v2
-        .lower_level_hosts()
+    host.lower_level_hosts()
         .iter()
         .for_each(|host| println!("{}", host.name));
 
     let lower_level_hosts_model = vec![
-        HostV2::from(
+        Host::from(
             Name::from("cluster")
                 .with_raw_index("dc-1")
                 .with_raw_index("server-1"),
         )
-        .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 11]))),
-        HostV2::from(
+        .with_config(HostConfig::from(IpAddr::from([192, 168, 16, 11]))),
+        Host::from(
             Name::from("cluster")
                 .with_raw_index("dc-1")
                 .with_raw_index("server-2"),
         )
-        .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 12]))),
-        HostV2::from(
+        .with_config(HostConfig::from(IpAddr::from([192, 168, 16, 12]))),
+        Host::from(
             Name::from("cluster")
                 .with_raw_index("dc-1")
                 .with_raw_index("server-3"),
         )
-        .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 13]))),
-        HostV2::from(
+        .with_config(HostConfig::from(IpAddr::from([192, 168, 16, 13]))),
+        Host::from(
             Name::from("cluster")
                 .with_raw_index("dc-2")
                 .with_raw_index("server-1"),
         )
-        .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 14]))),
-        HostV2::from(
+        .with_config(HostConfig::from(IpAddr::from([192, 168, 16, 14]))),
+        Host::from(
             Name::from("cluster")
                 .with_raw_index("dc-2")
                 .with_raw_index("server-2"),
         )
-        .with_config(HostV2Config::from(IpAddr::from([192, 168, 16, 15]))),
+        .with_config(HostConfig::from(IpAddr::from([192, 168, 16, 15]))),
     ];
 
     assert_eq!(
-        hosts_v2.lower_level_hosts(),
-        lower_level_hosts_model.iter().collect::<Vec<&HostV2>>()
+        host.lower_level_hosts(),
+        lower_level_hosts_model.iter().collect::<Vec<&Host>>()
     );
 }
 
-fn failure_domain_test_host() -> HostV2 {
+fn failure_domain_test_host() -> Host {
     let hosts_v2_str: String = r#"---
 name: cluster
 config:
@@ -414,19 +411,19 @@ hosts:
 "#
     .into();
 
-    let mut host: HostV2 = serde_yaml::from_str::<HostV2Helper>(&hosts_v2_str)
+    let mut host: Host = serde_yaml::from_str::<HostHelper>(&hosts_v2_str)
         .unwrap()
         .into();
 
-    fn new_instance(name: Name, failure_domains: FailureDomains) -> InstanceV2 {
-        InstanceV2 {
+    fn new_instance(name: Name, failure_domains: FailureDomains) -> Instance {
+        Instance {
             name,
             stateboard: Some(false),
             weight: None,
             failure_domains,
             roles: Vec::new(),
             cartridge_extra_env: IndexMap::new(),
-            config: InstanceV2Config::default(),
+            config: InstanceConfig::default(),
             vars: IndexMap::default(),
             view: View {
                 color: FG_WHITE,
@@ -465,9 +462,9 @@ hosts:
 }
 
 fn find_instance(
-    host: &HostV2,
-    mut predicate: impl FnMut(&InstanceV2) -> bool,
-) -> Option<(&HostV2, &InstanceV2)> {
+    host: &Host,
+    mut predicate: impl FnMut(&Instance) -> bool,
+) -> Option<(&Host, &Instance)> {
     let mut queue = VecDeque::new();
     queue.push_front(host);
 
@@ -505,7 +502,7 @@ fn hosts_force_failure_domain() {
 
 #[test]
 fn hosts_use_failure_domain_as_zone() {
-    fn failure_domain_instance_zone<'a>(host: &'a HostV2, instance_name: &str) -> Option<&'a str> {
+    fn failure_domain_instance_zone<'a>(host: &'a Host, instance_name: &str) -> Option<&'a str> {
         let (_, instance) =
             find_instance(host, |instance| instance.name.to_string() == instance_name).unwrap();
         instance.config.zone.as_deref()
@@ -550,10 +547,10 @@ fn hosts_v2_spreading() {
 
     let instances = Instances::from(&topology);
 
-    let mut hosts_v2 = HostV2::from("Cluster")
+    let mut host = Host::from("Cluster")
         .with_hosts(vec![
-            HostV2::from("Server-1"),
-            HostV2::from("Server-2")
+            Host::from("Server-1"),
+            Host::from("Server-2")
                 .with_http_port(25000)
                 .with_binary_port(26000),
         ])
@@ -570,14 +567,14 @@ fn hosts_v2_spreading() {
                 .collect(),
         )
         .with_instances(instances)
-        .with_config(HostV2Config::from((8081, 3031)))
+        .with_config(HostConfig::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2.spread();
+    host.spread();
 
-    println!("{}", &hosts_v2);
+    println!("{}", &host);
 
-    insta::assert_debug_snapshot!(hosts_v2);
+    insta::assert_debug_snapshot!(host);
 }
 
 #[test]
@@ -600,92 +597,91 @@ fn hosts_v2_print_table() {
 
     let instances = Instances::from(&topology);
 
-    let mut hosts_v2 = HostV2::from("Cluster")
+    let mut host = Host::from("Cluster")
         .with_hosts(vec![
-            HostV2::from("DC1").with_hosts(vec![
-                HostV2::from("Rack1")
-                    .with_hosts(vec![HostV2::from("Server-1"), HostV2::from("Server-2")]),
-                HostV2::from("Rack2")
-                    .with_hosts(vec![HostV2::from("Server-3"), HostV2::from("Server-4")]),
+            Host::from("DC1").with_hosts(vec![
+                Host::from("Rack1")
+                    .with_hosts(vec![Host::from("Server-1"), Host::from("Server-2")]),
+                Host::from("Rack2")
+                    .with_hosts(vec![Host::from("Server-3"), Host::from("Server-4")]),
             ]),
-            HostV2::from("DC2")
+            Host::from("DC2")
                 .with_hosts(vec![
-                    HostV2::from("Rack1")
-                        .with_hosts(vec![HostV2::from("Server-5"), HostV2::from("Server-6")]),
-                    HostV2::from("Rack2")
-                        .with_hosts(vec![HostV2::from("Server-7"), HostV2::from("Server-8")]),
+                    Host::from("Rack1")
+                        .with_hosts(vec![Host::from("Server-5"), Host::from("Server-6")]),
+                    Host::from("Rack2")
+                        .with_hosts(vec![Host::from("Server-7"), Host::from("Server-8")]),
                 ])
                 .with_http_port(25000)
                 .with_binary_port(26000),
         ])
         .with_instances(instances)
-        .with_config(HostV2Config::from((8081, 3031)))
+        .with_config(HostConfig::from((8081, 3031)))
         .with_address(Address::from([192, 168, 123, 11]));
 
-    hosts_v2.spread();
+    host.spread();
 
-    println!("{}", hosts_v2);
+    println!("{}", host);
 
-    insta::assert_display_snapshot!(uncolorize(hosts_v2));
+    insta::assert_display_snapshot!(uncolorize(host));
 }
 
 #[test]
 fn hosts_v2_spread_stateboard() {
-    let mut hosts_v2 = HostV2::from("Cluster")
+    let mut host = Host::from("Cluster")
         .with_hosts(vec![
-            HostV2::from("DC1").with_hosts(vec![
-                HostV2::from("Rack1").with_hosts(vec![
-                    HostV2::from("Server-1")
-                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 11]))),
-                    HostV2::from("Server-2")
-                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 12]))),
+            Host::from("DC1").with_hosts(vec![
+                Host::from("Rack1").with_hosts(vec![
+                    Host::from("Server-1")
+                        .with_config(HostConfig::from(IpAddr::from([192, 168, 123, 11]))),
+                    Host::from("Server-2")
+                        .with_config(HostConfig::from(IpAddr::from([192, 168, 123, 12]))),
                 ]),
-                HostV2::from("Rack2").with_hosts(vec![
-                    HostV2::from("Server-3")
-                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 101]))),
-                    HostV2::from("Server-4")
-                        .with_config(HostV2Config::from(IpAddr::from([192, 168, 123, 102]))),
+                Host::from("Rack2").with_hosts(vec![
+                    Host::from("Server-3")
+                        .with_config(HostConfig::from(IpAddr::from([192, 168, 123, 101]))),
+                    Host::from("Server-4")
+                        .with_config(HostConfig::from(IpAddr::from([192, 168, 123, 102]))),
                 ]),
             ]),
-            HostV2::from("DC2")
+            Host::from("DC2")
                 .with_hosts(vec![
-                    HostV2::from("Rack1").with_hosts(vec![
-                        HostV2::from("Server-5")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 11]))),
-                        HostV2::from("Server-6")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 12]))),
+                    Host::from("Rack1").with_hosts(vec![
+                        Host::from("Server-5")
+                            .with_config(HostConfig::from(IpAddr::from([192, 168, 66, 11]))),
+                        Host::from("Server-6")
+                            .with_config(HostConfig::from(IpAddr::from([192, 168, 66, 12]))),
                     ]),
-                    HostV2::from("Rack2").with_hosts(vec![
-                        HostV2::from("Server-7")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 101]))),
-                        HostV2::from("Server-8")
-                            .with_config(HostV2Config::from(IpAddr::from([192, 168, 66, 101]))),
+                    Host::from("Rack2").with_hosts(vec![
+                        Host::from("Server-7")
+                            .with_config(HostConfig::from(IpAddr::from([192, 168, 66, 101]))),
+                        Host::from("Server-8")
+                            .with_config(HostConfig::from(IpAddr::from([192, 168, 66, 101]))),
                     ]),
                 ])
                 .with_http_port(25000)
                 .with_binary_port(26000),
         ])
-        .with_config(HostV2Config::from((8081, 3031)));
+        .with_config(HostConfig::from((8081, 3031)));
 
     let address = Address::Ip("192.168.66.101".parse().unwrap());
 
-    hosts_v2.instances.push(InstanceV2 {
+    host.instances.push(Instance {
         name: Name::from("stateboard"),
         stateboard: Some(true),
         weight: None,
-        failure_domains: vec![hosts_v2.get_name_by_address(&address).unwrap().to_string()].into(),
+        failure_domains: vec![host.get_name_by_address(&address).unwrap().to_string()].into(),
         roles: Vec::new(),
         cartridge_extra_env: IndexMap::new(),
-        config: InstanceV2Config::default(),
+        config: InstanceConfig::default(),
         vars: IndexMap::default(),
         view: View::default(),
     });
 
-    hosts_v2.spread();
+    host.spread();
 
     assert_eq!(
-        hosts_v2
-            .hosts
+        host.hosts
             .last()
             .unwrap()
             .hosts
@@ -728,7 +724,7 @@ hosts:
           address: 192.168.64.102
 "#;
 
-    let mut hosts_old = serde_yaml::from_str::<HostV2>(hosts_old_str).unwrap();
+    let mut hosts_old = serde_yaml::from_str::<Host>(hosts_old_str).unwrap();
 
     let hosts_new_str = r#"---
 name: cluster
@@ -771,9 +767,9 @@ hosts:
           address: 192.168.16.19
 "#;
 
-    let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
+    let mut hosts_new = serde_yaml::from_str::<Host>(hosts_new_str).unwrap();
 
-    HostV2::merge(&mut hosts_old, &mut hosts_new, true);
+    Host::merge(&mut hosts_old, &mut hosts_new, true);
 
     insta::assert_yaml_snapshot!(hosts_old);
 }
@@ -821,7 +817,7 @@ hosts:
           address: 192.168.16.19
 "#;
 
-    let mut hosts_old = serde_yaml::from_str::<HostV2>(hosts_old_str).unwrap();
+    let mut hosts_old = serde_yaml::from_str::<Host>(hosts_old_str).unwrap();
 
     let hosts_new_str = r#"---
 name: cluster
@@ -847,9 +843,9 @@ hosts:
           address: 192.168.64.102
 "#;
 
-    let mut hosts_new = serde_yaml::from_str::<HostV2>(hosts_new_str).unwrap();
+    let mut hosts_new = serde_yaml::from_str::<Host>(hosts_new_str).unwrap();
 
-    HostV2::merge(&mut hosts_old, &mut hosts_new, true);
+    Host::merge(&mut hosts_old, &mut hosts_new, true);
 
     insta::assert_yaml_snapshot!(hosts_old);
 }
