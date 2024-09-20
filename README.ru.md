@@ -44,8 +44,8 @@ Genin это генератор инваентаря для `Ansible Cartridge`.
 
 Универсальный исполняемый файл (от пользователя root или через sudo):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.6.0-x86_64-musl.tar.gz
-tar -xvf genin-0.6.0-x86_64-musl.tar.gz ; install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.7.0-x86_64-musl.tar.gz
+tar -xvf genin-0.7.0-x86_64-musl.tar.gz ; install genin /usr/local/bin/
 ```
 
 #### Универскальная установка через пакетный менеджер
@@ -85,8 +85,8 @@ brew install genin
 Для установки без помощи homebrew используйте следующие команды для загрузки и установки
 Genin на macOS (10.10+):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.6.0-x86_64-macosx.tar.gz
-unzip genin-0.6.0-darwin-amd64.zip -d ~/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/osx/genin-0.7.0-x86_64-macosx.tar.gz
+unzip genin-0.7.0-darwin-amd64.zip -d ~/bin/
 ```
 
 ---
