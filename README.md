@@ -41,8 +41,8 @@ Genin is the tool that will help you very quickly roll out cluster configuration
 Linux binary file
 Universal executable (as root user or via sudo):
 ```shell
-curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.6.0-x86_64-musl.tar.gz
-tar -xvf genin-0.6.0-x86_64-musl.tar.gz ; install genin /usr/local/bin/
+curl -sLO https://binary.picodata.io/repository/raw/genin/bin/genin-0.7.0-x86_64-musl.tar.gz
+tar -xvf genin-0.7.0-x86_64-musl.tar.gz ; install genin /usr/local/bin/
 ```
 
 1. Add the Picodata repository using the following command in a terminal (as root or via sudo):
@@ -80,8 +80,8 @@ brew install genin
 Use the following command to grab and install Genin in macOS (10.10+) wihtout
 homebrew:
 ```shell
-curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.6.0-darwin-amd64.zip -o genin-0.6.0-darwin-amd64.zip
-unzip genin-0.6.0-darwin-amd64.zip -d ~/bin/
+curl -L https://binary.picodata.io/repository/raw/genin/apple/genin-0.7.0-darwin-amd64.zip -o genin-0.7.0-darwin-amd64.zip
+unzip genin-0.7.0-darwin-amd64.zip -d ~/bin/
 ```
 > **Note:** The application can then be found under the `~/bin` directory.
 > Make sure the directory is in your `$PATH`.
