@@ -188,10 +188,7 @@ pub struct Instance {
 
 impl PartialOrd for Instance {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.name.partial_cmp(&other.name) {
-            Some(Ordering::Equal) => Some(Ordering::Equal),
-            ord => ord,
-        }
+        Some(self.cmp(other))
     }
 }
 
@@ -210,7 +207,7 @@ impl<'a> From<(&'a Name, &'a InventoryHost)> for Instance {
             failure_domains: Default::default(),
             roles: Vec::default(),
             cartridge_extra_env: inventory_host.1.cartridge_extra_env.clone(),
-            config: InstanceConfig::from_inventory_host(&inventory_host.1),
+            config: InstanceConfig::from_inventory_host(inventory_host.1),
             vars: inventory_host.1.vars.clone(),
             view: View::default(),
         }
@@ -235,11 +232,7 @@ impl From<Name> for Instance {
 
 impl Instance {
     pub fn is_stateboard(&self) -> bool {
-        if let Some(stateboard) = self.stateboard {
-            stateboard
-        } else {
-            false
-        }
+        self.stateboard.unwrap_or_default()
     }
 
     pub fn with_roles(self, roles: Vec<Role>) -> Self {

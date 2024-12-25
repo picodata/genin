@@ -44,7 +44,7 @@ pub enum Role {
 
 struct RoleVisitor;
 
-impl<'de> Visitor<'de> for RoleVisitor {
+impl Visitor<'_> for RoleVisitor {
     type Value = Role;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

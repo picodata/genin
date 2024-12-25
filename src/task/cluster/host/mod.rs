@@ -79,11 +79,11 @@ impl Default for IP {
     }
 }
 
-impl ToString for IP {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for IP {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Server(ip) => ip.to_string(),
-            Self::None => String::new(),
+            Self::Server(ip) => write!(f, "{}", ip),
+            Self::None => write!(f, ""),
         }
     }
 }

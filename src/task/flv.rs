@@ -57,7 +57,7 @@ impl Default for Failover {
     }
 }
 
-impl<'a> TryFrom<&'a ArgMatches> for Failover {
+impl TryFrom<&'_ ArgMatches> for Failover {
     type Error = FailoverError;
 
     fn try_from(args: &ArgMatches) -> Result<Self, Self::Error> {
@@ -188,7 +188,7 @@ pub enum Mode {
 
 struct ModeVisitor;
 
-impl<'de> Visitor<'de> for ModeVisitor {
+impl Visitor<'_> for ModeVisitor {
     type Value = Mode;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -501,7 +501,7 @@ impl Display for UriWithProtocol {
 
 struct UriWithProtocolVisior;
 
-impl<'de> Visitor<'de> for UriWithProtocolVisior {
+impl Visitor<'_> for UriWithProtocolVisior {
     type Value = UriWithProtocol;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

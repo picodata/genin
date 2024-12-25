@@ -36,10 +36,7 @@ impl<'a> From<&'a Name> for &'a str {
 
 impl PartialOrd for Name {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.childrens
-            .last()
-            .unwrap()
-            .partial_cmp(other.childrens.last().unwrap())
+        Some(self.cmp(other))
     }
 }
 
@@ -116,7 +113,7 @@ impl Serialize for Name {
 impl Name {
     pub fn with_index<T: Display>(self, index: T) -> Self {
         Self {
-            childrens: vec![
+            childrens: [
                 self.childrens.clone(),
                 vec![format!("{}-{}", self.childrens.last().unwrap(), index)],
             ]
@@ -126,7 +123,7 @@ impl Name {
 
     pub fn clone_with_index<T: Display>(&self, index: T) -> Self {
         Self {
-            childrens: vec![
+            childrens: [
                 self.childrens.clone(),
                 vec![format!("{}-{}", self.childrens.last().unwrap(), index)],
             ]
@@ -159,7 +156,7 @@ impl Name {
     /// current name is formed.
     ///
     /// * If the Name has no children, then the original name will be
-    /// returned.
+    ///   returned.
     ///
     /// # Examples
     ///
@@ -183,7 +180,7 @@ impl Name {
     /// current name is formed.
     ///
     /// * If the parent Name has no children, then the original name
-    /// will be returned.
+    ///   will be returned.
     ///
     /// # Examples
     ///
@@ -210,7 +207,7 @@ impl Name {
     /// current name is formed.
     ///
     /// * If the parent Name has no children, then the original name
-    /// will be returned.
+    ///   will be returned.
     ///
     /// # Examples
     ///

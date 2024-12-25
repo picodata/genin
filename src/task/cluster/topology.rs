@@ -394,14 +394,7 @@ impl<'de> Deserialize<'de> for TopologySet {
 
 impl PartialOrd for TopologySet {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (
-            &self.failure_domains.is_empty(),
-            &other.failure_domains.is_empty(),
-        ) {
-            (true, false) => Some(Ordering::Less),
-            (false, true) => Some(Ordering::Greater),
-            _ => Some(Ordering::Equal),
-        }
+        Some(self.cmp(other))
     }
 }
 
@@ -624,7 +617,7 @@ struct InvalidFailureDomains<'a> {
     value: &'a Vec<Value>,
 }
 
-impl<'a> std::fmt::Debug for InvalidFailureDomains<'a> {
+impl std::fmt::Debug for InvalidFailureDomains<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.value.iter().try_for_each(|value| match value {
             Value::String(domain) => {
@@ -646,7 +639,7 @@ struct InvalidRoles<'a> {
     value: &'a Vec<Value>,
 }
 
-impl<'a> std::fmt::Debug for InvalidRoles<'a> {
+impl std::fmt::Debug for InvalidRoles<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for role in self.value {
             match role {
