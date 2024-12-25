@@ -627,7 +627,7 @@ impl Cluster {
             ("failover".into(), "# Failover management options".into()),
             (
                 "mode".to_string(),
-                "# Failover mode (stateful, eventual, disabled)".to_string(),
+                "# Failover mode (stateful, eventual, disabled, raft)".to_string(),
             ),
             (
                 "state_provider".to_string(),

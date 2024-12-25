@@ -193,7 +193,7 @@ hosts:
 
 # параметры фейловера
 failover:
-  mode: stateful              # (опционально) вариант работы фейловера (stateful, eventual, disabled)
+  mode: stateful              # (опционально) вариант работы фейловера (stateful, eventual, disabled, raft)
   state_provider: stateboard  # (опционально) провайдер предоставляющий фейловер (stateboard, stateful)
   failover_timeout: 60        # (опционально) время (в секундах), определяет время перевода инстанса со статусом `suspect` в статус `dead`
   fencing_enabled: true       # (опционально) если `true`, инстансы будут снимать с себя роль лидера при потере связи с провайдером состояния

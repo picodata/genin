@@ -61,7 +61,7 @@ hosts:
             - PORT: 3000
 # Failover management options
 failover:
-  # Failover mode (stateful, eventual, disabled)
+  # Failover mode (stateful, eventual, disabled, raft)
   mode: stateful
   # What is serve failover (stateboard, stateful)
   state_provider: stateboard

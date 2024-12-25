@@ -62,7 +62,7 @@ pub(super) fn read() -> ArgMatches {
                         .short('m')
                         .action(ArgAction::Set)
                         .default_value("stateful")
-                        .help("(string): failover mode (statefull, eventual, disabled)"),
+                        .help("(string): failover mode (statefull, eventual, disabled, raft)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')
@@ -245,7 +245,7 @@ pub(super) fn read() -> ArgMatches {
                         .short('m')
                         .action(ArgAction::Set)
                         .default_value("stateful")
-                        .help("(string): failover mode (statefull, eventual, disabled)"),
+                        .help("(string): failover mode (statefull, eventual, disabled, raft)"),
                     Arg::new("failover-state-provider")
                         .long("failover-state-provider")
                         .short('F')

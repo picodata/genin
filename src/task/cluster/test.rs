@@ -14,7 +14,7 @@ fn default_cluster() {
                 .short('m')
                 .action(ArgAction::Set)
                 .default_value("stateful")
-                .help("(string): failover mode (statefull, eventual, disabled)"),
+                .help("(string): failover mode (statefull, eventual, disabled, raft)"),
         )
         .arg(
             Arg::new("failover-state-provider")

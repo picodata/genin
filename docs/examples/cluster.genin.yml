@@ -39,7 +39,7 @@ hosts:
         config:
           address: <<host_address>>                 # Host or instance address (maybe IP or URI)
 failover:
-  mode: stateful                                    # Failover mode (stateful, eventual, disabled)
+  mode: stateful                                    # Failover mode (stateful, eventual, disabled, raft)
   state_provider: stateboard                        # What is serve failover (stateboard, stateful)
   stateboard_params:
     uri: <<host_address_and_port>>                 # Uri on which the stateboard will be available (ip:port)
