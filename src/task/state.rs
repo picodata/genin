@@ -117,7 +117,7 @@ impl State {
     }
 
     pub fn symlink_latest(&mut self, latest: &str) -> Result<(), io::Error> {
-        fs::symlink(&format!("{}.gz", &self.uid), latest)
+        fs::symlink(format!("{}.gz", &self.uid), latest)
     }
 
     pub fn from_latest(args: &ArgMatches) -> Result<Self, StateError> {

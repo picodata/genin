@@ -233,7 +233,7 @@ pub struct ErrSeqMapping<'a> {
     pub value: &'a Vec<Value>,
 }
 
-impl<'a> std::fmt::Debug for ErrSeqMapping<'a> {
+impl std::fmt::Debug for ErrSeqMapping<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("\n")?;
         self.value.iter().try_for_each(|value| match value {
@@ -271,7 +271,7 @@ pub struct ErrConfMapping<'a> {
     pub value: &'a Mapping,
 }
 
-impl<'a> std::fmt::Debug for ErrConfMapping<'a> {
+impl std::fmt::Debug for ErrConfMapping<'_> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.value
             .iter()

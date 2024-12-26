@@ -177,7 +177,7 @@ hosts:
 
 # failover parameters
 failover:
-  mode: stateful               # (optional) failover mode (stateful, eventual, disabled)
+  mode: stateful               # (optional) failover mode (stateful, eventual, disabled, raft)
   state_provider: stateboard   # (optional) what is serve failover (stateboard, stateful)
   failover_timeout: 60         # (optional) timeout (in seconds), used by membership to mark `suspect` members as `dead`
   fencing_enabled: true        # (optional) abandon leadership when both the state provider quorum and at least one

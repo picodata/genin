@@ -287,7 +287,7 @@ impl<'a> TryFrom<&'a Inventory> for Cluster {
                                                 roles: Vec::new(),
                                                 cartridge_extra_env: instance.vars.clone(),
                                                 config: InstanceConfig::from_inventory_host(
-                                                    &instance,
+                                                    instance,
                                                 ),
                                                 vars: instance.vars.clone(),
                                                 view: View::default(),
@@ -355,7 +355,7 @@ impl<'de> Deserialize<'de> for Cluster {
                 hosts: Vec<Host>,
                 #[serde(default)]
                 failover: Failover,
-                vars: Vars,
+                vars: Box<Vars>,
             },
             InvalidCluster(Value),
         }
@@ -373,7 +373,7 @@ impl<'de> Deserialize<'de> for Cluster {
                     .with_binary_port(DEFAULT_BINARY_PORT),
                 topology: topology.check_unique().map_err(serde::de::Error::custom)?,
                 failover,
-                vars,
+                vars: *vars,
                 metadata: ClusterMetadata {
                     paths: Default::default(),
                 },
@@ -627,7 +627,7 @@ impl Cluster {
             ("failover".into(), "# Failover management options".into()),
             (
                 "mode".to_string(),
-                "# Failover mode (stateful, eventual, disabled)".to_string(),
+                "# Failover mode (stateful, eventual, disabled, raft)".to_string(),
             ),
             (
                 "state_provider".to_string(),

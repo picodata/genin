@@ -70,7 +70,7 @@ hosts:
           address: 192.168.16.12
 # Failover management options
 failover:
-  # Failover mode (stateful, eventual, disabled)
+  # Failover mode (stateful, eventual, disabled, raft)
   mode: stateful
   # What is serve failover (stateboard, stateful)
   state_provider: stateboard
@@ -94,4 +94,3 @@ vars:
   cartridge_package_path: /tmp/myapp.rpm
   # Indicates if vshard must be bootstrapped on the cluster
   cartridge_bootstrap_vshard: true
-

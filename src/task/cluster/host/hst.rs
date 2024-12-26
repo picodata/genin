@@ -108,10 +108,7 @@ impl WithHosts<Vec<Host>> for Host {
 
 impl PartialOrd for Host {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match self.instances.len().partial_cmp(&other.instances.len()) {
-            Some(Ordering::Equal) => self.name.partial_cmp(&other.name),
-            ord => ord,
-        }
+        Some(self.cmp(other))
     }
 }
 
@@ -131,7 +128,7 @@ impl Display for Host {
 
         self.form_structure(depth, &collector);
 
-        let mut table = Builder::from_iter(collector.take().into_iter()).build();
+        let mut table = Builder::from_iter(collector.take()).build();
         table.with(Merge::horizontal());
         table.with(Alignment::center());
 
@@ -685,7 +682,7 @@ impl Host {
             }
         }
 
-        lvl = lvl + 1;
+        lvl += 1;
         for sub_host in self.hosts.iter_mut() {
             sub_host.set_zone(lvl, dc_lvl, zone.clone())
         }
@@ -1009,7 +1006,7 @@ impl From<String> for DomainMember {
     }
 }
 
-impl<'a> From<DomainMember> for Cow<'a, str> {
+impl From<DomainMember> for Cow<'_, str> {
     fn from(val: DomainMember) -> Self {
         match val {
             DomainMember::Domain(name) => Cow::Owned(name),

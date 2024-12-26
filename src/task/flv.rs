@@ -57,7 +57,7 @@ impl Default for Failover {
     }
 }
 
-impl<'a> TryFrom<&'a ArgMatches> for Failover {
+impl TryFrom<&'_ ArgMatches> for Failover {
     type Error = FailoverError;
 
     fn try_from(args: &ArgMatches) -> Result<Self, Self::Error> {
@@ -182,11 +182,13 @@ pub enum Mode {
     Eventual,
     #[serde(rename = "disabled")]
     Disabled,
+    #[serde(rename = "raft")]
+    Raft,
 }
 
 struct ModeVisitor;
 
-impl<'de> Visitor<'de> for ModeVisitor {
+impl Visitor<'_> for ModeVisitor {
     type Value = Mode;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -201,6 +203,7 @@ impl<'de> Visitor<'de> for ModeVisitor {
             "stateful" => Ok(Mode::Stateful),
             "eventual" => Ok(Mode::Eventual),
             "disabled" => Ok(Mode::Disabled),
+            "raft" => Ok(Mode::Raft),
             _ => Err(serde::de::Error::invalid_value(
                 serde::de::Unexpected::Other(v),
                 &self,
@@ -224,7 +227,7 @@ impl Default for Mode {
     }
 }
 
-impl<'s> TryFrom<&'s str> for Mode {
+impl TryFrom<&'_ str> for Mode {
     type Error = GeninError;
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
@@ -498,7 +501,7 @@ impl Display for UriWithProtocol {
 
 struct UriWithProtocolVisior;
 
-impl<'de> Visitor<'de> for UriWithProtocolVisior {
+impl Visitor<'_> for UriWithProtocolVisior {
     type Value = UriWithProtocol;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

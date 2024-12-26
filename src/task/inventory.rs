@@ -40,9 +40,10 @@ impl Default for HeaderInfo {
         }
     }
 }
-impl ToString for HeaderInfo {
-    fn to_string(&self) -> String {
-        format!("# {}\n# version: {}\n", self.title, self.version)
+
+impl std::fmt::Display for HeaderInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "# {}\n# version: {}\n", self.title, self.version)
     }
 }
 
@@ -64,7 +65,7 @@ impl<'a> TryFrom<&'a ArgMatches> for Inventory {
     }
 }
 
-impl<'a> TryFrom<&'a [u8]> for Inventory {
+impl TryFrom<&'_ [u8]> for Inventory {
     type Error = GeninError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
