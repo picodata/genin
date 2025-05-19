@@ -6,15 +6,13 @@ expression: cluster
 # List of replicasets as an array
 topology:
   - name: router
-    # How many masters we want, by default equal 1
-    replicasets_count: 1
+    replicaset_count: 1
     # Array of roles for this instance
     roles:
       - router
       - failover-coordinator
   - name: storage
-    # How many masters we want, by default equal 1
-    replicasets_count: 2
+    replicaset_count: 2
     # Number of replicas in replicaset, default 0
     replication_factor: 2
     # Array of roles for this instance

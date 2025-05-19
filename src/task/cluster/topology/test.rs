@@ -70,7 +70,7 @@ fn topology_from_instances() {
 fn topology_member_v2() {
     let topology_member_str: String = r#"---
 name: router
-replicasets_count: 1
+replicaset_count: 1
 roles:
   - router
   - failover-coordinator
