@@ -7,6 +7,8 @@ pub mod state;
 pub mod utils;
 pub mod vars;
 
+use console::style;
+use dialoguer::Confirm;
 use log::info;
 use serde_yaml::{Mapping, Value};
 use std::convert::TryFrom;
@@ -74,6 +76,21 @@ pub fn run_v2() -> Result<(), Box<dyn Error>> {
 
             match State::from_latest(args) {
                 Ok(state) => {
+                    if !args.get_flag("yes")
+                        && !Confirm::new()
+                            .with_prompt(
+                                style("Previous inventory state detected. Want to update it?")
+                                    .red()
+                                    .to_string(),
+                            )
+                            .interact()?
+                    {
+                        println!(
+                            "To recreate the inventory, use the command: genin build --recreate"
+                        );
+                        return Ok(());
+                    }
+
                     let mut old: Cluster = state.into();
                     old.hosts.clear_view();
 

@@ -5,6 +5,7 @@ use std::{
 };
 
 const INVENTORY_HEADER_SIZE: usize = 2;
+const GENIN_CMD: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/target/debug/genin",);
 
 fn create_file(path: &str) {
     File::create(path).unwrap();
@@ -46,15 +47,12 @@ pub fn build_result_from_output(output: Output) -> String {
 fn genin_init() {
     cleanup_test_dir("tests/.genin_init");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("init")
-    .arg("--output")
-    .arg("tests/.genin_init/cluster.genin.yml")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("init")
+        .arg("--output")
+        .arg("tests/.genin_init/cluster.genin.yml")
+        .output()
+        .expect("Failed to execute command");
 
     let genin_init = build_result_from_output(output);
     let genin_init = format!(
@@ -70,15 +68,12 @@ fn warning_message_on_init_output() {
     cleanup_test_dir("tests/.warning_message_on_init_output");
     create_file("tests/.warning_message_on_init_output/cluster.genin.yml");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("init")
-    .arg("-q")
-    .current_dir("tests/.warning_message_on_init_output")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("init")
+        .arg("-q")
+        .current_dir("tests/.warning_message_on_init_output")
+        .output()
+        .expect("Failed to execute command");
 
     let mut result = Vec::new();
     result.write_all(&output.stdout).unwrap();
@@ -97,25 +92,19 @@ fn warning_message_on_init_output() {
 fn genin_inspect() {
     cleanup_test_dir("tests/.genin_inspect");
 
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("init")
-    .arg("--output")
-    .arg("tests/.genin_inspect/cluster.genin.yml")
-    .output()
-    .expect("Failed to execute command");
+    Command::new(GENIN_CMD)
+        .arg("init")
+        .arg("--output")
+        .arg("tests/.genin_inspect/cluster.genin.yml")
+        .output()
+        .expect("Failed to execute command");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("inspect")
-    .arg("--source")
-    .arg("tests/.genin_inspect/cluster.genin.yml")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("inspect")
+        .arg("--source")
+        .arg("tests/.genin_inspect/cluster.genin.yml")
+        .output()
+        .expect("Failed to execute command");
 
     let genin_inspect = build_result_from_output(output);
 
@@ -127,27 +116,21 @@ fn warning_message_on_build_output() {
     cleanup_test_dir("tests/.warning_message_on_build_output");
     create_file("tests/.warning_message_on_build_output/inventory.yml");
 
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("init")
-    .arg("-q")
-    .current_dir("tests/.warning_message_on_build_output")
-    .output()
-    .expect("Failed to execute command");
+    Command::new(GENIN_CMD)
+        .arg("init")
+        .arg("-q")
+        .current_dir("tests/.warning_message_on_build_output")
+        .output()
+        .expect("Failed to execute command");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("--source")
-    .arg("cluster.genin.yml")
-    .arg("-q")
-    .current_dir("tests/.warning_message_on_build_output")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("--source")
+        .arg("cluster.genin.yml")
+        .arg("-q")
+        .current_dir("tests/.warning_message_on_build_output")
+        .output()
+        .expect("Failed to execute command");
 
     let mut result = Vec::new();
     result.write_all(&output.stdout).unwrap();
@@ -166,15 +149,12 @@ fn warning_message_on_build_output() {
 fn init_with_comments() {
     cleanup_test_dir("tests/.init_with_comments");
 
-    Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("init")
-    .arg("-q")
-    .current_dir("tests/.init_with_comments")
-    .output()
-    .expect("Failed to execute command");
+    Command::new(GENIN_CMD)
+        .arg("init")
+        .arg("-q")
+        .current_dir("tests/.init_with_comments")
+        .output()
+        .expect("Failed to execute command");
 
     let generated = std::fs::read_to_string("tests/.init_with_comments/cluster.genin.yml").unwrap();
 
@@ -185,23 +165,21 @@ fn init_with_comments() {
 fn sequential_upgrade_from_state() {
     cleanup_test_dir("tests/.sequential_upgrade_from_state");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("upgrade")
-    .arg("--old")
-    .arg("tests/resources/cluster.genin.yml")
-    .arg("--new")
-    .arg("tests/resources/cluster-new.genin.yml")
-    .arg("--output")
-    .arg("tests/.sequential_upgrade_from_state/v1_inventory.yml")
-    .arg("--export-state")
-    .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
-    .arg("--state-dir")
-    .arg("tests/.sequential_upgrade_from_state/.geninstate")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("upgrade")
+        .arg("--old")
+        .arg("tests/resources/cluster.genin.yml")
+        .arg("--new")
+        .arg("tests/resources/cluster-new.genin.yml")
+        .arg("--output")
+        .arg("tests/.sequential_upgrade_from_state/v1_inventory.yml")
+        .arg("--export-state")
+        .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
+        .arg("--state-dir")
+        .arg("tests/.sequential_upgrade_from_state/.geninstate")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let cluster_to_cluster_new = build_result_from_output(output);
 
@@ -216,21 +194,19 @@ fn sequential_upgrade_from_state() {
     // upgrade from previous saved state
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("upgrade")
-    .arg("--old")
-    .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
-    .arg("--new")
-    .arg("tests/resources/cluster-new-v2.genin.yml")
-    .arg("--output")
-    .arg("tests/.sequential_upgrade_from_state/v2_inventory.yml")
-    .arg("--state-dir")
-    .arg("tests/.sequential_upgrade_from_state/.geninstate")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("upgrade")
+        .arg("--old")
+        .arg("tests/.sequential_upgrade_from_state/v1_state.gz")
+        .arg("--new")
+        .arg("tests/resources/cluster-new-v2.genin.yml")
+        .arg("--output")
+        .arg("tests/.sequential_upgrade_from_state/v2_inventory.yml")
+        .arg("--state-dir")
+        .arg("tests/.sequential_upgrade_from_state/.geninstate")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let cluster_new_to_cluster_v2 = build_result_from_output(output);
 
@@ -245,20 +221,18 @@ fn sequential_upgrade_from_state() {
     // upgrade from latest state
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("upgrade")
-    .arg("--from-latest-state")
-    .arg("--new")
-    .arg("tests/resources/cluster-new-v3.genin.yml")
-    .arg("--output")
-    .arg("tests/.sequential_upgrade_from_state/v3_inventory.yml")
-    .arg("--state-dir")
-    .arg("tests/.sequential_upgrade_from_state/.geninstate")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("upgrade")
+        .arg("--from-latest-state")
+        .arg("--new")
+        .arg("tests/resources/cluster-new-v3.genin.yml")
+        .arg("--output")
+        .arg("tests/.sequential_upgrade_from_state/v3_inventory.yml")
+        .arg("--state-dir")
+        .arg("tests/.sequential_upgrade_from_state/.geninstate")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let cluster_v2_to_cluster_v3 = build_result_from_output(output);
     let cluster_v2_to_cluster_v3 = format!(
@@ -273,21 +247,19 @@ fn sequential_upgrade_from_state() {
 fn sequential_upgrade_with_decreasing() {
     cleanup_test_dir("tests/.sequential_upgrade_with_decreasing");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("upgrade")
-    .arg("--old")
-    .arg("tests/resources/cluster-new-v3.genin.yml")
-    .arg("--new")
-    .arg("tests/resources/cluster-new-v4.genin.yml")
-    .arg("--output")
-    .arg("tests/.sequential_upgrade_with_decreasing/v1_inventory.yml")
-    .arg("--state-dir")
-    .arg("tests/.sequential_upgrade_with_decreasing/.geninstate")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("upgrade")
+        .arg("--old")
+        .arg("tests/resources/cluster-new-v3.genin.yml")
+        .arg("--new")
+        .arg("tests/resources/cluster-new-v4.genin.yml")
+        .arg("--output")
+        .arg("tests/.sequential_upgrade_with_decreasing/v1_inventory.yml")
+        .arg("--state-dir")
+        .arg("tests/.sequential_upgrade_with_decreasing/.geninstate")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let cluster_v3_to_cluster_v4 = build_result_from_output(output);
 
@@ -302,20 +274,18 @@ fn sequential_upgrade_with_decreasing() {
     // upgrade from latest state
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("upgrade")
-    .arg("--from-latest-state")
-    .arg("--new")
-    .arg("tests/resources/cluster-new-v5.genin.yml")
-    .arg("--output")
-    .arg("tests/.sequential_upgrade_with_decreasing/v2_inventory.yml")
-    .arg("--state-dir")
-    .arg("tests/.sequential_upgrade_with_decreasing/.geninstate")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("upgrade")
+        .arg("--from-latest-state")
+        .arg("--new")
+        .arg("tests/resources/cluster-new-v5.genin.yml")
+        .arg("--output")
+        .arg("tests/.sequential_upgrade_with_decreasing/v2_inventory.yml")
+        .arg("--state-dir")
+        .arg("tests/.sequential_upgrade_with_decreasing/.geninstate")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let cluster_v4_to_cluster_v5 = build_result_from_output(output);
 
@@ -332,22 +302,20 @@ fn upgrade_consistency_100_times() {
     cleanup_test_dir("tests/.upgrade_consistency_100_times");
 
     for _ in 1..=100 {
-        let output = Command::new(format!(
-            "{}/target/debug/genin",
-            std::env::var("CARGO_MANIFEST_DIR").unwrap()
-        ))
-        .arg("upgrade")
-        .arg("--old")
-        .arg("tests/resources/cluster.genin.yml")
-        .arg("--new")
-        .arg("tests/resources/cluster-new.genin.yml")
-        .arg("--output")
-        .arg("tests/.upgrade_consistency_100_times/inventory.yml")
-        .arg("-f")
-        .arg("--state-dir")
-        .arg("tests/.upgrade_consistency_100_times/.geninstate")
-        .output()
-        .expect("Failed to execute command");
+        let output = Command::new(GENIN_CMD)
+            .arg("upgrade")
+            .arg("--old")
+            .arg("tests/resources/cluster.genin.yml")
+            .arg("--new")
+            .arg("tests/resources/cluster-new.genin.yml")
+            .arg("--output")
+            .arg("tests/.upgrade_consistency_100_times/inventory.yml")
+            .arg("-f")
+            .arg("--state-dir")
+            .arg("tests/.upgrade_consistency_100_times/.geninstate")
+            .arg("-y")
+            .output()
+            .expect("Failed to execute command");
 
         let consistency_100_times = build_result_from_output(output);
 
@@ -364,17 +332,15 @@ fn upgrade_consistency_100_times() {
 fn build_invalid_config() {
     cleanup_test_dir("tests/.build_invalid_config");
 
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg("tests/resources/cluster-invalid.genin.yml")
-    .arg("-o")
-    .arg("tests/.build_invalid_config/inventory.yml")
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg("tests/resources/cluster-invalid.genin.yml")
+        .arg("-o")
+        .arg("tests/.build_invalid_config/inventory.yml")
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let build_invalid_config = build_result_from_output(output);
 
@@ -390,19 +356,16 @@ fn build_with_recreate() {
     cleanup_test_dir(base_dir);
 
     // build from config
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&source)
-    .arg("-o")
-    .arg(&inventory)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&source)
+        .arg("-o")
+        .arg(&inventory)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
 
@@ -411,20 +374,17 @@ fn build_with_recreate() {
     assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
 
     // build with recreate state
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&source)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .arg("--recreate")
-    .arg("-o")
-    .arg(format!("{base_dir}/recreate_inventory.yml"))
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&source)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("--recreate")
+        .arg("-o")
+        .arg(format!("{base_dir}/recreate_inventory.yml"))
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
     let result = format!("{result}\n{}", read_to_string(&source).unwrap());
@@ -442,19 +402,17 @@ fn build_with_upgrade() {
     cleanup_test_dir(base_dir);
 
     // build from config
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&src)
-    .arg("-o")
-    .arg(&inventory)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&src)
+        .arg("-o")
+        .arg(&inventory)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
     let result = format!("{result}\n{}", read_to_string(&src).unwrap());
@@ -463,19 +421,17 @@ fn build_with_upgrade() {
 
     // build with upgrade from latest
     for i in 0..3 {
-        let output = Command::new(format!(
-            "{}/target/debug/genin",
-            std::env::var("CARGO_MANIFEST_DIR").unwrap()
-        ))
-        .arg("build")
-        .arg("-s")
-        .arg(&upg_src)
-        .arg("--state-dir")
-        .arg(&state_dir)
-        .arg("-o")
-        .arg(format!("{base_dir}/upg_inventory.{i}.yml"))
-        .output()
-        .expect("Failed to execute command");
+        let output = Command::new(GENIN_CMD)
+            .arg("build")
+            .arg("-s")
+            .arg(&upg_src)
+            .arg("--state-dir")
+            .arg(&state_dir)
+            .arg("-o")
+            .arg(format!("{base_dir}/upg_inventory.{i}.yml"))
+            .arg("-y")
+            .output()
+            .expect("Failed to execute command");
 
         let result = build_result_from_output(output);
         let result = format!("{result}\n{}", read_to_string(&upg_src).unwrap());
@@ -494,19 +450,17 @@ fn remove_role_with_undescrore_name() {
     cleanup_test_dir(base_dir);
 
     // build from config
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&src)
-    .arg("-o")
-    .arg(&inventory)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&src)
+        .arg("-o")
+        .arg(&inventory)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
     let result = format!("{result}\n{}", read_to_string(&src).unwrap());
@@ -514,38 +468,34 @@ fn remove_role_with_undescrore_name() {
     assert_eq!(read_dir(&state_dir).unwrap().count(), 2);
 
     // remove subscription_status role
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&upg_src)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .arg("-o")
-    .arg(format!("{base_dir}/upg_inventory_remove.yml"))
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&upg_src)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("-o")
+        .arg(format!("{base_dir}/upg_inventory_remove.yml"))
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
     let result = format!("{result}\n{}", read_to_string(&upg_src).unwrap());
     insta::assert_display_snapshot!("undescrore_names_remove", result);
 
     // add subscription_status role
-    let output = Command::new(format!(
-        "{}/target/debug/genin",
-        std::env::var("CARGO_MANIFEST_DIR").unwrap()
-    ))
-    .arg("build")
-    .arg("-s")
-    .arg(&src)
-    .arg("--state-dir")
-    .arg(&state_dir)
-    .arg("-o")
-    .arg(format!("{base_dir}/upg_inventory_add.yml"))
-    .output()
-    .expect("Failed to execute command");
+    let output = Command::new(GENIN_CMD)
+        .arg("build")
+        .arg("-s")
+        .arg(&src)
+        .arg("--state-dir")
+        .arg(&state_dir)
+        .arg("-o")
+        .arg(format!("{base_dir}/upg_inventory_add.yml"))
+        .arg("-y")
+        .output()
+        .expect("Failed to execute command");
 
     let result = build_result_from_output(output);
     let result = format!("{result}\n{}", read_to_string(&src).unwrap());

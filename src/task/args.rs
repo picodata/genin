@@ -89,6 +89,10 @@ pub(super) fn read() -> ArgMatches {
                         .short('I')
                         .action(ArgAction::SetTrue)
                         .help("merge replicasets with similar names like router-1 and router-1-1"),
+                    Arg::new("yes")
+                        .short('y')
+                        .action(ArgAction::SetTrue)
+                        .help("Auto-confirm all prompts"),
                 ]),
             Command::new("init")
                 .about("Init genin and create cluster.genin.yml configuration")
@@ -275,6 +279,10 @@ pub(super) fn read() -> ArgMatches {
                         .short('I')
                         .action(ArgAction::SetTrue)
                         .help("merge replicasets with similar names like router-1 and router-1-1"),
+                    Arg::new("yes")
+                        .short('y')
+                        .action(ArgAction::SetTrue)
+                        .help("Auto-confirm all prompts"),
                     fd_as_zone_arg(),
                 ]),
             Command::new("list-state")

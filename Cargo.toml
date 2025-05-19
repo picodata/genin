@@ -20,3 +20,8 @@ serde_json = "1.0.103"
 sha256 = "1.2.2"
 thiserror = "1.0.44"
 flate2 = "1.0.26"
+dialoguer = "0.11"
+console = "0.15"
+
+[dev-dependencies]
+concat = "0.1.0"
