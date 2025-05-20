@@ -4,12 +4,12 @@ expression: cluster_v2
 ---
 topology:
   - name: router
-    replicasets_count: 1
+    replicaset_count: 1
     roles:
       - router
       - failover-coordinator
   - name: storage
-    replicasets_count: 2
+    replicaset_count: 2
     replication_factor: 2
     roles:
       - storage
@@ -39,4 +39,3 @@ vars:
   cartridge_cluster_cookie: myapp-cookie
   cartridge_package_path: /tmp/myapp.rpm
   cartridge_bootstrap_vshard: true
-

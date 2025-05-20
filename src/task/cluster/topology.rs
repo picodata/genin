@@ -310,7 +310,11 @@ impl Default for Topology {
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 struct TopologySet {
     name: Name,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        alias = "replicaset_count",
+        rename(serialize = "replicaset_count"),
+        skip_serializing_if = "Option::is_none"
+    )]
     replicasets_count: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     replication_factor: Option<usize>,
@@ -336,7 +340,11 @@ impl<'de> Deserialize<'de> for TopologySet {
         #[derive(Deserialize)]
         struct Helper {
             name: String,
-            #[serde(default)]
+            #[serde(
+                alias = "replicaset_count",
+                rename(serialize = "replicaset_count"),
+                default
+            )]
             replicasets_count: Option<usize>,
             #[serde(default)]
             replication_factor: Option<usize>,
