@@ -4,7 +4,7 @@ default: ;
 
 install-cargo:
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |\
-		sh -s -- -y --profile default --default-toolchain 1.65.0
+		sh -s -- -y --profile default --default-toolchain 1.85.0
 
 build_binary: build_apple build_windows build_gnu build_musl
 
